@@ -221,6 +221,11 @@ td.tm{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap;font-variant
 .role ul{font-size:13.5px;color:var(--muted)}
 .obsg{border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .obsg .gh{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 14px;background:var(--surface-2);font-weight:600;font-size:14px}
+.obsv{display:block;width:100%;margin-top:6px;font-size:13px;padding:5px 8px}
+.tpl{border:1px solid var(--line);border-radius:12px;margin:14px 0;overflow:hidden}
+.tpl .th{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.tpl .th b{font-size:14px}.tpl .th span{font-size:12px;color:var(--muted)}
+.tpl pre{margin:0;padding:12px 14px;white-space:pre-wrap;font:inherit;font-size:14px;line-height:1.55}
 .obsr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:10px 14px;border-top:1px solid var(--line);align-items:center;font-size:14px}
 @media (max-width:620px){.obsr{grid-template-columns:minmax(0,1fr)}}
 .cot{display:inline-grid;grid-auto-flow:column;gap:2px;background:var(--surface-2);border-radius:8px;padding:2px;justify-self:start}
@@ -506,13 +511,13 @@ const OBJS = {
 };
 const OKEYS=Object.keys(OBJS);
 const CRIT = {
-  ALERTE:["L'alerte est reçue, tracée et transmise au maire sans délai","Le PCS est déclenché par une décision explicite du maire (DOS)","Le PCC est armé : lieu, membres, moyens de liaison opérationnels","La main courante est ouverte et tenue dès le début"],
-  EVAL:["Une carte de situation est tenue à jour","Les enjeux exposés sont identifiés (personnes vulnérables, ERP, réseaux)","Des points de situation réguliers sont conduits","Les informations sont recoupées avant décision"],
-  POP:["Les moyens d'alerte prévus au PCS sont mobilisés","Les messages sont clairs : danger, consignes, zone concernée","Les personnes vulnérables recensées sont contactées","Le suivi de diffusion est assuré (qui a été prévenu, quand)"],
-  SAUV:["Les décisions de confinement ou d'évacuation sont prises et motivées","Les itinéraires et points de rassemblement sont définis","Le recensement des personnes évacuées est tenu","Les refus d'évacuer sont traités et signalés"],
-  CARE:["Le lieu d'accueil est ouvert et armé dans les délais","L'accueil, l'enregistrement et le ravitaillement sont organisés","Le soutien aux personnes est prévu (couchage, besoins spécifiques)","Les besoins logistiques sont anticipés et remontés"],
-  COM:["Un porte-parole unique est désigné","Les éléments de langage sont validés par le maire","Les rumeurs sont détectées et traitées","La communication est coordonnée avec la préfecture"],
-  LIAI:["Les points de situation remontent à la préfecture selon le rythme demandé","La liaison avec le COS est établie et maintenue","Les demandes de renfort sont formalisées","Les décisions sont tracées et horodatées"]
+  ALERTE:["Alerte reçue, horodatée et transmise au maire en moins de 5 minutes","PCS déclenché par une décision explicite du maire (DOS) en moins de 15 minutes","PCC armé (lieu, membres, liaisons) en moins de 30 minutes après le déclenchement","Main courante ouverte dès l'armement, chaque événement horodaté"],
+  EVAL:["Carte de situation mise à jour moins de 10 minutes après chaque information nouvelle","Enjeux exposés recensés et chiffrés dans la première heure (personnes vulnérables, ERP, réseaux)","Point de situation interne conduit au moins toutes les 45 minutes","Information recoupée par une seconde source avant toute décision"],
+  POP:["Premier message d'alerte diffusé moins de 15 minutes après la décision","Message complet : danger, consigne, zone concernée, prochaine information (4 éléments sur 4)","Personnes vulnérables du secteur toutes contactées en moins d'une heure, résultat tracé","Part des foyers prévenus connue et suivie (qui, quand, par quel moyen)"],
+  SAUV:["Décision de confinement ou d'évacuation prise et motivée moins de 15 minutes après la demande du COS","Itinéraire et point de rassemblement donnés avec l'ordre d'évacuation","Liste nominative des évacués tenue à jour, sans écart au contrôle","Chaque refus d'évacuer signalé au COS et consigné"],
+  CARE:["Lieu d'accueil ouvert et armé moins de 45 minutes après la décision","Chaque personne accueillie enregistrée à l'arrivée (identité, provenance, besoins)","Couchage, repas et besoins spécifiques couverts dans les deux heures","Besoins logistiques chiffrés et remontés à chaque point de situation"],
+  COM:["Porte-parole unique désigné avant la première sollicitation des médias","Chaque message public validé par le maire avant diffusion","Rumeur traitée par un démenti factuel moins de 30 minutes après sa détection","Aucune contradiction avec la communication de la préfecture"],
+  LIAI:["Points de situation transmis à la préfecture à l'heure demandée, chiffrés","Liaison avec le COS établie en moins de 20 minutes et maintenue","Demandes de renfort écrites, chiffrées et horodatées","Décisions du maire tracées et horodatées dans la main courante"]
 };
 const REGL = [
   {ref:"Code de la sécurité intérieure, art. L731-3 à L731-5", objet:"Obligation d'élaborer un PCS pour les communes exposées, et un plan intercommunal (PICS) pour les EPCI dont une commune y est soumise.", statut:"vig", url:"https://www.legifrance.gouv.fr/codes/id/LEGISCTA000044375302"},
@@ -1503,7 +1508,7 @@ function generate(){
 }
 
 /* ---------- Rendu ---------- */
-const TABS=[["cadrage","Cadrage"],["carte","Carte"],["scenario","Scénario"],["chrono","Chronogramme"],["roles","Rôles"],["obs","Observation"],["retex","RETEX"],["regl","Réglementation"]];
+const TABS=[["cadrage","Cadrage"],["carte","Carte"],["scenario","Scénario"],["chrono","Chronogramme"],["roles","Rôles"],["modeles","Modèles"],["obs","Observation"],["retex","RETEX"],["regl","Réglementation"]];
 const info=`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 7.2v4M8 4.8v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 const docHead=t=>`<div class="dochead"><span class="exmark">EXERCICE · EXERCICE · EXERCICE</span><span class="meta">${esc(S.p.commune)} · ${esc(t)}</span></div>`;
 const refLink=t=>`<a class="ref" href="${EXREF}" target="_blank" rel="noopener">${t}</a>`;
@@ -1641,10 +1646,99 @@ function vRoles(){
   return docHead("Fiches rôles")+`<div class="docbody"><h3>Fiches rôles</h3><div class="roles">${R.map(r=>`<div class="role ${r[0]==="A"?"anim":""}"><span class="who">${r[0]==="J"?"Joueur":"Équipe d'animation"}</span><b>${esc(r[1])}</b><ul>${r[2].map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`).join("")}</div></div>`;
 }
 function tally(o){let a=0,p=0,k=0;crit(o).forEach((_,j)=>{const v=S.cot[o+"-"+j];if(v==="ok")a++;else if(v==="part")p++;else if(v==="ko")k++});return {a,p,k,n:crit(o).length}}
+const CONSIGNES={
+  inondation:"Montez dans les étages. Ne prenez pas votre voiture, ne descendez pas dans les sous-sols, n'allez pas chercher vos enfants à l'école : ils y sont pris en charge.",
+  feu:"Restez à l'intérieur, fermez portes, fenêtres et volets, arrosez les abords si vous le pouvez. N'évacuez que sur ordre des autorités.",
+  tmd:"Mettez-vous à l'abri dans le bâtiment le plus proche. Fermez portes et fenêtres, coupez la ventilation. N'allez pas chercher vos enfants à l'école.",
+  industriel:"Mettez-vous à l'abri dans le bâtiment le plus proche. Fermez portes et fenêtres, coupez la ventilation. Ne consommez pas les fruits et légumes de votre jardin.",
+  tempete:"Restez chez vous et ne vous déplacez qu'en cas d'urgence. Éloignez-vous des arbres et des fils électriques tombés.",
+  canicule:"Buvez régulièrement, restez au frais aux heures chaudes, prenez des nouvelles de vos proches âgés. Un lieu rafraîchi est ouvert : {heberg}.",
+  seisme:"Ne rentrez pas dans un bâtiment endommagé. Coupez le gaz et l'électricité, éloignez-vous des façades. Attendez-vous à des répliques.",
+  coupure:"N'utilisez pas de chauffage d'appoint à combustion à l'intérieur : risque d'intoxication au monoxyde de carbone. Un lieu chauffé est ouvert : {heberg}.",
+  hopital:"Les urgences {du_hopital} sont fermées. En cas d'urgence, composez le 15. N'allez pas sur place.",
+  ferroviaire:"Évitez les abords de la voie ferrée et laissez les routes libres pour les secours. Familles : appelez le numéro d'information de la préfecture.",
+  aerien:"Évitez les abords du site et ne vous approchez pas des débris. Laissez les routes libres pour les secours.",
+  bombe:"Évitez le secteur {du_erp} et laissez la circulation libre pour les forces de l'ordre. Ne diffusez pas d'images.",
+  masse:"Restez à l'abri. Évitez le secteur {du_evt}. Ne diffusez aucune image et suivez uniquement les consignes officielles.",
+  terrorisme:"Restez à l'abri. Évitez le secteur {du_evt}. Ne diffusez aucune image et suivez uniquement les consignes officielles.",
+  cyber:"Les services de la mairie fonctionnent en mode dégradé. Pour toute démarche urgente, présentez-vous à l'accueil de la mairie. Ne communiquez aucune donnée personnelle par téléphone ou courriel en réponse à un message inhabituel.",
+  sanitaire:"Respectez les mesures sanitaires en vigueur. Personnes isolées ou sans moyen de faire leurs courses : appelez le CCAS."
+};
+const DANGER={inondation:"Crue rapide {du_riviere}",feu:"Feu de forêt en progression",tmd:"Fuite de produit toxique sur {la_axe}",industriel:"Incendie sur {le_icpe} ; fumées potentiellement toxiques",tempete:"Tempête et chutes de neige",canicule:"Canicule",seisme:"Séisme",coupure:"Coupure d'électricité de longue durée",hopital:"Panne générale {du_hopital}",ferroviaire:"Accident ferroviaire",aerien:"Accident d'avion",bombe:"Alerte à la bombe {au_erp}",masse:"Attaque en cours",terrorisme:"Attaque en cours",cyber:"Cyberattaque contre les services de la mairie",sanitaire:"Épidémie"};
+let MODELES=[];
+const secArt=t=>/^(SDIS|Bataillon)/.test(t)?"le "+t:/^Brigade/.test(t)?"la "+t:t;
+function modeles(p){
+  const f=t=>fill(t,p),zone=["canicule","sanitaire","cyber","hopital"].includes(p.risk)?p.commune:f("{le_secteur}")+", à "+p.commune;
+  const cons=f(CONSIGNES[p.risk]||""),dang=f(DANGER[p.risk]||RISKS[p.risk].label),a=actors(p),dt=p.date?fmtDate(p.date):"[date]";
+  const M=[];
+  M.push({t:"Message FR-Alert",n:"Proposé par le maire, diffusé par la préfecture sur les téléphones de la zone",x:`${a.Pref.toUpperCase()} — ALERTE
+${dang}.
+Zone concernée : ${zone}.
+${cons}
+Informations : ${p.commune} — mairie [numéro de crise] et radio locale. Prochaine information à [heure].`});
+  M.push({t:"Communiqué de presse",n:"À valider par le maire, en cohérence avec la préfecture",x:`Mairie de ${p.commune}
+Communiqué du ${dt}, [heure]
+
+${dang}. Concerné : ${zone}.
+
+Le maire a déclenché le plan communal de sauvegarde à [heure]. La cellule de crise est réunie en mairie, en lien avec ${a.Pref.replace(/^Préfecture/,"la préfecture")} et ${secArt(a.secLabel)}.
+
+Mesures prises : [mise à l'abri, évacuation de [nombre] personnes, fermeture de voies…].
+Un lieu d'accueil est ouvert : ${p.heberg}.
+
+Consignes : ${cons}
+
+Prochain point d'information à [heure]. Contact presse : [nom du porte-parole], [téléphone].`});
+  M.push({t:"Publication sur les réseaux sociaux",n:"Courte, factuelle, à republier à chaque point de situation",x:`ALERTE — ${dang}. Zone concernée : ${zone}.
+${cons}
+Accueil : ${p.heberg}. Infos : mairie [numéro de crise].
+Ne relayez que les informations officielles. Prochain point à [heure].`});
+  const zoneA=["canicule","sanitaire","cyber"].includes(p.risk)?"[périmètre à préciser]":zone;
+  M.push({t:"Arrêté d'interdiction d'accès et d'évacuation",n:"Modèle à faire relire par le secrétariat de mairie avant signature",x:`ARRÊTÉ MUNICIPAL N° [numéro]
+portant interdiction d'accès, de circulation et évacuation
+
+Le maire de ${p.commune},
+Vu le code général des collectivités territoriales, notamment ses articles L2212-2, L2212-4 et L2213-1 ;
+Considérant la situation suivante : ${dang.charAt(0).toLowerCase()+dang.slice(1)}, affectant ${zoneA} ;
+Considérant qu'il existe un danger grave et imminent pour la sécurité des personnes ;
+
+ARRÊTE
+Article 1 — L'accès et la circulation sont interdits, sauf aux services de secours et de sécurité, dans le périmètre suivant : ${zoneA}, [rues ou limites].
+Article 2 — Les occupants des habitations situées dans ce périmètre sont tenus de les évacuer sans délai. Un lieu d'accueil est ouvert : ${p.heberg}.
+Article 3 — Le présent arrêté entre en vigueur dès sa publication, jusqu'à nouvel ordre.
+Article 4 — Ampliation : ${a.Pref.replace(/^Préfecture/,"la préfecture")}, ${a.la_fdo}, ${secArt(a.secLabel)}.
+
+Fait à ${p.commune}, le ${dt}, à [heure].
+Le maire`});
+  M.push({t:"Arrêté de réquisition",n:"En cas d'urgence, quand les moyens communaux ne suffisent pas",x:`ARRÊTÉ MUNICIPAL N° [numéro]
+portant réquisition
+
+Le maire de ${p.commune},
+Vu le code général des collectivités territoriales, notamment ses articles L2212-2 et L2212-4 ;
+Considérant la situation suivante : ${dang.charAt(0).toLowerCase()+dang.slice(1)}, et l'urgence à assurer [l'hébergement / le transport / l'alimentation] des personnes sinistrées ;
+Considérant l'insuffisance des moyens dont dispose la commune ;
+
+ARRÊTE
+Article 1 — [Nom de l'entreprise ou du propriétaire], [adresse], est requis de mettre à disposition de la commune : [bien ou service, quantité], à compter du ${dt} à [heure], pour une durée de [durée].
+Article 2 — Les conditions d'indemnisation seront fixées ultérieurement.
+Article 3 — Copie du présent arrêté est adressée à ${a.Pref.replace(/^Préfecture/,"la préfecture")}.
+
+Fait à ${p.commune}, le ${dt}, à [heure].
+Le maire`});
+  return M;
+}
+function vModeles(){
+  const p=S.p;MODELES=modeles(p);
+  return docHead("Modèles de messages")+`<div class="docbody"><h3>Modèles prêts à adapter</h3>
+    <p class="note">Rédigés pour le scénario « ${esc(riskTitle(p))} » à ${esc(p.commune)}. Complétez les éléments entre crochets. Pendant l'exercice, donnez-les aux joueurs seulement si l'objectif n'est pas d'évaluer leur rédaction.</p>
+    ${MODELES.map((m,i)=>`<div class="tpl"><div class="th"><div><b>${esc(m.t)}</b><br><span>${esc(m.n)}</span></div><button class="btn sm" type="button" data-copytpl="${i}">Copier</button></div><pre>${esc(m.x)}</pre></div>`).join("")}
+    <div class="callout warn">${info}<span>FR-Alert est déclenché par le préfet, sur proposition du maire. Les arrêtés sont des modèles : faites-les relire avant toute signature réelle.</span></div>
+  </div>`;
+}
 function vObs(){
   return docHead("Grille d'observation")+`<div class="docbody"><h3>Grille d'observation</h3>
-    <p class="note">À renseigner par les observateurs pendant le jeu. La synthèse apparaît dans l'onglet RETEX.</p>
-    ${S.p.objs.map(o=>{const t=tally(o);return `<div class="obsg"><div class="gh"><span>${esc(OBJS[o].label)}</span><span class="score">${t.a+t.p+t.k}/${t.n} cotés</span></div>${crit(o).map((c,j)=>{const id=o+"-"+j,v=S.cot[id]||"";return `<div class="obsr"><span>${esc(c)}</span><span class="cot" role="group" aria-label="Cotation">${[["ok","Atteint"],["part","Partiel"],["ko","Non atteint"]].map(x=>`<button type="button" data-cot="${id}" data-v="${x[0]}" aria-pressed="${v===x[0]}">${x[1]}</button>`).join("")}</span></div>`}).join("")}</div>`}).join("")}
+    <p class="note">À renseigner par les observateurs pendant le jeu : notez l'heure ou le délai constaté, puis cotez. Les délais cibles sont indicatifs ; adaptez-les à votre PCS. La synthèse apparaît dans l'onglet RETEX.</p>
+    ${S.p.objs.map(o=>{const t=tally(o);return `<div class="obsg"><div class="gh"><span>${esc(OBJS[o].label)}</span><span class="score">${t.a+t.p+t.k}/${t.n} cotés</span></div>${crit(o).map((c,j)=>{const id=o+"-"+j,v=S.cot[id]||"";return `<div class="obsr"><span>${esc(c)}<input class="obsv" type="text" data-obsv="${id}" value="${esc((S.obsv||{})[id]||"")}" placeholder="Constaté : heure, délai, remarque" aria-label="Constaté"></span><span class="cot" role="group" aria-label="Cotation">${[["ok","Atteint"],["part","Partiel"],["ko","Non atteint"]].map(x=>`<button type="button" data-cot="${id}" data-v="${x[0]}" aria-pressed="${v===x[0]}">${x[1]}</button>`).join("")}</span></div>`}).join("")}</div>`}).join("")}
   </div>`;
 }
 function vRetex(){
@@ -1691,7 +1785,7 @@ function vCarte(){
     <div class="callout">${info}<span>Les données OpenStreetMap sont collaboratives : vérifiez les lieux sur le terrain avant l'exercice. Un lieu manquant peut être saisi à la main dans « Lieux utilisés dans le scénario ».</span></div>
   </div>`;
 }
-const VIEWS={cadrage:vCadrage,carte:vCarte,scenario:vScenario,chrono:vChrono,roles:vRoles,obs:vObs,retex:vRetex,regl:vRegl};
+const VIEWS={cadrage:vCadrage,carte:vCarte,scenario:vScenario,chrono:vChrono,roles:vRoles,modeles:vModeles,obs:vObs,retex:vRetex,regl:vRegl};
 
 function render(){
   const p=S.p;
@@ -1733,10 +1827,11 @@ $("#view").addEventListener("focusout",e=>{
   if(ac&&ce.dataset.af){S.retex.actions[+ac.dataset.a][ce.dataset.af]=ce.textContent.trim();save()}
 });
 $("#view").addEventListener("change",e=>{const t=e.target;if(t.classList.contains("tmin")){const n=+t.closest("[data-i]").dataset.i;S.injects[n].t=Math.max(0,parseInt(t.value||0,10));S.injects.sort((a,b)=>a.t-b.t);S.edited=true;save();render()}});
-$("#view").addEventListener("input",e=>{const t=e.target;if(t.dataset.r){S.retex[t.dataset.r]=t.value;save()}});
+$("#view").addEventListener("input",e=>{const t=e.target;if(t.dataset.r){S.retex[t.dataset.r]=t.value;save()}if(t.dataset.obsv){S.obsv=S.obsv||{};S.obsv[t.dataset.obsv]=t.value;save()}});
 $("#view").addEventListener("click",e=>{
   const cc=e.target.closest("[data-cat]");if(cc){const k=cc.dataset.cat;hiddenCats.has(k)?hiddenCats.delete(k):hiddenCats.add(k);cc.setAttribute("aria-pressed",!hiddenCats.has(k));drawMap();return}
   const d=e.target.closest("[data-del]");if(d){S.injects.splice(+d.dataset.del,1);S.edited=true;save();render();return}
+  const ct=e.target.closest("[data-copytpl]");if(ct){const m=MODELES[+ct.dataset.copytpl];if(m)copy(m.x,m.t+" copié.");return}
   const ad=e.target.closest("[data-adel]");if(ad){S.retex.actions.splice(+ad.dataset.adel,1);save();render();return}
   const c=e.target.closest("[data-cot]");if(c){const id=c.dataset.cot;S.cot[id]=S.cot[id]===c.dataset.v?"":c.dataset.v;save();render();return}
   if(e.target.id==="addAct"){S.retex.actions.push({a:"Nouvelle action",pilote:"À désigner",ech:"À fixer"});save();render()}
@@ -1758,8 +1853,9 @@ function asText(){
   if(S.ctx)o.push("Historique (Géorisques) : "+S.ctx.catnat+" arrêté(s) CatNat pour ce risque.");
   o.push("Hypothèses :",...L.hypotheses.map(h=>"- "+fill(h,p)),...ficheHyp(p).map(h=>"- "+h),"");
   o.push("3. CHRONOGRAMME");S.injects.forEach(i=>o.push(hplus(i.t)+(p.heureH?" ("+clock(i.t)+")":"")+(i.sec?" · [cascade : "+RISKS[i.sec].label+"]":"")+" · "+i.from+" → "+i.to+" · "+i.via,"   "+i.msg,"   Attendu : "+i.exp));
-  o.push("","4. GRILLE D'OBSERVATION");p.objs.forEach(x=>{o.push(OBJS[x].label);crit(x).forEach((c,j)=>{const v=S.cot[x+"-"+j];o.push("- "+c+" : "+({ok:"atteint",part:"partiel",ko:"non atteint"}[v]||"à coter"))})});
+  o.push("","4. GRILLE D'OBSERVATION");p.objs.forEach(x=>{o.push(OBJS[x].label);crit(x).forEach((c,j)=>{const v=S.cot[x+"-"+j],ob=(S.obsv||{})[x+"-"+j];o.push("- "+c+" : "+({ok:"atteint",part:"partiel",ko:"non atteint"}[v]||"à coter")+(ob?" ("+ob+")":""))})});
   o.push("","5. RETEX","Points forts : "+(S.retex.forts||"—"),"Axes d'amélioration : "+(S.retex.axes||"—"),"Actions :",...S.retex.actions.map(a=>"- "+a.a+" · "+a.pilote+" · "+a.ech));
+  o.push("","MODÈLES DE MESSAGES",...modeles(p).flatMap(m=>["",m.t.toUpperCase(),m.x]));
   o.push("","6. CADRE RÉGLEMENTAIRE (vérifié le "+VERIF+")",...REGL.map(r=>"- "+r.ref+" ["+STAT[r.statut]+"] : "+r.objet+" "+r.url),"","EXERCICE EXERCICE EXERCICE");
   return o.join("\n");
 }
