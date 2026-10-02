@@ -1,6 +1,14 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Commune Prête : préparer, conduire et évaluer les exercices de crise des communes.">
+<!-- debut-contenu -->
 <title>Commune Prête</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <style>
 /* Layout : barre d'application, colonne de configuration en étapes, espace de travail du dossier en onglets */
 :root{
@@ -30,6 +38,10 @@
   --violet:#b39cf5; --teal:#4cc6c6;
   --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 40px -16px rgba(0,0,0,.6); color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+img{max-width:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
 button{font-family:inherit}
 a{color:var(--primary)}
@@ -232,6 +244,64 @@ td.tm{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap;font-variant
 .st.pro{background:var(--warn-soft);color:var(--warn)}
 .st.gui{background:var(--primary-soft);color:var(--primary)}
 .exnote{font-size:12.5px;color:var(--faint);margin:0}
+
+/* Cartographie (Leaflet, styles essentiels intégrés) */
+:root{--tile-filter:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--tile-filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.6)}}
+:root[data-theme="dark"]{--tile-filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.6)}
+.leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,.leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0}
+.leaflet-container{overflow:hidden;-webkit-tap-highlight-color:transparent;background:var(--surface-2);font-family:var(--f-ui)}
+.leaflet-tile,.leaflet-marker-icon{user-select:none;-webkit-user-drag:none}
+.leaflet-tile{visibility:hidden}.leaflet-tile-loaded{visibility:inherit}
+.leaflet-container img.leaflet-tile{max-width:none!important;max-height:none!important;width:256px;height:256px}
+.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200;filter:var(--tile-filter)}.leaflet-overlay-pane{z-index:400}.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}
+.leaflet-map-pane svg{z-index:200}
+.leaflet-control{position:relative;z-index:800;pointer-events:auto;float:left;clear:both}
+.leaflet-top,.leaflet-bottom{position:absolute;z-index:1000;pointer-events:none}
+.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}
+.leaflet-right .leaflet-control{float:right;margin-right:10px}.leaflet-top .leaflet-control{margin-top:10px}.leaflet-bottom .leaflet-control{margin-bottom:0}.leaflet-left .leaflet-control{margin-left:10px}
+.leaflet-zoom-animated{transform-origin:0 0}
+.leaflet-zoom-anim .leaflet-zoom-animated{transition:transform .25s cubic-bezier(0,0,.25,1)}
+.leaflet-interactive{cursor:pointer}.leaflet-grab{cursor:grab}.leaflet-dragging .leaflet-grab{cursor:move}
+.leaflet-control-zoom{border:1px solid var(--line);border-radius:8px;overflow:hidden;box-shadow:var(--shadow)}
+.leaflet-control-zoom a{display:block;width:32px;height:32px;line-height:32px;text-align:center;text-decoration:none;font-size:18px;background:var(--surface);color:var(--ink)}
+.leaflet-control-zoom a+a{border-top:1px solid var(--line)}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--surface) 85%,transparent);padding:1px 6px;font-size:11px;color:var(--muted)}
+.leaflet-control-attribution a{color:var(--primary)}
+.leaflet-popup{position:absolute;text-align:center;margin-bottom:14px}
+.leaflet-popup-content-wrapper{text-align:left;border-radius:10px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow-lg);border:1px solid var(--line)}
+.leaflet-popup-content{margin:12px 14px;line-height:1.45;font-size:13px;min-width:200px}
+.leaflet-popup-tip-container{width:40px;height:16px;position:absolute;left:50%;margin-left:-20px;overflow:hidden;pointer-events:none}
+.leaflet-popup-tip{width:14px;height:14px;margin:-8px auto 0;transform:rotate(45deg);background:var(--surface);border:1px solid var(--line)}
+.leaflet-popup-close-button{position:absolute;top:2px;right:4px;border:none;width:24px;height:24px;font:18px/24px var(--f-ui);color:var(--muted);text-decoration:none;text-align:center}
+.leaflet-tooltip{position:absolute;padding:3px 8px;background:var(--surface);border:1px solid var(--line);border-radius:6px;color:var(--ink);white-space:nowrap;pointer-events:none;box-shadow:var(--shadow);font-size:12px}
+.mapwrap{border:1px solid var(--line);border-radius:12px;overflow:hidden;position:relative}
+#map{height:440px;width:100%}
+@media (max-width:620px){#map{height:340px}}
+.mapmsg{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:var(--muted);font-size:13.5px;z-index:1100;background:color-mix(in srgb,var(--surface-2) 92%,transparent)}
+.catchips{display:flex;flex-wrap:wrap;gap:6px}
+.catchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:500;color:var(--ink);cursor:pointer}
+.catchip i{width:9px;height:9px;border-radius:50%;background:var(--c);flex:none}
+.catchip b{font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.catchip[aria-pressed=false]{opacity:.45}
+.pop-cat{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.pop-name{font-weight:600;font-size:14px;margin:2px 0 6px}
+.pop-acts{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.pop-acts button{font:inherit;font-size:12.5px;font-weight:500;text-align:left;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:6px;padding:5px 8px;cursor:pointer}
+.pop-acts button:hover{border-color:var(--primary)}
+.sites{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.site{border:1px solid var(--line);border-radius:10px;padding:9px 12px;display:flex;gap:10px;align-items:flex-start;min-width:0}
+.site i{width:10px;height:10px;border-radius:50%;background:var(--c);margin-top:6px;flex:none}
+.site b{display:block;font-size:13.5px;font-weight:600;overflow-wrap:anywhere}
+.site span{font-size:12px;color:var(--muted)}
+.famhead{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:6px 2px 0}
+.famhead:first-child{margin-top:0}
+.tg.map{background:var(--ok-soft);color:var(--ok)}
+.o-SEC{--c:var(--ink)}
+.chip .fq{font-size:10.5px;font-weight:600;color:var(--accent);margin-left:2px}
+#comboAdd{font-size:13px;padding:6px 8px}
+.c-mairie{--c:var(--primary)}.c-ecole{--c:var(--warn)}.c-sante{--c:var(--bad)}.c-ehpad{--c:var(--violet)}.c-secours{--c:var(--bad)}.c-pharmacie{--c:var(--ok)}.c-salle{--c:var(--teal)}.c-commerce{--c:var(--accent)}.c-sport{--c:var(--teal)}.c-culte{--c:var(--muted)}.c-energie{--c:var(--warn)}.c-eau{--c:var(--primary)}.c-industrie{--c:var(--violet)}.c-camping{--c:var(--ok)}.c-gare{--c:var(--ink)}.c-aero{--c:var(--ink)}
+@media (max-width:620px){.appbar{position:static}.status .pill+.pill{display:none}.logo small{display:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -272,6 +342,12 @@ td.tm{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap;font-variant
         <div class="stephead"><span class="num">2</span><h2 id="h2">Risque joué</h2><span class="aside" id="riskAside"></span></div>
         <div id="riskBanner"></div>
         <div class="risklist" id="risks" role="radiogroup" aria-labelledby="h2"></div>
+        <div class="field" id="comboBox">
+          <span class="lab" id="lcombo">Effets en cascade</span>
+          <p class="note">Les crises se succèdent et se chevauchent. Ajoutez jusqu'à deux événements qui viendront s'y superposer en cours d'exercice.</p>
+          <div class="chips" id="combo" role="group" aria-labelledby="lcombo"></div>
+          <select id="comboAdd" aria-label="Ajouter un autre événement"></select>
+        </div>
       </section>
 
       <section class="step" aria-labelledby="h3">
@@ -291,13 +367,21 @@ td.tm{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap;font-variant
       <section class="step" aria-labelledby="h4">
         <div class="stephead"><span class="num">4</span><h2 id="h4">Objectifs évalués</h2><span class="aside" id="objCount"></span></div>
         <div class="chips" id="objs"></div>
-        <details class="more">
+        <details class="more" id="lieuxBox">
           <summary>Lieux utilisés dans le scénario</summary>
           <div class="inner">
+            <p class="note" id="lieuxNote">Saisissez vos lieux réels. Une fois la commune choisie, la carte propose les noms officiels.</p>
             <div class="field"><label for="secteur">Secteur exposé</label><input type="text" id="secteur"></div>
-            <div class="field"><label for="etab">Établissement sensible</label><input type="text" id="etab"></div>
-            <div class="field"><label for="heberg">Lieu d'accueil</label><input type="text" id="heberg"></div>
-            <div class="field"><label for="axe">Axe routier principal</label><input type="text" id="axe"></div>
+            <div class="field"><label for="etab">Établissement sensible</label><input type="text" id="etab" list="dl-ecole"></div>
+            <div class="field"><label for="heberg">Lieu d'accueil</label><input type="text" id="heberg" list="dl-salle"></div>
+            <div class="field"><label for="erp">Commerce ou lieu très fréquenté</label><input type="text" id="erp" list="dl-commerce"></div>
+            <div class="field"><label for="hopital">Établissement de santé de référence</label><input type="text" id="hopital" list="dl-sante"></div>
+            <div class="row2">
+              <div class="field"><label for="gare">Gare</label><input type="text" id="gare" list="dl-gare"></div>
+              <div class="field"><label for="aero">Aérodrome</label><input type="text" id="aero" list="dl-aero"></div>
+            </div>
+            <div class="field"><label for="axe">Axe routier principal</label><input type="text" id="axe" list="dl-axe"></div>
+            <div id="datalists" hidden></div>
           </div>
         </details>
       </section>
@@ -326,7 +410,9 @@ td.tm{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap;font-variant
 <script>
 (function(){
 const API = {
-  geo: q => "https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(q)+"&fields=nom,code,population,departement&boost=population&limit=7",
+  geo: q => "https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(q)+"&fields=nom,code,population,departement,centre&boost=population&limit=7",
+  contour: code => "https://geo.api.gouv.fr/communes/"+code+"?fields=nom,contour,centre&format=geojson&geometry=contour",
+  overpass: ["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"],
   risques: insee => "https://georisques.gouv.fr/api/v1/gaspar/risques?code_insee="+insee,
   catnat: insee => "https://georisques.gouv.fr/api/v1/gaspar/catnat?code_insee="+insee+"&page_size=100",
   fiche: insee => "https://www.georisques.gouv.fr/mes-risques/connaitre-les-risques-pres-de-chez-moi/rapport2?form-commune=true&codeInsee="+insee
@@ -345,22 +431,40 @@ const ICONS = {
   cyber:'<rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2M8 9.8v1.6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>',
   canicule:'<circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9L13 13M3 13l1.1-1.1M11.9 4.1L13 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
   sanitaire:'<circle cx="8" cy="8" r="3.6" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 1.5v2.9M8 11.6v2.9M1.5 8h2.9M11.6 8h2.9M3.4 3.4l2 2M10.6 10.6l2 2M3.4 12.6l2-2M10.6 5.4l2-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  hopital:'<rect x="2" y="2" width="12" height="12" rx="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  ferroviaire:'<rect x="3.5" y="1.5" width="9" height="10" rx="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M3.5 7h9M6 14.5l1-3M10 14.5l-1-3M6 9.5v.1M10 9.5v.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  aerien:'<path d="M8 1.5c.8 0 1.2.8 1.2 1.8v3.3l5.3 3v1.6L9.2 9.6v2.6l1.8 1.4v1.3L8 14.2l-3 .7v-1.3l1.8-1.4V9.6L1.5 11.2V9.6l5.3-3V3.3c0-1 .4-1.8 1.2-1.8z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/>',
+  bombe:'<circle cx="7" cy="9" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10.5 5.5l2-2M12.5 1.5v1M14.5 3.5h-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  masse:'<circle cx="5" cy="5" r="2" stroke="currentColor" stroke-width="1.4" fill="none"/><circle cx="11" cy="5" r="2" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M1.5 13c0-2.2 1.6-4 3.5-4s3.5 1.8 3.5 4M7.5 13c0-2.2 1.6-4 3.5-4s3.5 1.8 3.5 4" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>',
   autre:'<path d="M8 2l6.5 11.5h-13zM8 6.5v3.2M8 11.6v.1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
 };
 const ico=k=>`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">${ICONS[k]||ICONS.autre}</svg>`;
 
+const FAMS = [["nat","Risques naturels et climatiques"],["tech","Risques technologiques"],["trans","Transports"],["res","Réseaux et services essentiels"],["san","Risques sanitaires"],["mal","Malveillance"]];
 const RISKS = {
-  inondation:{label:"Inondation", re:/inond|crue|submersion|ruissel|coulée de boue/i},
-  feu:{label:"Feu de forêt", re:/feu de for|incendie de for/i},
-  tempete:{label:"Tempête, grand froid, neige", re:/temp[êe]te|grain|neige|météo|vent|cyclone|grand froid|orage/i},
-  tmd:{label:"Transport de matières dangereuses", re:/transport de marchandises dangereuses|matières dangereuses|\bTMD\b|canalisation/i},
-  seisme:{label:"Séisme", re:/s[ée]isme/i},
-  industriel:{label:"Accident industriel", re:/industriel|seveso|ICPE/i},
-  terrorisme:{label:"Attentat lors d'un événement communal", re:null, transverse:true},
-  cyber:{label:"Cyberattaque contre la mairie", re:null, transverse:true},
-  canicule:{label:"Canicule", re:/canicule|vague de chaleur/i, transverse:true},
-  sanitaire:{label:"Épidémie (type Covid-19)", re:/épidém|pandém/i, transverse:true},
-  coupure:{label:"Coupure électrique prolongée", re:null, transverse:true}
+  inondation:{label:"Inondation", fam:"nat", re:/inond|crue|submersion|ruissel|coulée de boue/i, cats:["ecole","ehpad","camping","salle"]},
+  feu:{label:"Feu de forêt", fam:"nat", re:/feu de for|incendie de for/i, cats:["camping","ehpad","ecole"]},
+  tempete:{label:"Tempête, grand froid, neige", fam:"nat", re:/temp[êe]te|grain|neige|météo|vent|cyclone|grand froid|orage/i, cats:["energie","ehpad","salle"]},
+  canicule:{label:"Canicule", fam:"nat", re:/canicule|vague de chaleur/i, transverse:true, cats:["ehpad","ecole","salle"]},
+  seisme:{label:"Séisme", fam:"nat", re:/s[ée]isme/i, cats:["ecole","ehpad","sante"]},
+  tmd:{label:"Transport de matières dangereuses", fam:"tech", re:/transport de marchandises dangereuses|matières dangereuses|\bTMD\b|canalisation/i, cats:["industrie","ecole"]},
+  industriel:{label:"Accident industriel", fam:"tech", re:/industriel|seveso|ICPE/i, cats:["industrie","ecole","ehpad"]},
+  ferroviaire:{label:"Déraillement de train", fam:"trans", re:null, site:["gare"], rail:true, cats:["gare","salle"]},
+  aerien:{label:"Accident aérien", fam:"trans", re:null, site:["aero"], cats:["aero","salle"]},
+  coupure:{label:"Coupure électrique prolongée", fam:"res", re:null, transverse:true, cats:["energie","sante","ehpad","eau"]},
+  hopital:{label:"Défaillance d'un établissement de santé", fam:"res", re:null, site:["sante"], cats:["sante","ehpad","pharmacie"]},
+  cyber:{label:"Cyberattaque contre la mairie", fam:"res", re:null, transverse:true, cats:["mairie"]},
+  sanitaire:{label:"Épidémie (type Covid-19)", fam:"san", re:/épidém|pandém/i, transverse:true, cats:["sante","ehpad","pharmacie","ecole"]},
+  bombe:{label:"Alerte à la bombe", fam:"mal", re:null, site:["commerce","ecole"], cats:["commerce","ecole","mairie"]},
+  masse:{label:"Attaque de masse", fam:"mal", re:null, site:["commerce","sport"], cats:["commerce","sport","salle","sante"]},
+  terrorisme:{label:"Attentat lors d'un événement communal", fam:"mal", re:null, transverse:true, cats:["salle","sport","culte"]}
+};
+const CASC = {
+  inondation:["coupure","industriel","hopital"], feu:["coupure","tmd","canicule"], tempete:["coupure","ferroviaire","hopital"],
+  canicule:["feu","coupure","hopital"], seisme:["industriel","coupure","hopital"], tmd:["industriel","coupure"],
+  industriel:["tmd","coupure","hopital"], ferroviaire:["tmd","coupure"], aerien:["feu","coupure"],
+  coupure:["cyber","hopital","canicule"], hopital:["coupure","cyber","sanitaire"], cyber:["coupure","hopital"],
+  sanitaire:["canicule","cyber","hopital"], bombe:["masse","cyber"], masse:["bombe","hopital"], terrorisme:["bombe","hopital"]
 };
 const OTHER = [
   {re:/mouvement de terrain|glissement|éboulement|chute de blocs|effondrement|cavité|affaissement|argile/i,label:"Mouvement de terrain"},
@@ -403,6 +507,7 @@ const REGL = [
   {ref:"Plan gouvernemental de réponse à une pandémie (SGDSN, mars 2024)", objet:"Cadre national de gestion d'une pandémie. Le maire veille aux personnes vulnérables, au respect des mesures sanitaires et à la continuité des services de proximité, en s'appuyant sur les associations et la solidarité de voisinage.", statut:"gui", url:"https://www.sgdsn.gouv.fr/files/files/Circulaires%20et%20instructions/SGDSN-PLAN_GOUVERNEMENTAL_PANDEMIE_V8-NUM%20(1).pdf"},
   {ref:"Code de l'action sociale et des familles, art. L121-6-1", objet:"Le maire tient un registre nominatif des personnes âgées et handicapées vivant à domicile qui en font la demande, mobilisé lors des canicules.", statut:"vig", url:"https://nausica-avocats.fr/maire-et-canicule-quels-pouvoirs-quels-responsabilites/"}
 ];
+const crit=o=>(S&&S.p&&(S.p.combo||[]).length&&o==="EVAL")?CRIT.EVAL.concat(["Le PCC hiérarchise les événements simultanés et réaffecte ses moyens"]):CRIT[o];
 const STAT={vig:"En vigueur",pro:"En discussion",gui:"Doctrine"};
 const EXREF=REGL[2].url;
 
@@ -410,17 +515,17 @@ const LIB = {
 inondation:{
   contexte:"Après plusieurs jours de pluies soutenues sur le bassin versant, les sols sont saturés. Un épisode orageux stationnaire provoque une montée rapide du cours d'eau qui traverse {commune}.",
   initiale:"À H, Vigicrues place le tronçon en vigilance rouge. Le pic de crue est attendu vers H+3. Le {secteur} est situé en zone inondable.",
-  hypotheses:["Le pic de crue intervient en fin d'exercice","L'{etab} accueille élèves et personnels","Le {axe} est coupé à hauteur du pont en cours d'exercice","Le réseau téléphonique fonctionne normalement"],
+  hypotheses:["Le pic de crue intervient en fin d'exercice","{Le_etab} accueille élèves et personnels","{La_axe} est coupé à hauteur du pont en cours d'exercice","Le réseau téléphonique fonctionne normalement"],
   phases:[["Alerte","Réception de la vigilance, déclenchement du PCS, armement du PCC."],["Montée en puissance","Alerte des riverains, premières mises en sécurité, ouverture de l'accueil."],["Gestion de crise","Évacuations, hébergement, pression médiatique, points de situation."],["Décrue","Préparation du retour à la normale et FINEX."]],
   injects:[
    [0,"ALERTE","Préfecture (SIDPC)","Maire","SMS + appel","Vigilance crue rouge sur le tronçon. Pic attendu vers H+3. Merci de déclencher votre PCS et de confirmer.","Déclenchement du PCS, convocation de la cellule de crise, accusé de réception à la préfecture."],
    [10,"EVAL","Habitant","Accueil mairie","Téléphone","L'eau commence à recouvrir la chaussée en bas du {secteur}. Est-ce qu'on doit partir ?","Recueil de l'information, report sur la carte, consigne d'attente donnée à l'appelant."],
    [20,"LIAI","CODIS (SDIS)","PCC","Téléphone","Le COS demande la liste des personnes vulnérables du {secteur} et vos points de rassemblement.","Transmission du recensement des personnes vulnérables et des points de rassemblement."],
    [30,"POP","Préfecture","Maire","Téléphone","Merci d'alerter sans délai les riverains de la zone inondable et de me rendre compte.","Mise en œuvre des moyens d'alerte du PCS, compte rendu à la préfecture."],
-   [45,"SAUV","Direction de l'{etab}","Maire","Téléphone","Des parents arrivent en masse pour récupérer les enfants, la cour donne sur le {secteur}. Que fait-on ?","Décision de mise à l'abri ou d'évacuation, coordination avec le PPMS de l'établissement."],
+   [45,"SAUV","Direction {du_etab}","Maire","Téléphone","Des parents arrivent en masse pour récupérer les enfants, la cour donne sur le {secteur}. Que fait-on ?","Décision de mise à l'abri ou d'évacuation, coordination avec le PPMS de l'établissement."],
    [60,"CARE","COS","PCC","Radio","Évacuation en cours d'environ 40 personnes. Ouvrez un lieu d'accueil.","Ouverture et armement du lieu d'accueil ({heberg}), désignation d'un responsable."],
    [75,"COM","Journaliste presse locale","Maire","Téléphone","Bonjour, combien de personnes sont évacuées ? Pouvez-vous me répondre en direct ?","Orientation vers le porte-parole, réponse sur éléments validés uniquement."],
-   [90,"EVAL","Agent technique communal","PCC","Téléphone","Le pont du {axe} est submergé. La circulation continue malgré les barrières.","Fermeture de l'axe, demande d'appui gendarmerie, itinéraire de délestage."],
+   [90,"EVAL","Agent technique communal","PCC","Téléphone","Le pont de {la_axe} est submergé. La circulation continue malgré les barrières.","Fermeture de l'axe, demande d'appui gendarmerie, itinéraire de délestage."],
    [100,"SAUV","Voisin","Accueil mairie","Téléphone","Ma voisine de 87 ans refuse de quitter sa maison, l'eau monte dans sa cour.","Signalement au COS, démarche de persuasion, traçabilité du refus."],
    [115,"CARE","Responsable du lieu d'accueil","PCC","Téléphone","Nous avons 32 personnes, pas assez de couvertures et rien pour le repas du soir.","Sollicitation des fournisseurs ou associations recensés au PCS, remontée du besoin."],
    [130,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Une publication partagée 300 fois annonce la rupture de la digue en amont.","Vérification auprès des secours, démenti coordonné avec la préfecture."],
@@ -431,7 +536,7 @@ inondation:{
 feu:{
   contexte:"Après six semaines sans pluie et sous un vent soutenu, le niveau de danger feu de forêt est très sévère. Un départ de feu est signalé dans le massif boisé qui borde {commune}.",
   initiale:"À H, un feu d'environ 5 hectares progresse vers le {secteur}, en interface forêt-habitat. Les moyens aériens sont engagés sur un autre incendie du département.",
-  hypotheses:["Le vent tourne et accélère la propagation vers H+1","Des fumées gênent la circulation sur le {axe}","L'{etab} accueille du public au moment de l'alerte","Une coupure électrique touche une partie du secteur"],
+  hypotheses:["Le vent tourne et accélère la propagation vers H+1","Des fumées gênent la circulation sur {la_axe}","{Le_etab} accueille du public au moment de l'alerte","Une coupure électrique touche une partie du secteur"],
   phases:[["Alerte","Signalement du feu, déclenchement du PCS, armement du PCC."],["Menace","Confinement ou évacuation du secteur, gestion des fumées et des axes."],["Crise","Accueil des évacués, pression médiatique, coupure de réseaux."],["Fixation","Feu fixé, retour progressif et FINEX."]],
   injects:[
    [0,"ALERTE","CODIS (SDIS)","Maire","Téléphone","Feu de forêt en cours, environ 5 hectares, progression vers le {secteur}. Merci de déclencher votre PCS.","Déclenchement du PCS, armement du PCC, information de la préfecture."],
@@ -440,9 +545,9 @@ feu:{
    [35,"POP","Préfecture","Maire","Téléphone","Un message FR-Alert est envisagé. Quel est votre périmètre et votre consigne ?","Définition du périmètre et rédaction du message de consigne."],
    [50,"SAUV","COS","PCC","Radio","Le vent tourne. Évacuation immédiate de la rue haute du {secteur}, environ 25 foyers.","Organisation de l'évacuation : itinéraire, point de rassemblement, recensement."],
    [65,"CARE","Agent communal","PCC","Téléphone","Les premiers évacués arrivent au lieu d'accueil ({heberg}), certains avec des animaux.","Armement de l'accueil, gestion des animaux de compagnie, enregistrement."],
-   [80,"EVAL","Gendarmerie","PCC","Téléphone","La fumée rend le {axe} dangereux. Nous proposons une fermeture.","Fermeture coordonnée, déviation, information des usagers."],
+   [80,"EVAL","Gendarmerie","PCC","Téléphone","La fumée rend {la_axe} dangereux. Nous proposons une fermeture.","Fermeture coordonnée, déviation, information des usagers."],
    [95,"COM","Télévision régionale","Maire","Sur place","Une équipe de télévision est devant la mairie et souhaite filmer le PCC.","Accueil du média hors PCC, porte-parole désigné, éléments validés."],
-   [110,"SAUV","Direction de l'{etab}","Maire","Téléphone","Nous sommes confinés mais deux personnes ont un malaise lié à la fumée.","Relais immédiat vers le SAMU via le COS, suivi de la situation."],
+   [110,"SAUV","Direction {du_etab}","Maire","Téléphone","Nous sommes confinés mais deux personnes ont un malaise lié à la fumée.","Relais immédiat vers le SAMU via le COS, suivi de la situation."],
    [125,"EVAL","Gestionnaire réseau électrique","PCC","Téléphone","Coupure sur 180 foyers pour la sécurité des secours, durée estimée 4 heures.","Identification des personnes électro-dépendantes, priorisation."],
    [140,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Des internautes affirment que des maisons ont brûlé et que la mairie le cache.","Vérification, communication factuelle coordonnée avec la préfecture."],
    [155,"LIAI","Préfecture","Maire","Téléphone","Point de situation attendu : évacués, hébergés, habitations menacées, besoins.","Point de situation structuré et horodaté."],
@@ -451,14 +556,14 @@ feu:{
   ]},
 tempete:{
   contexte:"Météo-France place le département en vigilance rouge vent violent et neige. Des rafales supérieures à 130 km/h et 30 cm de neige lourde sont attendues sur {commune} en soirée.",
-  initiale:"À H, les premières chutes d'arbres sont signalées. Plusieurs secteurs sont privés d'électricité, dont le {secteur}. Des automobilistes sont bloqués sur le {axe}.",
+  initiale:"À H, les premières chutes d'arbres sont signalées. Plusieurs secteurs sont privés d'électricité, dont le {secteur}. Des automobilistes sont bloqués sur {la_axe}.",
   hypotheses:["La coupure électrique dure au-delà de la fin de l'exercice","Les communications mobiles sont dégradées par endroits","Des usagers de la route doivent être hébergés pour la nuit","Les services techniques communaux sont réduits"],
   phases:[["Alerte","Vigilance rouge, déclenchement du PCS, armement du PCC."],["Impacts","Chutes d'arbres, coupures, automobilistes bloqués."],["Soutien","Hébergement d'urgence, personnes isolées, ravitaillement."],["Stabilisation","Accalmie, rétablissement progressif et FINEX."]],
   injects:[
    [0,"ALERTE","Préfecture","Maire","SMS + courriel","Vigilance rouge vent violent et neige. Merci d'activer votre PCS et de confirmer.","Déclenchement du PCS, armement du PCC, accusé de réception."],
    [10,"POP","Préfecture","Maire","Téléphone","Merci de relayer les consignes : rester chez soi, éviter les déplacements.","Diffusion des consignes par les moyens du PCS."],
    [25,"EVAL","Agent technique","PCC","Téléphone","Un arbre est tombé sur une ligne et bloque la route d'accès au {secteur}.","Signalement au gestionnaire du réseau, balisage, carte mise à jour."],
-   [40,"LIAI","Gendarmerie","PCC","Téléphone","Une trentaine de véhicules sont bloqués sur le {axe}. Pouvez-vous les accueillir ?","Ouverture du lieu d'accueil ({heberg}), organisation du transfert."],
+   [40,"LIAI","Gendarmerie","PCC","Téléphone","Une trentaine de véhicules sont bloqués sur {la_axe}. Pouvez-vous les accueillir ?","Ouverture du lieu d'accueil ({heberg}), organisation du transfert."],
    [55,"CARE","Responsable du lieu d'accueil","PCC","Téléphone","Le chauffage d'appoint ne suffit pas, il fait 12 °C dans la salle.","Recherche de moyens de chauffage, alternative d'hébergement."],
    [70,"SAUV","Infirmière libérale","Accueil mairie","Téléphone","Un patient sous oxygène à domicile n'a plus d'électricité depuis une heure.","Priorisation de la personne électro-dépendante, relais vers les secours."],
    [85,"EVAL","Gestionnaire réseau électrique","PCC","Téléphone","1 200 foyers privés d'électricité, rétablissement non envisagé avant demain.","Anticipation d'une nuit sans électricité, recensement des besoins."],
@@ -471,14 +576,14 @@ tempete:{
    [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
   ]},
 tmd:{
-  contexte:"Un camion-citerne transportant un produit chimique toxique se renverse sur le {axe}, à l'entrée de {commune}. Une fuite est constatée.",
+  contexte:"Un camion-citerne transportant un produit chimique toxique se renverse sur {la_axe}, à l'entrée de {commune}. Une fuite est constatée.",
   initiale:"À H, les secours sont sur place. Le nuage se déplace avec le vent vers le {secteur}, situé à 400 mètres. Un périmètre de sécurité est en cours de définition.",
-  hypotheses:["Le vent pousse le nuage vers les habitations","L'{etab} se trouve dans le périmètre de confinement","Le {axe} reste fermé pendant toute la durée de l'exercice","La nature exacte du produit n'est confirmée qu'à H+45"],
+  hypotheses:["Le vent pousse le nuage vers les habitations","{Le_etab} se trouve dans le périmètre de confinement","{La_axe} reste fermé pendant toute la durée de l'exercice","La nature exacte du produit n'est confirmée qu'à H+45"],
   phases:[["Alerte","Information par les secours, déclenchement du PCS, armement du PCC."],["Protection","Confinement de la population, fermeture des axes."],["Gestion","Inquiétude des familles, accueil, médias."],["Levée","Fin de la fuite, levée du confinement et FINEX."]],
   injects:[
-   [0,"ALERTE","CODIS (SDIS)","Maire","Téléphone","Accident de poids lourd TMD sur le {axe}, fuite de produit toxique. Déclenchez votre PCS.","Déclenchement du PCS, armement du PCC."],
+   [0,"ALERTE","CODIS (SDIS)","Maire","Téléphone","Accident de poids lourd TMD sur {la_axe}, fuite de produit toxique. Déclenchez votre PCS.","Déclenchement du PCS, armement du PCC."],
    [10,"POP","COS","PCC","Radio","Confinement immédiat de la population du {secteur}. Fermez portes et ventilations.","Diffusion de la consigne de confinement, compte rendu au COS."],
-   [20,"SAUV","Direction de l'{etab}","Maire","Téléphone","Nous confinons, mais des parents veulent venir chercher leurs enfants.","Rappel de la consigne, information des parents, blocage des accès."],
+   [20,"SAUV","Direction {du_etab}","Maire","Téléphone","Nous confinons, mais des parents veulent venir chercher leurs enfants.","Rappel de la consigne, information des parents, blocage des accès."],
    [35,"EVAL","Gendarmerie","PCC","Téléphone","Nous mettons en place des déviations. Quels agents pouvez-vous fournir ?","Mise à disposition d'agents et de moyens de balisage."],
    [45,"LIAI","COS","PCC","Radio","Le produit est confirmé : ammoniac. Le périmètre de confinement est étendu à 800 mètres.","Mise à jour de la carte, extension de l'alerte."],
    [60,"POP","Habitant","Accueil mairie","Téléphone","Ça sent fort et j'ai les yeux qui piquent. Je prends ma voiture pour partir ?","Consigne de rester confiné, signalement au COS."],
@@ -493,12 +598,12 @@ tmd:{
 seisme:{
   contexte:"Un séisme de magnitude 5,4 est ressenti fortement sur {commune}. L'épicentre se situe à une vingtaine de kilomètres.",
   initiale:"À H, de nombreux appels arrivent en mairie. Des fissures sont signalées sur des bâtiments anciens du {secteur}. Le réseau mobile est saturé.",
-  hypotheses:["Une réplique intervient à H+1","L'{etab} déclenche son plan de mise en sûreté","Une partie de la population refuse de rentrer chez elle","Les moyens de secours sont engagés sur tout le département"],
+  hypotheses:["Une réplique intervient à H+1","{Le_etab} déclenche son plan de mise en sûreté","Une partie de la population refuse de rentrer chez elle","Les moyens de secours sont engagés sur tout le département"],
   phases:[["Choc","Secousse, afflux d'appels, déclenchement du PCS."],["Reconnaissance","Recensement des dégâts et des personnes, sécurisation."],["Soutien","Accueil des sinistrés, réplique, pression des familles."],["Bilan","Premier bilan, organisation des expertises et FINEX."]],
   injects:[
    [0,"ALERTE","Préfecture","Maire","Téléphone","Séisme ressenti sur le département. Merci d'activer votre PCS et de remonter un premier bilan.","Déclenchement du PCS, armement du PCC malgré la saturation des réseaux."],
    [10,"EVAL","Habitants (multiples)","Accueil mairie","Téléphone","Afflux d'appels : fissures, chutes de tuiles, personnes paniquées dans la rue.","Organisation de la prise d'appels, tri des informations, carte des dégâts."],
-   [25,"SAUV","Direction de l'{etab}","Maire","Téléphone","Nous avons évacué dans la cour. Un mur du préau est fissuré. Peut-on rentrer ?","Interdiction d'accès en attendant une expertise, solution d'accueil."],
+   [25,"SAUV","Direction {du_etab}","Maire","Téléphone","Nous avons évacué dans la cour. Un mur du préau est fissuré. Peut-on rentrer ?","Interdiction d'accès en attendant une expertise, solution d'accueil."],
    [40,"LIAI","CODIS (SDIS)","PCC","Téléphone","Nos moyens sont saturés. Pouvez-vous faire une reconnaissance des bâtiments du {secteur} ?","Envoi d'équipes communales pour reconnaissance visuelle, compte rendu."],
    [55,"POP","Préfecture","Maire","Téléphone","Diffusez les consignes : ne pas rentrer dans un bâtiment endommagé, couper gaz et électricité.","Diffusion des consignes par tous les moyens du PCS."],
    [65,"ALERTE","Réplique","Tous","Inject animateur","Une réplique de magnitude 4,6 est ressentie. Nouveaux appels.","Réévaluation de la situation, mise en sécurité du PCC lui-même."],
@@ -513,7 +618,7 @@ seisme:{
 coupure:{
   contexte:"Un incident majeur sur le réseau de transport d'électricité prive {commune} et plusieurs communes voisines d'électricité, en plein épisode de grand froid.",
   initiale:"À H, la coupure dure depuis deux heures. Le gestionnaire annonce un rétablissement incertain, au-delà de 24 heures. Les températures nocturnes descendent à -8 °C.",
-  hypotheses:["Le réseau mobile se dégrade à partir de H+1","La station de pompage d'eau potable n'a qu'une autonomie limitée","L'{etab} doit fermer","Les carburants deviennent difficiles à trouver"],
+  hypotheses:["Le réseau mobile se dégrade à partir de H+1","La station de pompage d'eau potable n'a qu'une autonomie limitée","{Le_etab} doit fermer","Les carburants deviennent difficiles à trouver"],
   phases:[["Alerte","Information du gestionnaire, déclenchement du PCS."],["Vulnérables","Recensement et prise en charge des personnes fragiles."],["Durée","Chauffage, eau, communications dégradées."],["Tenue","Organisation de la nuit, relève et FINEX."]],
   injects:[
    [0,"ALERTE","Préfecture","Maire","Téléphone","Coupure électrique de longue durée sur le secteur. Activez votre PCS.","Déclenchement du PCS, armement du PCC avec moyens autonomes."],
@@ -532,13 +637,13 @@ coupure:{
 industriel:{
   contexte:"Un incendie se déclare dans l'entrepôt d'une coopérative agricole qui stocke engrais et produits phytosanitaires, en limite de {commune}.",
   initiale:"À H, un panache de fumée noire se dirige vers le {secteur}. L'exploitant a déclenché son plan d'urgence et le SDIS est engagé. La composition des fumées n'est pas encore connue.",
-  hypotheses:["Le vent pousse les fumées vers les habitations","L'{etab} se trouve sous le panache","Des suies retombent sur les jardins et les cultures","Le suivi environnemental se poursuit au-delà de l'exercice"],
+  hypotheses:["Le vent pousse les fumées vers les habitations","{Le_etab} se trouve sous le panache","Des suies retombent sur les jardins et les cultures","Le suivi environnemental se poursuit au-delà de l'exercice"],
   phases:[["Alerte","Information par les secours, déclenchement du PCS, armement du PCC."],["Protection","Confinement sous le panache, évacuation du périmètre de danger."],["Inquiétude","Retombées, questions sanitaires, pression médiatique."],["Maîtrise","Feu maîtrisé, levée des mesures, suivi environnemental et FINEX."]],
   note:"Pour un site classé Seveso, le plan particulier d'intervention (PPI) arrêté par le préfet prime : le PCS de la commune doit s'y articuler, notamment pour l'alerte et le confinement.",
   injects:[
    [0,"ALERTE","CODIS (SDIS)","Maire","Téléphone","Incendie en cours dans l'entrepôt de la coopérative, panache important vers le {secteur}. Déclenchez votre PCS.","Déclenchement du PCS, armement du PCC, information de la préfecture."],
    [10,"POP","COS","PCC","Radio","Confinement immédiat des habitations sous le panache. Fermez portes, fenêtres et ventilations.","Diffusion de la consigne de confinement, compte rendu au COS."],
-   [20,"SAUV","Direction de l'{etab}","Maire","Téléphone","De la fumée entre dans les classes, des enfants toussent. Faut-il évacuer ?","Maintien du confinement dans les locaux les plus étanches, relais vers le COS."],
+   [20,"SAUV","Direction {du_etab}","Maire","Téléphone","De la fumée entre dans les classes, des enfants toussent. Faut-il évacuer ?","Maintien du confinement dans les locaux les plus étanches, relais vers le COS."],
    [35,"EVAL","Exploitant du site","PCC","Téléphone","Environ 400 tonnes d'engrais sont stockées. Risque de décomposition et d'explosion : le COS établit un périmètre de 500 mètres.","Report du périmètre sur la carte, recensement des habitations concernées."],
    [45,"SAUV","COS","PCC","Radio","Évacuation des habitations situées dans les 500 mètres, environ 30 foyers.","Organisation de l'évacuation : itinéraire hors panache, recensement."],
    [60,"CARE","Agent communal","PCC","Sur place","Les premiers évacués arrivent au lieu d'accueil ({heberg}), plusieurs se plaignent d'irritations.","Accueil, enregistrement, orientation vers les secours des personnes symptomatiques."],
@@ -553,7 +658,7 @@ industriel:{
 terrorisme:{
   contexte:"{commune} organise sa fête annuelle sur la place principale ; environ 800 personnes sont présentes. Le plan Vigipirate est en posture renforcée sur l'ensemble du territoire.",
   initiale:"À H, une attaque est signalée sur le lieu de la fête. Les forces de l'ordre interviennent et bouclent le secteur. Le nombre de victimes est inconnu et l'auteur est en fuite.",
-  hypotheses:["Le préfet prend la direction des opérations ; la commune agit en appui","Une animation pour enfants est organisée par l'{etab} au moment des faits","Les réseaux sociaux diffusent images et fausses informations","Les familles affluent vers la mairie pour retrouver leurs proches"],
+  hypotheses:["Le préfet prend la direction des opérations ; la commune agit en appui","Une animation pour enfants est organisée par {le_etab} au moment des faits","Les réseaux sociaux diffusent images et fausses informations","Les familles affluent vers la mairie pour retrouver leurs proches"],
   phases:[["Choc","Alerte, confinement des lieux communaux, armement du PCC hors zone."],["Accueil","Prise en charge des personnes non blessées et choquées."],["Familles et médias","Information des familles, maîtrise de la communication."],["Après","Levée des mesures, soutien dans la durée et FINEX."]],
   note:"La gestion de l'attaque relève exclusivement des forces de l'ordre et du préfet. L'exercice évalue les missions de la commune : mise à l'abri, accueil des impliqués, soutien aux familles, communication et continuité.",
   noteRef:["Guides Vigipirate","https://www.sgdsn.gouv.fr/vigipirate/les-guides"],
@@ -562,7 +667,7 @@ terrorisme:{
    [10,"POP","Préfecture","Maire","Téléphone","Le préfet dirige les opérations. Relayez uniquement les consignes officielles : rester à l'abri, ne pas diffuser d'images.","Alignement sur les consignes préfectorales, relais par les moyens du PCS."],
    [20,"SAUV","Responsable de l'animation enfants","Maire","Téléphone","Nous sommes 40 enfants et 6 adultes enfermés dans la salle. Des parents veulent venir les chercher.","Maintien de la mise à l'abri, information des parents, aucun déplacement vers la zone."],
    [35,"EVAL","Agent communal","PCC","Téléphone","Une cinquantaine de personnes choquées se sont réfugiées dans la mairie et les commerces voisins.","Recensement, regroupement en lieu sûr, signalement aux secours."],
-   [50,"CARE","SAMU (via le COS)","PCC","Téléphone","Ouvrez un centre d'accueil des impliqués au {heberg} pour les personnes non blessées.","Ouverture du centre, enregistrement nominatif, eau et couvertures, attente des psychologues."],
+   [50,"CARE","SAMU (via le COS)","PCC","Téléphone","Ouvrez un centre d'accueil des impliqués {au_heberg} pour les personnes non blessées.","Ouverture du centre, enregistrement nominatif, eau et couvertures, attente des psychologues."],
    [65,"LIAI","Préfecture","PCC","Téléphone","La cellule d'urgence médico-psychologique est engagée. Donnez l'adresse et la capacité du centre d'accueil.","Transmission des informations, accueil des intervenants."],
    [80,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Des vidéos de la scène circulent et une rumeur annonce une seconde attaque près de l'école.","Vérification auprès des forces de l'ordre, démenti coordonné avec la préfecture, appel à ne pas diffuser d'images."],
    [95,"CARE","Accueil mairie","PCC","Sur place","Des dizaines de familles arrivent sans nouvelles de leurs proches.","Ouverture d'un espace d'accueil des familles distinct, relais vers le numéro d'information de la préfecture."],
@@ -597,7 +702,7 @@ cyber:{
 sanitaire:{
   contexte:"Un nouveau virus respiratoire se propage rapidement en France, sur le modèle de la Covid-19. Le gouvernement active son plan pandémie ; le préfet et l'agence régionale de santé pilotent la réponse dans le département. Les cas se multiplient à {commune}.",
   initiale:"L'exercice se joue en sauts de temps : J (premiers cas et mesures nationales), J+3 (confinement annoncé), J+10 (crise installée), J+30 (sortie progressive). Chaque inject indique le jour simulé.",
-  hypotheses:["Un tiers des agents municipaux est absent (malades ou garde d'enfants)","L'{etab} ferme sur décision nationale","Les personnes âgées isolées ne peuvent plus faire leurs courses","Un scrutin ou un conseil municipal doit se tenir pendant la crise"],
+  hypotheses:["Un tiers des agents municipaux est absent (malades ou garde d'enfants)","{Le_etab} ferme sur décision nationale","Les personnes âgées isolées ne peuvent plus faire leurs courses","Un scrutin ou un conseil municipal doit se tenir pendant la crise"],
   phases:[["J · Montée","Premières mesures, activation du PCS, plan de continuité des services."],["J+3 · Confinement","Personnes isolées, écoles, services essentiels."],["J+10 · Durée","Absentéisme, solidarité, rumeurs, soutien à la campagne sanitaire."],["J+30 · Sortie","Reprise progressive, retour d'expérience et FINEX."]],
   note:"Dans une crise sanitaire, l'État (préfet, ARS) décide des mesures. La commune garantit la continuité de ses services, protège les personnes vulnérables, relaie les consignes et organise la solidarité locale.",
   noteRef:["Plan pandémie 2024","https://www.sgdsn.gouv.fr/files/files/Circulaires%20et%20instructions/SGDSN-PLAN_GOUVERNEMENTAL_PANDEMIE_V8-NUM%20(1).pdf"],
@@ -607,7 +712,7 @@ sanitaire:{
    [25,"POP","Préfecture","Maire","Courriel","[J+3] Confinement national annoncé ce soir. Relayez les consignes et les attestations aux habitants.","Diffusion par affichage, site, réseaux sociaux et porte-à-porte pour les personnes sans internet."],
    [40,"SAUV","CCAS","PCC","Sur place","[J+3] Les 47 inscrits du registre des personnes vulnérables doivent être contactés. Plusieurs vivent seuls.","Campagne d'appels, fiche de suivi, visites pour les personnes injoignables."],
    [55,"CARE","Association locale","PCC","Téléphone","[J+3] Des bénévoles proposent de faire les courses des personnes isolées. Comment s'organiser ?","Coordination de la solidarité : recensement des besoins, binômes, règles sanitaires."],
-   [70,"EVAL","Direction de l'{etab}","Maire","Téléphone","[J+3] L'école ferme, mais des enfants de soignants doivent être accueillis.","Accueil des enfants de personnels prioritaires, avec l'Éducation nationale."],
+   [70,"EVAL","Direction {du_etab}","Maire","Téléphone","[J+3] L'école ferme, mais des enfants de soignants doivent être accueillis.","Accueil des enfants de personnels prioritaires, avec l'Éducation nationale."],
    [85,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","[J+10] Rumeur : un habitant contaminé serait à l'origine du foyer et son nom circule.","Démenti, rappel au respect de la vie privée, signalement si besoin."],
    [100,"EVAL","Responsable des services techniques","PCC","Téléphone","[J+10] Quatre agents sur six sont absents. La collecte des déchets et le cimetière posent problème.","Priorisation des tâches, mutualisation avec l'intercommunalité, appel à des renforts."],
    [115,"LIAI","Agence régionale de santé","Maire","Courriel","[J+10] Un centre de vaccination ou de dépistage doit ouvrir dans le secteur. Pouvez-vous fournir une salle et des bénévoles ?","Proposition du lieu d'accueil ({heberg}), logistique, organisation de l'accueil du public."],
@@ -619,7 +724,7 @@ sanitaire:{
 canicule:{
   contexte:"Météo-France place le département en vigilance rouge canicule pour cinq jours. Les températures dépassent 40 °C le jour et ne descendent pas sous 25 °C la nuit sur {commune}.",
   initiale:"À H, la préfecture demande l'activation des mesures de gestion de la vague de chaleur. Le registre communal des personnes vulnérables compte 47 inscrits.",
-  hypotheses:["La vague de chaleur dure au-delà de l'exercice","La consommation d'eau atteint un niveau record","L'{etab} est ouvert malgré la chaleur","Les agents techniques travaillent en extérieur"],
+  hypotheses:["La vague de chaleur dure au-delà de l'exercice","La consommation d'eau atteint un niveau record","{Le_etab} est ouvert malgré la chaleur","Les agents techniques travaillent en extérieur"],
   phases:[["Alerte","Vigilance rouge, déclenchement du PCS, mobilisation du registre."],["Vulnérables","Appels, visites, prise en charge des personnes isolées."],["Durée","Lieux rafraîchis, eau, adaptation des activités."],["Tenue","Organisation dans la durée, relève et FINEX."]],
   note:"Le maire tient le registre nominatif des personnes vulnérables qui en font la demande et le mobilise dès la vigilance canicule.",
   noteRef:["CASF L121-6-1","https://nausica-avocats.fr/maire-et-canicule-quels-pouvoirs-quels-responsabilites/"],
@@ -630,13 +735,120 @@ canicule:{
    [40,"SAUV","Équipe de visite","PCC","Téléphone","Une dame de 91 ans est trouvée confuse et déshydratée, seule chez elle.","Appel au 15, mise en sécurité, information de la famille."],
    [55,"CARE","Maire (inject animateur)","PCC","Inject animateur","Ouvrez une salle rafraîchie pour les personnes fragiles, avec des horaires élargis.","Ouverture du lieu d'accueil ({heberg}), eau, transport des personnes sans véhicule."],
    [70,"EVAL","Syndicat des eaux","PCC","Téléphone","Consommation record, la pression baisse dans les quartiers hauts. Des restrictions sont nécessaires.","Arrêté de restriction, information de la population, priorité aux usages vitaux."],
-   [85,"POP","Direction de l'{etab}","Maire","Téléphone","Il fait 35 °C dans les classes. Faut-il fermer ou adapter les horaires ?","Décision coordonnée avec l'Éducation nationale, information des familles."],
+   [85,"POP","Direction {du_etab}","Maire","Téléphone","Il fait 35 °C dans les classes. Faut-il fermer ou adapter les horaires ?","Décision coordonnée avec l'Éducation nationale, information des familles."],
    [100,"COM","Radio locale","Maire","Téléphone","Les auditeurs demandent où se mettre au frais et comment aider leurs voisins âgés.","Message clair : lieux rafraîchis, horaires, consignes, numéro du CCAS."],
    [115,"EVAL","Responsable des services techniques","PCC","Téléphone","Deux agents ont eu un malaise sur un chantier de voirie.","Adaptation des horaires de travail, suspension des tâches exposées."],
    [130,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Rumeur : l'eau sera coupée totalement demain dans toute la commune.","Démenti coordonné avec le syndicat des eaux, rappel des restrictions réelles."],
    [145,"LIAI","Préfecture","Maire","Téléphone","Point de situation : personnes contactées, visites, interventions, besoins.","Point de situation structuré et horodaté."],
    [162,"EVAL","Météo-France","PCC","Bulletin","Vigilance rouge prolongée de trois jours.","Organisation dans la durée : relève des équipes, rythme des appels, ressources."],
    [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
+  ]},
+hopital:{
+  contexte:"{Le_hopital}, qui accueille les patients de {commune} et des communes voisines, subit une coupure électrique générale doublée d'une panne de son réseau informatique.",
+  initiale:"À H, les groupes électrogènes n'ont démarré que partiellement. Les urgences sont fermées, les dossiers des patients sont inaccessibles et l'agence régionale de santé organise des transferts. Les familles commencent à affluer.",
+  hypotheses:["La direction de l'établissement, l'ARS et le préfet pilotent la crise ; la commune agit en appui", "Des patients sont transférés par la route vers d'autres établissements", "Les patients soignés à domicile sous assistance électrique s'inquiètent", "La panne dure au-delà de l'exercice"],
+  phases:[["Alerte", "Information de la commune, déclenchement du PCS, liaison avec l'établissement."], ["Transferts", "Circulation, aire de regroupement des ambulances, personnes vulnérables."], ["Familles", "Accueil des proches, information de la population, soutien aux personnels."], ["Rétablissement", "Retour de l'alimentation, réouverture progressive et FINEX."]],
+  note:"La conduite de la crise appartient à la direction de l'établissement, à l'ARS et au préfet. La commune facilite les transferts, protège ses habitants vulnérables, accueille les familles et relaie l'information.",
+  injects:[
+   [0, "ALERTE", "Préfecture", "Maire", "Téléphone", "{Le_hopital} est privé d'électricité et d'informatique. Activez votre PCS en appui : transferts de patients et afflux de familles attendus.", "Déclenchement du PCS, armement du PCC, contact avec la direction de l'établissement."],
+   [12, "EVAL", "Direction {du_hopital}", "PCC", "Téléphone", "Nous transférons 35 patients dans les deux heures. Il nous faut un itinéraire dégagé et une aire de regroupement des ambulances.", "Choix d'une aire de regroupement, itinéraire fléché, appui des forces de l'ordre."],
+   [25, "LIAI", "Gendarmerie", "PCC", "Téléphone", "La circulation est saturée autour de l'établissement. Pouvez-vous fermer des rues et dévier le trafic ?", "Arrêté de circulation, agents et barrières, information des riverains."],
+   [40, "SAUV", "Infirmière libérale", "Accueil mairie", "Téléphone", "Mes patients sous assistance respiratoire à domicile ne pourront pas être repris par l'hôpital s'ils ont un problème.", "Recensement des personnes électro-dépendantes, relais vers le SAMU, solution d'accueil."],
+   [55, "CARE", "Accueil mairie", "PCC", "Sur place", "Des familles de patients arrivent en mairie, sans nouvelles de leurs proches transférés.", "Espace d'accueil des familles, relais vers le numéro d'information de l'établissement."],
+   [70, "POP", "Préfecture", "Maire", "Courriel", "Les urgences sont fermées : orientez la population vers le 15 et les établissements voisins.", "Message clair sur tous les canaux, affichage en mairie et dans les pharmacies."],
+   [85, "COM", "Presse régionale", "Maire", "Téléphone", "On parle de patients en danger et d'une cyberattaque. Confirmez-vous ?", "Aucune spéculation, renvoi vers la direction de l'établissement et l'ARS."],
+   [100, "CARE", "Direction {du_hopital}", "PCC", "Téléphone", "Nos personnels enchaînent les gardes. Pouvez-vous fournir des repas et des lits de camp ?", "Mobilisation des ressources communales et associatives recensées au PCS."],
+   [115, "EVAL", "Gestionnaire réseau électrique", "PCC", "Téléphone", "Rétablissement dans quatre heures. Les groupes électrogènes de l'établissement manquent de carburant.", "Recherche de carburant, priorisation, lien avec les stations-service."],
+   [130, "COM", "Réseaux sociaux", "Cellule communication", "Capture d'écran", "Rumeur : des patients seraient morts faute d'oxygène.", "Vérification auprès de l'établissement, démenti coordonné avec l'ARS."],
+   [145, "LIAI", "Préfecture", "Maire", "Téléphone", "Point de situation attendu : familles accueillies, personnes vulnérables suivies, besoins logistiques.", "Point de situation structuré et horodaté."],
+   [162, "EVAL", "Direction {du_hopital}", "PCC", "Téléphone", "Courant rétabli. Réouverture progressive des urgences demain matin.", "Levée progressive du dispositif, information de la population."],
+   [178, "FIN", "Directeur d'exercice", "Tous", "Message", "FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.", "Arrêt du jeu, débriefing à chaud."]
+  ]},
+ferroviaire:{
+  contexte:"Un train régional transportant 240 voyageurs déraille sur la voie ferrée qui traverse {commune}, à quelques kilomètres de {le_gare}.",
+  initiale:"À H, plusieurs voitures sont couchées sur la voie. Le nombre de blessés est inconnu. Le dispositif ORSEC « nombreuses victimes » est déclenché ; les secours convergent vers un site difficile d'accès.",
+  hypotheses:["Le préfet dirige les opérations ; la commune agit en appui", "Le site n'est accessible que par un chemin communal étroit", "La ligne reste coupée plusieurs jours", "Des voyageurs indemnes doivent être pris en charge et hébergés"],
+  phases:[["Alerte", "Information par les secours, déclenchement du PCS, armement du PCC."], ["Accès", "Guidage des secours, fermeture des abords, liaison avec le préfet."], ["Impliqués", "Accueil des voyageurs indemnes et des familles, hébergement."], ["Après", "Ligne coupée, cars de substitution, soutien et FINEX."]],
+  note:"Le dispositif ORSEC « nombreuses victimes » est conduit par le préfet et les secours. La commune guide les secours, accueille les impliqués et les familles, et organise l'hébergement.",
+  injects:[
+   [0, "ALERTE", "CODIS (SDIS)", "Maire", "Téléphone", "Déraillement d'un train de voyageurs sur la commune, nombreuses victimes possibles. Déclenchez votre PCS.", "Déclenchement du PCS, armement du PCC, information de la préfecture."],
+   [10, "EVAL", "COS", "PCC", "Radio", "Nos engins ne passent pas sur le chemin d'accès. Qui connaît le terrain ? Avez-vous un engin pour élargir le passage ?", "Guide local envoyé au COS, moyens techniques communaux, plan d'accès."],
+   [22, "LIAI", "Préfecture", "Maire", "Téléphone", "Le préfet dirige les opérations. Désignez un représentant de la commune au poste de commandement.", "Élu de liaison désigné et envoyé au poste de commandement."],
+   [35, "CARE", "COS", "PCC", "Radio", "Ouvrez un centre d'accueil des impliqués pour environ 150 voyageurs indemnes.", "Ouverture du lieu d'accueil ({heberg}), recensement nominatif, eau, couvertures, navettes depuis le site."],
+   [50, "POP", "Préfecture", "Maire", "Courriel", "Demandez aux habitants d'éviter les abords de la voie et de laisser les routes libres pour les secours.", "Diffusion des consignes, fermeture des voies d'accès au site."],
+   [65, "CARE", "Accueil mairie", "PCC", "Sur place", "Des familles arrivent en mairie et {au_gare} pour retrouver leurs proches.", "Espace d'accueil des familles, relais vers le numéro d'information de la préfecture."],
+   [80, "COM", "Presse nationale", "Maire", "Sur place", "Des chaînes d'information installent leurs camions devant la mairie.", "Zone presse délimitée, porte-parole désigné, points presse coordonnés avec la préfecture."],
+   [95, "EVAL", "SNCF Réseau", "PCC", "Téléphone", "La voie restera coupée plusieurs jours. Des cars de substitution partiront {du_gare}.", "Information des usagers, stationnement des cars, signalétique."],
+   [110, "CARE", "Responsable du lieu d'accueil", "PCC", "Téléphone", "Quarante voyageurs ne peuvent pas rentrer chez eux ce soir.", "Hébergement d'urgence : hôtels, familles d'accueil, repas."],
+   [125, "COM", "Réseaux sociaux", "Cellule communication", "Capture d'écran", "Une liste de victimes non vérifiée circule, avec des noms d'habitants.", "Démenti, appel à ne pas relayer, renvoi vers les sources officielles."],
+   [145, "LIAI", "Préfecture", "Maire", "Téléphone", "Point de situation attendu : voyageurs accueillis et hébergés, familles reçues, besoins.", "Point de situation structuré et horodaté."],
+   [162, "CARE", "Maire (inject animateur)", "PCC", "Inject animateur", "Préparez le soutien des jours suivants.", "Cellule d'écoute, accueil des familles des victimes, information des habitants."],
+   [178, "FIN", "Directeur d'exercice", "Tous", "Message", "FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.", "Arrêt du jeu, débriefing à chaud."]
+  ]},
+aerien:{
+  contexte:"Un avion d'affaires en approche vers {le_aero} s'écrase en lisière de {commune}, près d'une zone habitée.",
+  initiale:"À H, un incendie est visible au point d'impact. Le nombre de personnes à bord et au sol est inconnu. Des débris sont tombés dans des jardins du {secteur}.",
+  hypotheses:["Le préfet dirige les opérations ; la gendarmerie et le Bureau d'enquêtes et d'analyses (BEA) enquêtent", "Des habitations sont touchées par des débris", "Le carburant répandu impose un périmètre de sécurité", "Des habitants filment et s'approchent du site"],
+  phases:[["Impact", "Alerte, déclenchement du PCS, premières mises en sécurité."], ["Périmètre", "Évacuation, fermeture des rues, gestion des curieux."], ["Sinistrés", "Accueil des familles évacuées, information, médias."], ["Enquête", "Site gelé plusieurs jours, relogement, soutien et FINEX."]],
+  note:"Les secours, la gendarmerie et le BEA gèrent le site. La commune protège la population, accueille les sinistrés et gère l'afflux de curieux et de médias.",
+  injects:[
+   [0, "ALERTE", "CODIS (SDIS)", "Maire", "Téléphone", "Un avion s'est écrasé en lisière de la commune, près du {secteur}. Déclenchez votre PCS.", "Déclenchement du PCS, armement du PCC, information de la préfecture."],
+   [10, "SAUV", "COS", "PCC", "Radio", "Évacuez les maisons dans un rayon de 300 mètres : risque d'explosion du carburant.", "Évacuation, itinéraire, point de rassemblement, recensement."],
+   [20, "POP", "Habitant", "Accueil mairie", "Téléphone", "Des débris ont traversé mon toit, mes enfants sont terrorisés.", "Relais vers les secours, prise en charge, recensement des dégâts."],
+   [35, "EVAL", "Gendarmerie", "PCC", "Téléphone", "Des dizaines de curieux s'approchent du site. Il nous faut des barrières et des agents.", "Périmètre renforcé, fermeture des rues, arrêté d'interdiction d'accès."],
+   [50, "CARE", "COS", "PCC", "Radio", "Ouvrez un lieu d'accueil pour les familles évacuées.", "Ouverture du lieu d'accueil ({heberg}), enregistrement, soutien."],
+   [65, "LIAI", "Direction {du_aero}", "PCC", "Téléphone", "L'avion transportait six personnes. La liste des passagers est transmise à la préfecture.", "Aucune diffusion de noms, relais exclusif par la préfecture."],
+   [80, "COM", "Télévision régionale", "Maire", "Sur place", "Une équipe demande à filmer depuis le jardin d'un habitant.", "Respect de la propriété privée, zone presse, porte-parole."],
+   [95, "EVAL", "Gendarmerie (pour le BEA)", "PCC", "Téléphone", "L'enquête impose de laisser les débris en place plusieurs jours, y compris chez des particuliers.", "Information des habitants concernés, gardiennage, relogement temporaire."],
+   [110, "CARE", "Habitants (multiples)", "Accueil mairie", "Sur place", "Plusieurs familles ne peuvent pas regagner leur maison cette nuit.", "Hébergement d'urgence, soutien du CCAS."],
+   [125, "COM", "Réseaux sociaux", "Cellule communication", "Capture d'écran", "Rumeur : l'avion transportait des produits dangereux.", "Vérification, démenti coordonné avec la préfecture."],
+   [145, "LIAI", "Préfecture", "Maire", "Téléphone", "Point de situation attendu : évacués, hébergés, habitations touchées, besoins.", "Point de situation structuré et horodaté."],
+   [162, "EVAL", "Préfecture", "Maire", "Courriel", "Levée partielle du périmètre demain matin. Préparez la réintégration des habitants.", "Organisation de la réintégration et du soutien aux sinistrés."],
+   [178, "FIN", "Directeur d'exercice", "Tous", "Message", "FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.", "Arrêt du jeu, débriefing à chaud."]
+  ]},
+bombe:{
+  contexte:"Un samedi de forte affluence, un appel anonyme annonce qu'un engin explosif a été déposé dans {le_erp}, à {commune}.",
+  initiale:"À H, la direction a fait évacuer environ 400 clients et salariés sur le parking. La gendarmerie établit un périmètre ; les démineurs sont attendus dans deux heures.",
+  hypotheses:["Les forces de l'ordre conduisent la levée de doute ; la commune agit en appui", "Un second appel vise {le_etab} dans l'heure", "Il fait froid et il pleut sur le parking", "La menace se révèle infondée en fin d'exercice"],
+  phases:[["Alerte", "Information de la commune, déclenchement du PCS, liaison avec la gendarmerie."], ["Mise à l'abri", "Personnes évacuées, riverains, circulation."], ["Seconde menace", "Évacuation d'un second site, parents, rumeurs."], ["Levée de doute", "Réintégration, reprise des activités et FINEX."]],
+  note:"La levée de doute relève des forces de l'ordre et des démineurs. La commune met à l'abri les personnes évacuées, gère la circulation et l'information et, si besoin, l'évacuation d'autres établissements.",
+  noteRef:["Guides Vigipirate", "https://www.sgdsn.gouv.fr/vigipirate/les-guides"],
+  injects:[
+   [0, "ALERTE", "Gendarmerie", "Maire", "Téléphone", "Alerte à la bombe {au_erp}, évacuation en cours. Nous établissons un périmètre de 200 mètres.", "Déclenchement du PCS, armement du PCC, liaison avec la gendarmerie."],
+   [10, "SAUV", "Direction {du_erp}", "Maire", "Téléphone", "Quatre cents personnes attendent sous la pluie sur le parking, dont des personnes âgées et des enfants.", "Mise à l'abri dans le lieu d'accueil ({heberg}), transport des personnes fragiles."],
+   [20, "EVAL", "Gendarmerie", "PCC", "Téléphone", "Le périmètre englobe des habitations et une rue. Faites évacuer les riverains.", "Évacuation des riverains, recensement, fermeture de la rue."],
+   [35, "POP", "Gendarmerie", "Maire", "Téléphone", "Informez la population : éviter le secteur et ne pas diffuser d'images des forces de l'ordre.", "Message diffusé sur tous les canaux, sans détail opérationnel."],
+   [50, "ALERTE", "Direction {du_etab}", "Maire", "Téléphone", "Nous venons de recevoir un appel anonyme : une bombe serait dans l'établissement.", "Évacuation selon le plan de mise en sûreté, information de la gendarmerie, accueil des élèves."],
+   [65, "CARE", "Agent communal", "PCC", "Sur place", "Les parents affluent vers l'établissement évacué.", "Point de regroupement des familles, remise des enfants contrôlée."],
+   [80, "COM", "Réseaux sociaux", "Cellule communication", "Capture d'écran", "Des messages évoquent une attaque en cours dans la commune.", "Démenti coordonné avec la gendarmerie et la préfecture."],
+   [95, "EVAL", "Gendarmerie", "PCC", "Téléphone", "Les démineurs arrivent. Prévoyez un local et un accès dégagé.", "Mise à disposition d'un local, guidage, accès libéré."],
+   [110, "COM", "Presse locale", "Maire", "Téléphone", "Est-ce un attentat ? Faut-il annuler les manifestations du week-end ?", "Réponse factuelle, décision sur les événements prise avec la préfecture."],
+   [125, "LIAI", "Préfecture", "Maire", "Téléphone", "Point de situation attendu : personnes mises à l'abri, établissements évacués, besoins.", "Point de situation structuré et horodaté."],
+   [145, "EVAL", "Gendarmerie", "PCC", "Téléphone", "Levée de doute terminée, aucun engin découvert. Réintégration possible.", "Réintégration coordonnée, information de la population."],
+   [162, "CARE", "Maire (inject animateur)", "PCC", "Inject animateur", "Préparez la reprise des jours suivants.", "Accueil des élèves lundi, soutien aux salariés du magasin, retour d'expérience avec la gendarmerie."],
+   [178, "FIN", "Directeur d'exercice", "Tous", "Message", "FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.", "Arrêt du jeu, débriefing à chaud."]
+  ]},
+masse:{
+  contexte:"Le marché hebdomadaire réunit plus de mille personnes au centre de {commune}. Une attaque y fait de nombreuses victimes ; l'auteur est rapidement neutralisé.",
+  initiale:"À H, le dispositif ORSEC « nombreuses victimes » est déclenché. Les secours installent un poste médical avancé ; {le_hopital} déclenche son plan blanc.",
+  hypotheses:["Le préfet dirige les opérations ; la commune agit en appui", "Les secours demandent un bâtiment communal pour le poste médical avancé", "{Le_hopital} est rapidement saturé", "L'émotion est très forte dans la population"],
+  phases:[["Choc", "Alerte, mise à l'abri, armement du PCC."], ["Secours", "Bâtiments mis à disposition, accueil des impliqués."], ["Familles", "Accueil et information des familles, rumeurs, autorités."], ["Après", "Soutien dans la durée, hommage et FINEX."]],
+  note:"Le dispositif ORSEC « nombreuses victimes » est conduit par le préfet et les secours. La commune met à disposition ses bâtiments, accueille impliqués et familles, informe la population et organise le soutien dans la durée.",
+  noteRef:["Guides Vigipirate", "https://www.sgdsn.gouv.fr/vigipirate/les-guides"],
+  injects:[
+   [0, "ALERTE", "Gendarmerie", "Maire", "Téléphone", "Attaque sur le marché, nombreuses victimes, auteur neutralisé. Déclenchez votre PCS.", "Déclenchement du PCS, armement du PCC, mise à l'abri dans les bâtiments communaux."],
+   [10, "EVAL", "COS", "PCC", "Radio", "Il nous faut un gymnase ou une salle proche du marché pour installer le poste médical avancé.", "Mise à disposition du bâtiment le plus proche : accès, électricité, chauffage."],
+   [22, "POP", "Préfecture", "Maire", "Téléphone", "Demandez aux habitants de rester chez eux et de laisser les routes libres pour les secours.", "Diffusion des consignes par tous les moyens du PCS."],
+   [35, "CARE", "SAMU (via le COS)", "PCC", "Téléphone", "Ouvrez un centre d'accueil des impliqués pour les témoins indemnes.", "Ouverture du lieu d'accueil ({heberg}), enregistrement nominatif, attente des psychologues."],
+   [50, "LIAI", "Direction {du_hopital}", "PCC", "Téléphone", "Plan blanc déclenché. Les familles affluent aux urgences ; orientez-les vers un autre lieu.", "Lieu d'accueil des familles distinct, navettes, relais vers le numéro de la préfecture."],
+   [65, "COM", "Réseaux sociaux", "Cellule communication", "Capture d'écran", "Des vidéos de victimes circulent et une rumeur annonce un second assaillant.", "Démenti coordonné, appel à ne pas diffuser d'images."],
+   [80, "CARE", "Établissement français du sang", "PCC", "Téléphone", "Afflux de donneurs : nous cherchons une salle pour une collecte demain.", "Mise à disposition d'une salle, logistique, information du public."],
+   [95, "SAUV", "Direction {du_etab}", "Maire", "Téléphone", "Les enfants sont confinés depuis l'alerte. Quand pouvons-nous les rendre aux parents ?", "Levée coordonnée avec les forces de l'ordre, remise contrôlée des enfants."],
+   [110, "COM", "Presse nationale", "Maire", "Téléphone", "Le ministre arrive dans une heure. Le maire fera-t-il une déclaration ?", "Accueil des autorités, déclaration sobre coordonnée avec la préfecture."],
+   [125, "LIAI", "Préfecture", "Maire", "Téléphone", "Il faut un lieu calme et à l'écart des médias pour informer les familles des victimes.", "Salle dédiée, protégée, avec psychologues et un élu présent."],
+   [145, "LIAI", "Préfecture", "Maire", "Téléphone", "Point de situation attendu : impliqués accueillis, familles reçues, besoins.", "Point de situation structuré et horodaté."],
+   [162, "CARE", "Maire (inject animateur)", "PCC", "Inject animateur", "Préparez les jours suivants.", "Cellule d'écoute, registre de condoléances, hommage, soutien aux commerçants du marché."],
+   [178, "FIN", "Directeur d'exercice", "Tous", "Message", "FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.", "Arrêt du jeu, débriefing à chaud."]
   ]}
 };
 const FORMATS = {
@@ -647,8 +859,10 @@ const FORMATS = {
 const DEFAULTS = {
   commune:"Sainte-Croix-du-Lez", insee:"", pop:1240, dept:"Ariège (09)", risk:"inondation", format:"cadre",
   duree:"180", heureH:"09:00", date:"", objs:[...OKEYS],
-  secteur:"quartier du Moulin", etab:"école primaire", heberg:"salle des fêtes", axe:"RD 119"
+  secteur:"quartier du Moulin", etab:"école primaire", heberg:"salle des fêtes", axe:"RD 119",
+  erp:"supermarché", hopital:"centre hospitalier de secteur", gare:"gare", aero:"aérodrome", lat:null, lon:null, combo:[]
 };
+const PLACE_KEYS=["secteur","etab","heberg","erp","hopital","gare","aero","axe"];
 const ACTIONS0=()=>[{a:"Mettre à jour l'annuaire de crise du PCS",pilote:"Secrétariat de mairie",ech:"1 mois"},{a:"Compléter le recensement des personnes vulnérables",pilote:"Élu référent CCAS",ech:"3 mois"}];
 
 const KEY="atelier-pcs-v2";
@@ -657,7 +871,39 @@ function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r)}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const fill=(t,p)=>String(t).replace(/\{(\w+)\}/g,(m,k)=>p[k]!=null&&p[k]!==""?p[k]:m);
+const GEN={ecole:"f",college:"m",lycee:"m",groupe:"m",creche:"f",institut:"m",centre:"m",etablissement:"m",salle:"f",foyer:"m",maison:"f",espace:"m",halle:"f",hall:"m",gymnase:"m",stade:"m",complexe:"m",hopital:"m",clinique:"f",polyclinique:"f",chu:"m",ch:"m",ehpad:"m",residence:"f",gare:"f",halte:"f",aerodrome:"m",aeroport:"m",base:"f",supermarche:"m",hypermarche:"m",magasin:"m",marche:"m",mairie:"f",hotel:"m",piscine:"f",cinema:"m",eglise:"f",mediatheque:"f",bibliotheque:"f",quartier:"m",hameau:"m",lotissement:"m",zone:"f",route:"f",avenue:"f",rue:"f",place:"f",village:"m",bourg:"m",camping:"m",parc:"m",ecole_:"f"};
+const ASPIRE=["halle","hall","hangar","hameau"];
+const ROLE_NOUN={etab:["établissement","m"],heberg:["salle","f"],erp:["magasin","m"],hopital:["centre hospitalier","m"],gare:["gare","f"],aero:["aérodrome","m"],mairie:["mairie","f"]};
+const norm=w=>String(w||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z_]/g,"");
+function art(name,role){
+  let s=String(name||"").trim();if(!s)return null;
+  const m=s.match(/^(le|la|les|l')\s*/i);let le;
+  if(m){le=s.charAt(0).toLowerCase()+s.slice(1)}
+  else{
+    const w0=norm(s.split(/[\s-]/)[0]);let g=GEN[w0],first=s;
+    if(!g){const rn=ROLE_NOUN[role]||["site","m"];first=rn[0]+" "+s;g=rn[1]}
+    else if(s.length>1&&s.charAt(1)===s.charAt(1).toLowerCase())first=s.charAt(0).toLowerCase()+s.slice(1);
+    const w=norm(first.split(/[\s-]/)[0]);
+    const el=/^[aeiouyh]/.test(w)&&!ASPIRE.includes(w);
+    le=(el?"l'":g==="f"?"la ":"le ")+first;
+  }
+  const du=le.replace(/^le /,"du ").replace(/^la /,"de la ").replace(/^l'/,"de l'").replace(/^les /,"des ");
+  const au=le.replace(/^le /,"au ").replace(/^la /,"à la ").replace(/^l'/,"à l'").replace(/^les /,"aux ");
+  return {le,du,au,Le:cap(le)};
+}
+function axeForms(v){
+  v=String(v||"").trim();if(!v)return null;
+  if(/^(le|la|l')\s*/i.test(v))return art(v,"axe");
+  if(/^(R?D|R?N|A|M|C)\s?\d/i.test(v)){const le="la "+v;return {le,du:"de "+le,au:"à "+le,Le:cap(le)}}
+  return GEN[norm(v.split(/[\s-]/)[0])]?art(v,"axe"):{le:"la "+v,du:"de la "+v,au:"à la "+v,Le:"La "+v};
+}
+function vars(p){
+  const v={...p};
+  ["etab","heberg","erp","hopital","gare","aero"].forEach(k=>{const f=art(p[k]||DEFAULTS[k],k);if(f){v["le_"+k]=f.le;v["Le_"+k]=f.Le;v["du_"+k]=f.du;v["au_"+k]=f.au}});
+  const a=axeForms(p.axe||DEFAULTS.axe);if(a){v.la_axe=a.le;v.La_axe=a.Le;v.de_axe=a.du}
+  return v;
+}
+const fill=(t,p)=>{const v=vars(p);return String(t).replace(/\{(\w+)\}/g,(m,k)=>v[k]!=null&&v[k]!==""?v[k]:m)};
 const hplus=m=>"H+"+Math.floor(m/60)+":"+String(m%60).padStart(2,"0");
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 const nf=n=>Number(n).toLocaleString("fr-FR");
@@ -707,6 +953,157 @@ async function loadRisks(insee){
   renderRisks();
 }
 
+
+/* ---------- Lieux de la commune (OpenStreetMap) ---------- */
+const CATS = {
+  mairie:{label:"Mairie", def:"Mairie", t:g=>g.amenity==="townhall"},
+  ecole:{label:"Établissements scolaires", def:"Établissement scolaire", t:g=>/^(school|kindergarten|college)$/.test(g.amenity)},
+  sante:{label:"Établissements de santé", def:"Établissement de santé", t:g=>/^(hospital|clinic)$/.test(g.amenity)},
+  ehpad:{label:"EHPAD et résidences", def:"Résidence pour personnes âgées", t:g=>g.social_facility==="nursing_home"||g.amenity==="nursing_home"},
+  secours:{label:"Secours et sécurité", def:"Centre de secours", t:g=>/^(fire_station|police)$/.test(g.amenity)},
+  pharmacie:{label:"Pharmacies", def:"Pharmacie", t:g=>g.amenity==="pharmacy"},
+  salle:{label:"Salles et lieux d'accueil", def:"Salle communale", t:g=>g.amenity==="community_centre"},
+  commerce:{label:"Commerces et marchés", def:"Supermarché", t:g=>/^(supermarket|mall|department_store)$/.test(g.shop)||g.amenity==="marketplace"},
+  sport:{label:"Équipements sportifs", def:"Équipement sportif", t:g=>/^(stadium|sports_centre|sports_hall)$/.test(g.leisure)},
+  culte:{label:"Lieux de culte", def:"Lieu de culte", t:g=>g.amenity==="place_of_worship"},
+  energie:{label:"Postes électriques", def:"Poste électrique", t:g=>g.power==="substation"},
+  eau:{label:"Eau potable et assainissement", def:"Ouvrage d'eau", t:g=>/^(water_works|water_tower|wastewater_plant)$/.test(g.man_made)},
+  industrie:{label:"Sites industriels", def:"Site industriel", t:g=>g.man_made==="works"||(g.landuse==="industrial"&&!!g.name)},
+  camping:{label:"Campings", def:"Camping", t:g=>g.tourism==="camp_site"},
+  gare:{label:"Gares", def:"Gare", t:g=>/^(station|halt)$/.test(g.railway)},
+  aero:{label:"Aérodromes", def:"Aérodrome", t:g=>g.aeroway==="aerodrome"}
+};
+const CAT_KEYS=Object.keys(CATS);
+const ROLE_CAT={etab:"ecole",heberg:"salle",erp:"commerce",hopital:"sante",gare:"gare",aero:"aero"};
+const ROLE_LABEL={etab:"établissement sensible",heberg:"lieu d'accueil",erp:"lieu très fréquenté",hopital:"établissement de santé de référence",gare:"gare",aero:"aérodrome"};
+let map=null, contourGeo=null, hiddenCats=new Set();
+function overpassQuery(insee,lat,lon){
+  const A='area["ref:INSEE"="'+insee+'"]["boundary"="administrative"]->.c;';
+  const R=lat!=null?20000:0, ar=R?'(around:'+R+','+lat+','+lon+')':'(area.c)';
+  return '[out:json][timeout:25];'+A+'('+
+    'nwr(area.c)["amenity"~"^(townhall|school|kindergarten|college|hospital|clinic|fire_station|police|pharmacy|community_centre|marketplace|place_of_worship|nursing_home)$"];'+
+    'nwr(area.c)["social_facility"="nursing_home"];nwr(area.c)["shop"~"^(supermarket|mall|department_store)$"];'+
+    'nwr(area.c)["leisure"~"^(stadium|sports_centre|sports_hall)$"];nwr(area.c)["power"="substation"];'+
+    'nwr(area.c)["man_made"~"^(water_works|water_tower|wastewater_plant|works)$"];nwr(area.c)["landuse"="industrial"]["name"];'+
+    'nwr(area.c)["tourism"="camp_site"];nwr(area.c)["railway"~"^(station|halt)$"];'+
+    'nwr'+ar+'["amenity"="hospital"];nwr'+ar+'["aeroway"="aerodrome"];nwr'+ar+'["railway"~"^(station|halt)$"];'+
+    ');out center tags 400;way(area.c)["highway"~"^(trunk|primary|secondary)$"]["ref"];out tags 80;way(area.c)["railway"="rail"];out tags 1;';
+}
+async function postOverpass(q){
+  let last;
+  for(const url of API.overpass){
+    const c=new AbortController();const t=setTimeout(()=>c.abort(),30000);
+    try{const r=await fetch(url,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"},signal:c.signal});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}
+    catch(e){last=e}finally{clearTimeout(t)}
+  }
+  throw last;
+}
+const dist=(a,b,c,d)=>{const R=6371,r=Math.PI/180,x=(c-a)*r,y=(d-b)*r,h=Math.sin(x/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(y/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
+async function loadPlaces(){
+  const p=S.p;if(!p.insee)return;
+  S.geo={status:"loading"};renderMapState();
+  try{
+    const [j,ct]=await Promise.allSettled([postOverpass(overpassQuery(p.insee,p.lat,p.lon)),getJSON(API.contour(p.insee),8000)]);
+    if(ct.status==="fulfilled"){contourGeo=ct.value;const c=ct.value&&ct.value.properties&&ct.value.properties.centre;if(c&&p.lat==null){p.lon=c.coordinates[0];p.lat=c.coordinates[1]}}
+    if(j.status!=="fulfilled")throw j.reason;
+    const seen=new Set(),places=[],roads={};let rail=false;
+    (j.value.elements||[]).forEach(e=>{
+      const g=e.tags||{};
+      if(e.type==="way"&&g.highway){const r=String(g.ref).split(";")[0].trim();roads[r]=(roads[r]||0)+(g.highway==="trunk"?3:g.highway==="primary"?2:1);return}
+      if(e.type==="way"&&g.railway==="rail"&&!e.center){rail=true;return}
+      const lat=e.lat!=null?e.lat:e.center&&e.center.lat, lon=e.lon!=null?e.lon:e.center&&e.center.lon;if(lat==null)return;
+      const cat=CAT_KEYS.find(k=>CATS[k].t(g));if(!cat)return;
+      const name=(g.name||g["name:fr"]||"").trim();
+      const key=cat+"|"+(name||e.type+e.id);if(seen.has(key))return;seen.add(key);
+      places.push({id:e.type[0]+e.id,cat,name:name||CATS[cat].def,named:!!name,lat,lon,d:p.lat!=null?Math.round(dist(p.lat,p.lon,lat,lon)*10)/10:null,big:g.amenity==="hospital"||g.aeroway==="aerodrome"&&!!g.iata||g.railway==="station"});
+    });
+    places.sort((a,b)=>(a.d??0)-(b.d??0));
+    S.places=places;S.roads=Object.entries(roads).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);S.rail=rail||places.some(x=>x.cat==="gare");
+    S.geo={status:"ok",at:new Date().toISOString(),insee:p.insee};
+    autoAssign();save();
+    toast(places.length+" lieux de "+p.commune+" chargés depuis OpenStreetMap.");
+  }catch(e){S.geo={status:"error"}}
+  renderDatalists();renderRisks();if(S.tab==="carte"||S.tab==="scenario")render();else renderMapState();
+}
+function best(cat,opts={}){
+  let list=(S.places||[]).filter(x=>x.cat===cat&&x.named);
+  if(opts.near)list=list.filter(x=>x.d==null||x.d<=opts.near);
+  if(opts.pref)list.sort((a,b)=>(opts.pref(b)-opts.pref(a))||((a.d??0)-(b.d??0)));
+  return list[0]||null;
+}
+function autoAssign(){
+  const p=S.p;
+  const e=best("ecole",{pref:x=>/élémentaire|primaire|groupe scolaire|école/i.test(x.name)?1:0});if(e)p.etab=e.name;
+  const h=best("salle",{pref:x=>/fêtes|polyvalente|foyer|espace/i.test(x.name)?1:0});if(h)p.heberg=h.name;
+  const c=best("commerce");if(c)p.erp=c.name;
+  const s=best("sante",{pref:x=>x.big?1:0});if(s)p.hopital=s.name;
+  const g=best("gare");if(g)p.gare=g.name;
+  const a=best("aero",{pref:x=>x.big?1:0});if(a)p.aero=a.name;
+  if(S.roads&&S.roads[0])p.axe=S.roads[0];
+  PLACE_KEYS.forEach(k=>{const el=$("#"+k);if(el)el.value=p[k]||""});
+  const n=$("#lieuxNote");if(n)n.textContent="Lieux proposés à partir de la carte. Vous pouvez les modifier ou en choisir d'autres dans les suggestions.";
+}
+function renderDatalists(){
+  const pl=S.places||[];
+  const opts=cat=>pl.filter(x=>x.cat===cat&&x.named).slice(0,40).map(x=>`<option value="${esc(x.name)}">${x.d!=null?x.d+" km":""}</option>`).join("");
+  $("#datalists").innerHTML=["ecole","salle","commerce","sante","gare","aero"].map(c=>`<datalist id="dl-${c}">${opts(c)}</datalist>`).join("")+
+    `<datalist id="dl-axe">${(S.roads||[]).slice(0,15).map(r=>`<option value="${esc(r)}">`).join("")}</datalist>`;
+}
+function riskSites(k,limit=8){
+  const cats=(RISKS[k]&&RISKS[k].cats)||[];
+  const pl=(S.places||[]).filter(x=>cats.includes(x.cat)&&(x.d==null||x.d<=(x.cat==="sante"||x.cat==="aero"||x.cat==="gare"?25:8)));
+  pl.sort((a,b)=>cats.indexOf(a.cat)-cats.indexOf(b.cat)||(a.d??0)-(b.d??0));
+  return pl.slice(0,limit);
+}
+function siteTag(k){
+  const r=RISKS[k];if(!r.site||!S.places)return "";
+  const s=(S.places||[]).filter(x=>r.site.includes(x.cat)&&x.named).sort((a,b)=>(a.d??0)-(b.d??0))[0];
+  if(s)return `<span class="tg map">${esc(s.name)}${s.d!=null?" · "+String(s.d).replace(".",",")+" km":""}</span>`;
+  if(r.rail&&S.rail)return '<span class="tg map">Voie ferrée sur la commune</span>';
+  return '<span class="tg no">Aucun site proche recensé</span>';
+}
+function renderMapState(){
+  const el=$("#mapmsg");if(!el)return;
+  const g=S.geo||{};
+  let m="";
+  if(!window.L)m="La carte ne peut pas s'afficher dans cet aperçu. Elle fonctionne sur la version en ligne de l'outil.";
+  else if(!S.p.insee)m="Recherchez une commune pour afficher sa carte et ses lieux.";
+  else if(g.status==="loading")m="Chargement des lieux depuis OpenStreetMap…";
+  else if(g.status==="error")m="OpenStreetMap n'a pas répondu. Réessayez dans quelques minutes.";
+  el.textContent=m;el.hidden=!m;
+}
+function drawMap(){
+  if(map){map.remove();map=null}
+  const box=$("#map");if(!box||!window.L)return renderMapState();
+  const p=S.p;
+  const center=p.lat!=null?[p.lat,p.lon]:[46.6,2.4];
+  map=L.map(box,{scrollWheelZoom:false,zoomControl:true}).setView(center,p.lat!=null?13:5);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributeurs OpenStreetMap</a>'}).addTo(map);
+  const cs=getComputedStyle(document.documentElement);
+  const col=c=>{const tmp=document.createElement("i");tmp.className="c-"+c;document.body.appendChild(tmp);const v=getComputedStyle(tmp).getPropertyValue("--c").trim();tmp.remove();const m=v.match(/var\((--[\w-]+)\)/);return m?cs.getPropertyValue(m[1]).trim():v};
+  const line=cs.getPropertyValue("--primary").trim();
+  let bounds=null;
+  if(contourGeo){const gl=L.geoJSON(contourGeo,{style:{color:line,weight:2,fill:true,fillOpacity:.04,dashArray:"6 4"},interactive:false}).addTo(map);bounds=gl.getBounds()}
+  const hot=new Set(((RISKS[p.risk]||{}).cats)||[]);
+  (S.places||[]).forEach(x=>{
+    if(hiddenCats.has(x.cat))return;
+    const isHot=hot.has(x.cat);
+    const c=col(x.cat);
+    const m=L.circleMarker([x.lat,x.lon],{radius:isHot?8:5.5,color:isHot?c:"#ffffff",weight:isHot?3:1.5,fillColor:c,fillOpacity:isHot?.9:.75}).addTo(map);
+    m.bindTooltip(x.name,{direction:"top",offset:[0,-6]});
+    const roles=Object.entries(ROLE_CAT).filter(([r,cat])=>cat===x.cat).map(([r])=>`<button type="button" data-assign="${r}" data-name="${esc(x.name)}">Utiliser comme ${ROLE_LABEL[r]}</button>`).join("");
+    m.bindPopup(`<div class="pop-cat">${esc(CATS[x.cat].label)}</div><div class="pop-name">${esc(x.name)}</div>${x.d!=null?`<div>${String(x.d).replace(".",",")} km du centre</div>`:""}${roles?`<div class="pop-acts">${roles}</div>`:""}`);
+  });
+  if(bounds)map.fitBounds(bounds,{padding:[20,20]});
+  setTimeout(()=>map&&map.invalidateSize(),60);
+  renderMapState();
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-assign]");if(!b)return;
+  const r=b.dataset.assign;S.p[r]=b.dataset.name;const el=$("#"+r);if(el)el.value=b.dataset.name;
+  save();if(map)map.closePopup();toast(cap(ROLE_LABEL[r])+" : "+b.dataset.name+". Régénérez le dossier pour l'appliquer.");
+});
+
 /* ---------- Configuration ---------- */
 function renderId(){
   const p=S.p;
@@ -724,17 +1121,19 @@ function renderRisks(){
   else if(geoRisks&&geoRisks.status==="ok") banner=`<p class="note">Risques recensés par Géorisques, consultés le ${geoRisks.at.toLocaleDateString("fr-FR")} à ${geoRisks.at.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}. <a href="${API.fiche(geoRisks.insee)}" target="_blank" rel="noopener">Voir la fiche Géorisques</a></p>`;
   else if(live) banner=`<p class="note">Recherchez une commune pour charger ses risques recensés.</p>`;
   const prof=geoRisks&&geoRisks.status==="ok"?geoRisks.items:null;
-  const keys=Object.keys(RISKS);
-  const ordered=prof?[...new Set(prof.filter(x=>x.key!=="autre").map(x=>x.key).concat(keys))]:keys;
-  let html=ordered.map(k=>{
+  const card=k=>{
     const e=prof&&prof.find(x=>x.key===k);const tags=[];
     if(e&&e.labels.length)tags.push('<span class="tg src">Recensé Géorisques</span>');
     if(e&&e.catnat)tags.push(`<span class="tg cat">${e.catnat} arrêté${e.catnat>1?"s":""} CatNat${e.last?" · dernier en "+e.last.getFullYear():""}</span>`);
-    if(prof&&!(e&&e.labels.length))tags.push(RISKS[k].transverse?'<span class="tg no">Risque transverse</span>':'<span class="tg no">Non recensé</span>');
-    if(!prof)tags.push('<span class="tg">Scénario disponible</span>');
+    if(RISKS[k].site)tags.push(siteTag(k));
+    else if(prof&&!(e&&e.labels.length))tags.push(RISKS[k].transverse?'<span class="tg no">Risque transverse</span>':'<span class="tg no">Non recensé</span>');
+    if(!prof&&!RISKS[k].site)tags.push('<span class="tg">Scénario disponible</span>');
     return `<div class="rk"><input type="radio" name="risk" id="r-${k}" value="${k}" ${p.risk===k?"checked":""}><label for="r-${k}"><span class="ic">${ico(k)}</span><span class="tx"><b>${esc(RISKS[k].label)}</b><span class="tags">${tags.join("")}</span></span></label></div>`;
-  }).join("");
+  };
+  const score=k=>{const e=prof&&prof.find(x=>x.key===k);return (e&&e.labels.length?2:0)+(e&&e.catnat?1:0)};
+  let html=FAMS.map(([f,lab])=>{const ks=Object.keys(RISKS).filter(k=>RISKS[k].fam===f).sort((a,b)=>score(b)-score(a));return `<div class="famhead">${lab}</div>`+ks.map(card).join("")}).join("");
   if(prof) prof.filter(x=>x.key==="autre").forEach((x,i)=>{
+    if(i===0)html+='<div class="famhead">Autres risques recensés</div>';
     html+=`<div class="rk"><input type="radio" name="risk" id="ro-${i}" disabled><label for="ro-${i}"><span class="ic">${ico("autre")}</span><span class="tx"><b>${esc(x.group)}</b><span class="tags"><span class="tg src">Recensé Géorisques</span>${x.catnat?`<span class="tg cat">${x.catnat} CatNat</span>`:""}<span class="tg no">Scénario à venir</span></span></span></label></div>`;
   });
   $("#riskBanner").innerHTML=banner;
@@ -751,8 +1150,8 @@ function writeForm(){
   const p=S.p;
   $("#commune").value=p.commune;$("#pop").value=p.pop||"";$("#dept").value=p.dept||"";
   $("#heureH").value=p.heureH;$("#date").value=p.date;
-  ["secteur","etab","heberg","axe"].forEach(k=>$("#"+k).value=p[k]);
-  renderSegs();renderId();renderRisks();
+  PLACE_KEYS.forEach(k=>$("#"+k).value=p[k]||"");renderDatalists();
+  renderSegs();renderId();renderRisks();renderCombo();
 }
 function readForm(){
   const p=S.p;
@@ -760,7 +1159,7 @@ function readForm(){
   if(live===false){p.pop=$("#pop").value;p.dept=$("#dept").value.trim()}
   const r=document.querySelector('input[name=risk]:checked');if(r)p.risk=r.value;
   p.heureH=$("#heureH").value;p.date=$("#date").value;
-  ["secteur","etab","heberg","axe"].forEach(k=>p[k]=$("#"+k).value.trim()||DEFAULTS[k]);
+  PLACE_KEYS.forEach(k=>p[k]=$("#"+k).value.trim()||DEFAULTS[k]);
   return p;
 }
 
@@ -790,17 +1189,41 @@ function closeSugg(){$("#sugg").hidden=true;$("#commune").setAttribute("aria-exp
 $("#sugg").addEventListener("mousedown",e=>{const li=e.target.closest("li");if(li){e.preventDefault();pick(suggItems[+li.dataset.i])}});
 function pick(c){
   closeSugg();
-  Object.assign(S.p,{commune:c.nom,insee:c.code,pop:c.population||"",dept:c.departement?c.departement.nom+" ("+c.departement.code+")":""});
+  Object.assign(S.p,{commune:c.nom,insee:c.code,pop:c.population||"",dept:c.departement?c.departement.nom+" ("+c.departement.code+")":"",lat:c.centre?c.centre.coordinates[1]:null,lon:c.centre?c.centre.coordinates[0]:null});
+  PLACE_KEYS.forEach(k=>S.p[k]=DEFAULTS[k]);S.places=null;S.roads=null;S.rail=false;contourGeo=null;writeForm();
   $("#commune").value=c.nom;S.isExample=false;renderId();save();render();
   loadRisks(c.code).then(()=>{if(geoRisks.status==="ok")toast("Risques de "+c.nom+" chargés depuis Géorisques.")});
+  loadPlaces();
 }
 
 /* ---------- Génération ---------- */
 function buildInjects(p){
   const lib=LIB[p.risk],dur=Number(p.duree),k=dur/180,keep=new Set(p.objs);
-  return lib.injects.filter(i=>i[1]==="FIN"||i[1]==="ALERTE"||keep.has(i[1])).map(i=>({
+  const out=lib.injects.filter(i=>i[1]==="FIN"||i[1]==="ALERTE"||keep.has(i[1])).map(i=>({
     t:i[1]==="FIN"?dur-2:Math.round(i[0]*k/5)*5,obj:i[1],from:fill(i[2],p),to:fill(i[3],p),via:i[4],msg:fill(i[5],p),exp:fill(i[6],p)
   }));
+  comboOf(p).forEach((c,n)=>{
+    const L2=LIB[c].injects.filter(x=>x[1]!=="FIN");
+    const sel=[L2[0]].concat(L2.slice(1).filter(x=>keep.has(x[1])).slice(0,3));
+    const start=Math.round(dur*(n===0?.33:.55)/5)*5, span=dur*.35;
+    sel.forEach((x,j)=>{
+      const t=Math.min(dur-5,j===0?start:start+Math.max(5,Math.round(x[0]/180*span/5)*5));
+      const exp=fill(x[6],p);
+      out.push({t,obj:x[1],sec:c,from:fill(x[2],p),to:fill(x[3],p),via:x[4],msg:(j===0?"[Nouvel événement] ":"")+fill(x[5],p),exp:j===0?"Intégrer ce nouvel événement à la conduite en cours : "+exp.charAt(0).toLowerCase()+exp.slice(1):exp});
+    });
+  });
+  return out.sort((a,b)=>a.t-b.t);
+}
+function comboOf(p){return (p.combo||[]).filter(c=>c!==p.risk&&LIB[c]).slice(0,2)}
+function comboStart(p,c){const dur=Number(p.duree),n=comboOf(p).indexOf(c);return Math.round(dur*(n===0?.33:.55)/5)*5}
+function riskTitle(p){const c=comboOf(p);return RISKS[p.risk].label+(c.length?" + "+c.map(x=>RISKS[x].label.toLowerCase()).join(" + "):"")}
+function renderCombo(){
+  const p=S.p;p.combo=comboOf(p);
+  const sug=(CASC[p.risk]||[]).filter(c=>c!==p.risk);
+  const shown=[...new Set(sug.concat(p.combo))];
+  $("#combo").innerHTML=shown.map(c=>`<button type="button" class="chip" data-combo="${c}" aria-pressed="${p.combo.includes(c)}">${esc(RISKS[c].label)}${sug.includes(c)?'<span class="fq">fréquent</span>':""}</button>`).join("");
+  const others=Object.keys(RISKS).filter(c=>c!==p.risk&&!shown.includes(c)&&LIB[c]);
+  $("#comboAdd").innerHTML=`<option value="">Autre événement…</option>`+others.map(c=>`<option value="${c}">${esc(RISKS[c].label)}</option>`).join("");
 }
 function generate(){
   const p=readForm();
@@ -811,7 +1234,7 @@ function generate(){
 }
 
 /* ---------- Rendu ---------- */
-const TABS=[["cadrage","Cadrage"],["scenario","Scénario"],["chrono","Chronogramme"],["roles","Rôles"],["obs","Observation"],["retex","RETEX"],["regl","Réglementation"]];
+const TABS=[["cadrage","Cadrage"],["carte","Carte"],["scenario","Scénario"],["chrono","Chronogramme"],["roles","Rôles"],["obs","Observation"],["retex","RETEX"],["regl","Réglementation"]];
 const info=`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 7.2v4M8 4.8v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 const docHead=t=>`<div class="dochead"><span class="exmark">EXERCICE · EXERCICE · EXERCICE</span><span class="meta">${esc(S.p.commune)} · ${esc(t)}</span></div>`;
 const refLink=t=>`<a class="ref" href="${EXREF}" target="_blank" rel="noopener">${t}</a>`;
@@ -822,7 +1245,7 @@ function vCadrage(){
     <h3>Convention d'exercice</h3>
     <dl class="kv">
       <dt>Commune</dt><dd>${esc(p.commune)}${p.pop?" · "+nf(p.pop)+" habitants":""}${p.dept?" · "+esc(p.dept):""}</dd>
-      <dt>Risque joué</dt><dd>${esc(RISKS[p.risk].label)}</dd>
+      <dt>Risque joué</dt><dd>${esc(RISKS[p.risk].label)}${comboOf(p).length?" · en cascade : "+esc(comboOf(p).map(c=>RISKS[c].label.toLowerCase()).join(", ")):""}</dd>
       <dt>Format</dt><dd>${esc(f.label)}</dd>
       <dt>Date</dt><dd>${esc(cap(fmtDate(p.date)))}</dd>
       <dt>Horaires</dt><dd>H = ${esc(p.heureH||"à fixer")} · ${Number(p.duree)/60} h de jeu · 30 min de débriefing à chaud</dd>
@@ -855,10 +1278,12 @@ function vScenario(){
     </div><p class="note">Source : Géorisques, consulté le ${new Date(S.ctx.at).toLocaleDateString("fr-FR")}. Rappeler un événement réel rend le scénario crédible pour les joueurs.</p></div>`;
   }
   return docHead("Scénario")+`<div class="docbody">
-    <h3>${esc(RISKS[p.risk].label)} sur ${esc(p.commune)}</h3>
+    <h3>${esc(riskTitle(p))} à ${esc(p.commune)}</h3>
     <div class="sec"><h4>Contexte</h4><p>${esc(fill(L.contexte,p))}</p></div>
     <div class="sec"><h4>Situation initiale</h4><p>${esc(fill(L.initiale,p))}</p></div>
+    ${comboOf(p).length?`<div class="sec"><h4>Effets en cascade</h4><ul>${comboOf(p).map(c=>`<li><b>${esc(RISKS[c].label)}</b>, à partir de ${hplus(comboStart(p,c))} : un nouvel événement se superpose à la crise en cours. La cellule de crise doit hiérarchiser les priorités et réaffecter ses moyens.</li>`).join("")}</ul></div>`:""}
     ${hist}
+    ${(()=>{const st=riskSites(p.risk,6);return st.length?`<div class="sec"><h4>Sites concernés dans la commune</h4><div class="sites">${st.map(x=>`<div class="site c-${x.cat}"><i></i><div><b>${esc(x.name)}</b><span>${esc(CATS[x.cat].label)}${x.d!=null?" · "+String(x.d).replace(".",",")+" km":""}</span></div></div>`).join("")}</div></div>`:""})()}
     <div class="sec"><h4>Déroulement</h4><div class="phases">${ph}</div></div>
     <div class="sec"><h4>Hypothèses de jeu</h4><ul>${L.hypotheses.map(h=>`<li>${esc(fill(h,p))}</li>`).join("")}</ul></div>
     ${L.note?`<div class="callout">${info}<span>${esc(L.note)}${L.noteRef?` <a class="ref" href="${L.noteRef[1]}" target="_blank" rel="noopener">${esc(L.noteRef[0])}</a>`:""}</span></div>`:""}
@@ -872,7 +1297,7 @@ function vChrono(){
     body=`<div class="timeline">${S.injects.map((i,n)=>`<article class="inj o-${i.obj}" data-i="${n}">
       <div class="top">
         <span class="time"><input class="tmin" type="number" min="0" step="5" value="${i.t}" aria-label="Minute de l'inject ${n+1}">${hplus(i.t)}${S.p.heureH?`<span class="clk">${clock(i.t)}</span>`:""}</span>
-        ${tagOf(i.obj)}
+        ${tagOf(i.obj)}${i.sec?`<span class="tag o-SEC">Cascade · ${esc(RISKS[i.sec].label)}</span>`:""}
         <span class="flow"><span contenteditable="true" data-f="from">${esc(i.from)}</span> → <span contenteditable="true" data-f="to">${esc(i.to)}</span></span>
         <span class="spacer"><span class="via" contenteditable="true" data-f="via">${esc(i.via)}</span><button class="del" type="button" data-del="${n}" aria-label="Supprimer l'inject ${n+1}">×</button></span>
       </div>
@@ -882,7 +1307,7 @@ function vChrono(){
   } else {
     body=`<div class="tablewrap"><table class="big"><thead><tr><th>Heure</th><th>Objectif</th><th>Émetteur</th><th>Destinataire</th><th>Vecteur</th><th>Message</th><th>Réaction attendue</th><th></th></tr></thead><tbody>${S.injects.map((i,n)=>`<tr data-i="${n}">
       <td class="tm"><input class="tmin" type="number" min="0" step="5" value="${i.t}" aria-label="Minute de l'inject ${n+1}"><div>${hplus(i.t)}${S.p.heureH?" · "+clock(i.t):""}</div></td>
-      <td>${tagOf(i.obj)}</td>
+      <td>${tagOf(i.obj)}${i.sec?`<span class="tag o-SEC">Cascade · ${esc(RISKS[i.sec].label)}</span>`:""}</td>
       <td><div contenteditable="true" data-f="from">${esc(i.from)}</div></td><td><div contenteditable="true" data-f="to">${esc(i.to)}</div></td>
       <td><div contenteditable="true" data-f="via">${esc(i.via)}</div></td><td><div contenteditable="true" data-f="msg">${esc(i.msg)}</div></td>
       <td><div contenteditable="true" data-f="exp">${esc(i.exp)}</div></td>
@@ -905,11 +1330,11 @@ function vRoles(){
   ];
   return docHead("Fiches rôles")+`<div class="docbody"><h3>Fiches rôles</h3><div class="roles">${R.map(r=>`<div class="role ${r[0]==="A"?"anim":""}"><span class="who">${r[0]==="J"?"Joueur":"Équipe d'animation"}</span><b>${esc(r[1])}</b><ul>${r[2].map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`).join("")}</div></div>`;
 }
-function tally(o){let a=0,p=0,k=0;CRIT[o].forEach((_,j)=>{const v=S.cot[o+"-"+j];if(v==="ok")a++;else if(v==="part")p++;else if(v==="ko")k++});return {a,p,k,n:CRIT[o].length}}
+function tally(o){let a=0,p=0,k=0;crit(o).forEach((_,j)=>{const v=S.cot[o+"-"+j];if(v==="ok")a++;else if(v==="part")p++;else if(v==="ko")k++});return {a,p,k,n:crit(o).length}}
 function vObs(){
   return docHead("Grille d'observation")+`<div class="docbody"><h3>Grille d'observation</h3>
     <p class="note">À renseigner par les observateurs pendant le jeu. La synthèse apparaît dans l'onglet RETEX.</p>
-    ${S.p.objs.map(o=>{const t=tally(o);return `<div class="obsg"><div class="gh"><span>${esc(OBJS[o].label)}</span><span class="score">${t.a+t.p+t.k}/${t.n} cotés</span></div>${CRIT[o].map((c,j)=>{const id=o+"-"+j,v=S.cot[id]||"";return `<div class="obsr"><span>${esc(c)}</span><span class="cot" role="group" aria-label="Cotation">${[["ok","Atteint"],["part","Partiel"],["ko","Non atteint"]].map(x=>`<button type="button" data-cot="${id}" data-v="${x[0]}" aria-pressed="${v===x[0]}">${x[1]}</button>`).join("")}</span></div>`}).join("")}</div>`}).join("")}
+    ${S.p.objs.map(o=>{const t=tally(o);return `<div class="obsg"><div class="gh"><span>${esc(OBJS[o].label)}</span><span class="score">${t.a+t.p+t.k}/${t.n} cotés</span></div>${crit(o).map((c,j)=>{const id=o+"-"+j,v=S.cot[id]||"";return `<div class="obsr"><span>${esc(c)}</span><span class="cot" role="group" aria-label="Cotation">${[["ok","Atteint"],["part","Partiel"],["ko","Non atteint"]].map(x=>`<button type="button" data-cot="${id}" data-v="${x[0]}" aria-pressed="${v===x[0]}">${x[1]}</button>`).join("")}</span></div>`}).join("")}</div>`}).join("")}
   </div>`;
 }
 function vRetex(){
@@ -932,17 +1357,35 @@ function vRegl(){
     <div class="callout warn">${info}<span>Un texte en discussion peut modifier les obligations. Vérifiez son avancement avant toute communication officielle à la préfecture.</span></div>
   </div>`;
 }
-const VIEWS={cadrage:vCadrage,scenario:vScenario,chrono:vChrono,roles:vRoles,obs:vObs,retex:vRetex,regl:vRegl};
+
+function vCarte(){
+  const p=S.p,pl=S.places||[];
+  const counts={};pl.forEach(x=>counts[x.cat]=(counts[x.cat]||0)+1);
+  const chips=CAT_KEYS.filter(k=>counts[k]).map(k=>`<button type="button" class="catchip c-${k}" data-cat="${k}" aria-pressed="${!hiddenCats.has(k)}"><i></i>${esc(CATS[k].label)}<b>${counts[k]}</b></button>`).join("");
+  const sites=riskSites(p.risk,12);
+  const src=S.geo&&S.geo.status==="ok"?`Lieux issus d'OpenStreetMap, chargés le ${new Date(S.geo.at).toLocaleDateString("fr-FR")}. Cliquez sur un point pour l'utiliser dans le scénario.`:"";
+  return docHead("Cartographie")+`<div class="docbody">
+    <h3>${esc(p.commune)} : lieux et sites sensibles</h3>
+    ${src?`<p class="note">${src}</p>`:""}
+    <div class="mapwrap"><div id="map" role="region" aria-label="Carte de la commune"></div><div class="mapmsg" id="mapmsg" hidden></div></div>
+    ${chips?`<div class="catchips" aria-label="Catégories affichées">${chips}</div>`:""}
+    ${sites.length?`<div class="sec"><h4>Sites concernés par le risque « ${esc(RISKS[p.risk].label)} »</h4><div class="sites">${sites.map(x=>`<div class="site c-${x.cat}"><i></i><div><b>${esc(x.name)}</b><span>${esc(CATS[x.cat].label)}${x.d!=null?" · "+String(x.d).replace(".",",")+" km":""}</span></div></div>`).join("")}</div><p class="note">Les sites mis en évidence sur la carte sont ceux qu'un événement de ce type menacerait en priorité, ou dont la commune aurait besoin pour y faire face.</p></div>`:""}
+    <div class="callout">${info}<span>Les données OpenStreetMap sont collaboratives : vérifiez les lieux sur le terrain avant l'exercice. Un lieu manquant peut être saisi à la main dans « Lieux utilisés dans le scénario ».</span></div>
+  </div>`;
+}
+const VIEWS={cadrage:vCadrage,carte:vCarte,scenario:vScenario,chrono:vChrono,roles:vRoles,obs:vObs,retex:vRetex,regl:vRegl};
 
 function render(){
   const p=S.p;
-  const k=[["Risque joué",RISKS[p.risk].label,1],["Format",FORMATS[p.format].short],["Durée de jeu",Number(p.duree)/60+" h"],["Injects",S.injects.length],["Objectifs",p.objs.length+" sur 7"]];
+  const k=[["Risque joué",RISKS[p.risk].label+(comboOf(p).length?" +"+comboOf(p).length:""),1],["Format",FORMATS[p.format].short],["Durée de jeu",Number(p.duree)/60+" h"],["Injects",S.injects.length],["Objectifs",p.objs.length+" sur 7"]];
   $("#kpis").innerHTML=k.map(x=>`<div class="card kpi ${x[2]?"hl":""}"><span>${x[0]}</span><b title="${esc(x[1])}">${esc(x[1])}</b></div>`).join("");
   $("#tabs").innerHTML=TABS.map(t=>`<button class="tab" role="tab" type="button" id="tab-${t[0]}" aria-selected="${S.tab===t[0]}" data-tab="${t[0]}">${t[1]}</button>`).join("");
   let tools=`<button class="btn sm ghost" type="button" id="copyAll">Copier le dossier</button>`;
   if(S.tab==="chrono")tools=`<div class="seg" role="group" aria-label="Affichage du chronogramme"><button type="button" data-view="tl" aria-pressed="${S.view!=="table"}">Frise</button><button type="button" data-view="table" aria-pressed="${S.view==="table"}">Tableau</button></div><button class="btn sm" type="button" id="addInj">+ Inject</button><button class="btn sm" type="button" id="copyTsv">Copier pour un tableur</button>`+tools;
   $("#tools").innerHTML=tools;
+  if(map){map.remove();map=null}
   $("#view").innerHTML=`<article class="card doc">${VIEWS[S.tab]()}</article>`;
+  if(S.tab==="carte")drawMap();
   $("#exnote").hidden=!S.isExample;
 }
 
@@ -950,7 +1393,9 @@ function render(){
 $("#segFormat").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.p.format=b.dataset.v;renderSegs();save()});
 $("#segDuree").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.p.duree=b.dataset.v;renderSegs();save()});
 $("#objs").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(!b)return;const o=b.dataset.o,i=S.p.objs.indexOf(o);if(i>=0){if(S.p.objs.length===1){toast("Gardez au moins un objectif.");return}S.p.objs.splice(i,1)}else S.p.objs.push(o);S.p.objs.sort((a,b)=>OKEYS.indexOf(a)-OKEYS.indexOf(b));renderSegs();save()});
-$("#risks").addEventListener("change",e=>{if(e.target.name==="risk"){S.p.risk=e.target.value;save()}});
+$("#risks").addEventListener("change",e=>{if(e.target.name==="risk"){S.p.risk=e.target.value;renderCombo();save();if(S.tab==="carte")render()}});
+$("#combo").addEventListener("click",e=>{const b=e.target.closest("[data-combo]");if(!b)return;const c=b.dataset.combo,a=S.p.combo||[];const i=a.indexOf(c);if(i>=0)a.splice(i,1);else{if(a.length>=2){toast("Deux événements en cascade au maximum.");return}a.push(c)}S.p.combo=a;renderCombo();save()});
+$("#comboAdd").addEventListener("change",e=>{const c=e.target.value;if(!c)return;const a=S.p.combo||[];if(a.length>=2){toast("Deux événements en cascade au maximum.");renderCombo();return}a.push(c);S.p.combo=a;renderCombo();save()});
 $("#gen").addEventListener("click",()=>{
   if(S.edited&&!pendingRegen){pendingRegen=true;$("#genLabel").textContent="Confirmer : remplacer le chronogramme modifié";return}
   pendingRegen=false;$("#genLabel").textContent="Générer le dossier";generate();toast("Dossier généré.");
@@ -972,22 +1417,23 @@ $("#view").addEventListener("focusout",e=>{
 $("#view").addEventListener("change",e=>{const t=e.target;if(t.classList.contains("tmin")){const n=+t.closest("[data-i]").dataset.i;S.injects[n].t=Math.max(0,parseInt(t.value||0,10));S.injects.sort((a,b)=>a.t-b.t);S.edited=true;save();render()}});
 $("#view").addEventListener("input",e=>{const t=e.target;if(t.dataset.r){S.retex[t.dataset.r]=t.value;save()}});
 $("#view").addEventListener("click",e=>{
+  const cc=e.target.closest("[data-cat]");if(cc){const k=cc.dataset.cat;hiddenCats.has(k)?hiddenCats.delete(k):hiddenCats.add(k);cc.setAttribute("aria-pressed",!hiddenCats.has(k));drawMap();return}
   const d=e.target.closest("[data-del]");if(d){S.injects.splice(+d.dataset.del,1);S.edited=true;save();render();return}
   const ad=e.target.closest("[data-adel]");if(ad){S.retex.actions.splice(+ad.dataset.adel,1);save();render();return}
   const c=e.target.closest("[data-cot]");if(c){const id=c.dataset.cot;S.cot[id]=S.cot[id]===c.dataset.v?"":c.dataset.v;save();render();return}
   if(e.target.id==="addAct"){S.retex.actions.push({a:"Nouvelle action",pilote:"À désigner",ech:"À fixer"});save();render()}
 });
-["secteur","etab","heberg","axe","heureH","date","pop","dept"].forEach(id=>$("#"+id).addEventListener("change",()=>{readForm();save()}));
+[...PLACE_KEYS,"heureH","date","pop","dept"].forEach(id=>$("#"+id).addEventListener("change",()=>{readForm();save()}));
 
 function asText(){
   const p=S.p,L=LIB[p.risk],f=FORMATS[p.format],o=[];
-  o.push("EXERCICE EXERCICE EXERCICE","","COMMUNE PRÊTE · EXERCICE DE CRISE · "+p.commune.toUpperCase(),RISKS[p.risk].label+" · "+f.label+" · "+fmtDate(p.date)+" · H = "+(p.heureH||"à fixer")+" · "+Number(p.duree)/60+" h","");
+  o.push("EXERCICE EXERCICE EXERCICE","","COMMUNE PRÊTE · EXERCICE DE CRISE · "+p.commune.toUpperCase(),riskTitle(p)+" · "+f.label+" · "+fmtDate(p.date)+" · H = "+(p.heureH||"à fixer")+" · "+Number(p.duree)/60+" h","");
   o.push("1. CADRAGE","Objectifs :",...p.objs.map(x=>"- "+OBJS[x].label),"Principe : "+f.desc,"");
   o.push("2. SCÉNARIO","Contexte : "+fill(L.contexte,p),"Situation initiale : "+fill(L.initiale,p));
   if(S.ctx)o.push("Historique (Géorisques) : "+S.ctx.catnat+" arrêté(s) CatNat pour ce risque.");
   o.push("Hypothèses :",...L.hypotheses.map(h=>"- "+fill(h,p)),"");
-  o.push("3. CHRONOGRAMME");S.injects.forEach(i=>o.push(hplus(i.t)+(p.heureH?" ("+clock(i.t)+")":"")+" · "+i.from+" → "+i.to+" · "+i.via,"   "+i.msg,"   Attendu : "+i.exp));
-  o.push("","4. GRILLE D'OBSERVATION");p.objs.forEach(x=>{o.push(OBJS[x].label);CRIT[x].forEach((c,j)=>{const v=S.cot[x+"-"+j];o.push("- "+c+" : "+({ok:"atteint",part:"partiel",ko:"non atteint"}[v]||"à coter"))})});
+  o.push("3. CHRONOGRAMME");S.injects.forEach(i=>o.push(hplus(i.t)+(p.heureH?" ("+clock(i.t)+")":"")+(i.sec?" · [cascade : "+RISKS[i.sec].label+"]":"")+" · "+i.from+" → "+i.to+" · "+i.via,"   "+i.msg,"   Attendu : "+i.exp));
+  o.push("","4. GRILLE D'OBSERVATION");p.objs.forEach(x=>{o.push(OBJS[x].label);crit(x).forEach((c,j)=>{const v=S.cot[x+"-"+j];o.push("- "+c+" : "+({ok:"atteint",part:"partiel",ko:"non atteint"}[v]||"à coter"))})});
   o.push("","5. RETEX","Points forts : "+(S.retex.forts||"—"),"Axes d'amélioration : "+(S.retex.axes||"—"),"Actions :",...S.retex.actions.map(a=>"- "+a.a+" · "+a.pilote+" · "+a.ech));
   o.push("","6. CADRE RÉGLEMENTAIRE (vérifié le "+VERIF+")",...REGL.map(r=>"- "+r.ref+" ["+STAT[r.statut]+"] : "+r.objet+" "+r.url),"","EXERCICE EXERCICE EXERCICE");
   return o.join("\n");
@@ -1002,7 +1448,11 @@ if(!(S&&S.p&&LIB[S.p.risk]&&Array.isArray(S.injects))){
   S={p:{...DEFAULTS,objs:[...DEFAULTS.objs]},tab:"cadrage",view:"tl",isExample:true,cot:{},ctx:null,retex:{forts:"",axes:"",actions:ACTIONS0()}};
   S.injects=buildInjects(S.p);
 }
+S.p={...DEFAULTS,...S.p};
 writeForm();render();
-probe().then(()=>{if(live&&S.p.insee)loadRisks(S.p.insee)});
+probe().then(()=>{if(live&&S.p.insee){loadRisks(S.p.insee);if(!S.places)loadPlaces();else fetchContour()}});
+async function fetchContour(){try{contourGeo=await getJSON(API.contour(S.p.insee),8000);if(S.tab==="carte")drawMap()}catch(e){}}
 })();
 </script>
+<!-- fin-contenu -->
+</html>
