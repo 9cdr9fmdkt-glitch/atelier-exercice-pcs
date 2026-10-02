@@ -607,7 +607,7 @@ feu:{
    [35,"POP","{Pref}","Maire","Téléphone","Un message FR-Alert est envisagé. Quel est votre périmètre et votre consigne ?","Définition du périmètre et rédaction du message de consigne."],
    [50,"SAUV","COS","PCC","Radio","Le vent tourne. Évacuation immédiate de la rue haute {du_secteur}, environ {n_foyers} foyers.","Organisation de l'évacuation : itinéraire, point de rassemblement, recensement."],
    [65,"CARE","Agent communal","PCC","Téléphone","Les premiers évacués arrivent au lieu d'accueil ({heberg}), certains avec des animaux.","Armement de l'accueil, gestion des animaux de compagnie, enregistrement."],
-   [80,"EVAL","{Fdo}","PCC","Téléphone","La fumée rend {la_axe} dangereux. Nous proposons une fermeture.","Fermeture coordonnée, déviation, information des usagers."],
+   [80,"EVAL","{Fdo}","PCC","Téléphone","La fumée rend la circulation dangereuse sur {la_axe}. Nous proposons une fermeture.","Fermeture coordonnée, déviation, information des usagers."],
    [95,"COM","Télévision régionale","Maire","Sur place","Une équipe de télévision est devant la mairie et souhaite filmer le PCC.","Accueil du média hors PCC, porte-parole désigné, éléments validés."],
    [110,"SAUV","Direction {du_etab}","Maire","Téléphone","Nous sommes confinés mais deux personnes ont un malaise lié à la fumée.","Relais immédiat vers le SAMU via le COS, suivi de la situation."],
    [125,"EVAL","{Elec}","PCC","Téléphone","Coupure sur {n_elec_feu} foyers pour la sécurité des secours, durée estimée 4 heures.","Identification des personnes électro-dépendantes, priorisation."],
@@ -640,7 +640,7 @@ tempete:{
 tmd:{
   contexte:"Un camion-citerne transportant un produit chimique toxique se renverse sur {la_axe}, à l'entrée de {commune}. Une fuite est constatée.",
   initiale:"À H, les secours sont sur place. Poussé par un vent {vent_tmd}, le nuage se dirige vers {le_secteur}, situé à {dist_tmd}. Un périmètre de sécurité est en cours de définition.",
-  hypotheses:["Le vent pousse le nuage vers les habitations","{Le_etab} se trouve dans le périmètre de confinement","{La_axe} reste fermé pendant toute la durée de l'exercice","La nature exacte du produit n'est confirmée qu'à H+45"],
+  hypotheses:["Le vent pousse le nuage vers les habitations","{Le_etab} se trouve dans le périmètre de confinement","La circulation reste interdite sur {la_axe} pendant toute la durée de l'exercice","La nature exacte du produit n'est confirmée qu'à H+45"],
   phases:[["Alerte","Information par les secours, déclenchement du PCS, armement du PCC."],["Protection","Confinement de la population, fermeture des axes."],["Gestion","Inquiétude des familles, accueil, médias."],["Levée","Fin de la fuite, levée du confinement et FINEX."]],
   injects:[
    [0,"ALERTE","{Secours}","Maire","Téléphone","Accident de poids lourd TMD sur {la_axe}, fuite de produit toxique. Déclenchez votre PCS.","Déclenchement du PCS, armement du PCC."],
@@ -786,7 +786,7 @@ sanitaire:{
 canicule:{
   contexte:"Météo-France place le département en vigilance rouge canicule pour cinq jours. Les températures dépassent 40 °C le jour et ne descendent pas sous 25 °C la nuit sur {commune}.",
   initiale:"À H, la préfecture demande l'activation des mesures de gestion de la vague de chaleur. Le registre communal des personnes vulnérables compte {n_registre} inscrits.",
-  hypotheses:["La vague de chaleur dure au-delà de l'exercice","La consommation d'eau atteint un niveau record","{Le_etab} est ouvert malgré la chaleur","Les agents techniques travaillent en extérieur"],
+  hypotheses:["La vague de chaleur dure au-delà de l'exercice","La consommation d'eau atteint un niveau record","Les cours sont maintenus {au_etab} malgré la chaleur","Les agents techniques travaillent en extérieur"],
   phases:[["Alerte","Vigilance rouge, déclenchement du PCS, mobilisation du registre."],["Vulnérables","Appels, visites, prise en charge des personnes isolées."],["Durée","Lieux rafraîchis, eau, adaptation des activités."],["Tenue","Organisation dans la durée, relève et FINEX."]],
   note:"Le maire tient le registre nominatif des personnes vulnérables qui en font la demande et le mobilise dès la vigilance canicule.",
   noteRef:["CASF L121-6-1","https://nausica-avocats.fr/maire-et-canicule-quels-pouvoirs-quels-responsabilites/"],
