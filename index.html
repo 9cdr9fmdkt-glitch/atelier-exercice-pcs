@@ -226,6 +226,26 @@ td.tm{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap;font-variant
 .tpl .th{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
 .tpl .th b{font-size:14px}.tpl .th span{font-size:12px;color:var(--muted)}
 .tpl pre{margin:0;padding:12px 14px;white-space:pre-wrap;font:inherit;font-size:14px;line-height:1.55}
+.lhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.lclock{font-family:var(--f-mono);font-size:32px;font-weight:600;line-height:1.1;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.lclock small{display:block;font-family:var(--f-ui);font-size:12.5px;font-weight:500;line-height:1.5;color:var(--muted);letter-spacing:0;margin-top:4px}
+.lbtns{display:flex;flex-wrap:wrap;gap:8px}
+.lcard{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0;display:flex;flex-direction:column;gap:6px;background:var(--surface)}
+.lcard.due{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.lcard .lt{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.lcard .lm{font-size:15px}.lcard .le{font-size:13px;color:var(--muted)}
+.lcard .lact{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.badge{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.badge.late{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}
+.mcrow{display:flex;gap:8px;margin:8px 0}.mcrow input{flex:1}
+.mclist{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.mclist li{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px;padding:7px 2px;border-bottom:1px solid var(--line);font-size:14px}
+.mclist time{font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.nowb{margin-left:6px;font-size:12px;padding:3px 8px}
+.obsv-wrap{display:flex;align-items:center;margin-top:6px}.obsv-wrap .obsv{margin-top:0}
+body.obsmode .shell{grid-template-columns:minmax(0,760px);justify-content:center}
+body.obsmode .status{display:none}
 .obsr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:10px 14px;border-top:1px solid var(--line);align-items:center;font-size:14px}
 @media (max-width:620px){.obsr{grid-template-columns:minmax(0,1fr)}}
 .cot{display:inline-grid;grid-auto-flow:column;gap:2px;background:var(--surface-2);border-radius:8px;padding:2px;justify-self:start}
@@ -1594,7 +1614,7 @@ function generate(){
 }
 
 /* ---------- Rendu ---------- */
-const TABS=[["cadrage","Cadrage"],["carte","Carte"],["scenario","Scénario"],["chrono","Chronogramme"],["roles","Rôles"],["modeles","Modèles"],["obs","Observation"],["retex","RETEX"],["regl","Réglementation"]];
+const TABS=[["cadrage","Cadrage"],["carte","Carte"],["scenario","Scénario"],["chrono","Chronogramme"],["conduite","Conduite"],["roles","Rôles"],["modeles","Modèles"],["obs","Observation"],["retex","RETEX"],["regl","Réglementation"]];
 const info=`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 7.2v4M8 4.8v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 const docHead=t=>`<div class="dochead"><span class="exmark">EXERCICE · EXERCICE · EXERCICE</span><span class="meta">${esc(S.p.commune)} · ${esc(t)}</span></div>`;
 const refLink=t=>`<a class="ref" href="${EXREF}" target="_blank" rel="noopener">${t}</a>`;
@@ -1718,6 +1738,70 @@ function vChrono(){
   }
   return docHead("Chronogramme")+`<div class="docbody"><h3>Chronogramme d'animation</h3><p class="note">Cliquez sur un texte pour le modifier. Le temps se règle en minutes après H et l'ordre se met à jour seul.</p>${body}</div>`;
 }
+/* ---------- Conduite de l'exercice ---------- */
+const LV=()=>{S.live=S.live||{start:null,acc:0,run:false,sent:{},done:{},rel:{},log:[]};return S.live};
+const elMs=()=>{const l=LV();return l.run?l.acc+(Date.now()-l.start):l.acc};
+const elMin=()=>elMs()/60000;
+function fmtEl(ms){ms=Math.max(0,ms);const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor(t%3600/60),sec=t%60;return "H+"+h+":"+String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0")}
+const fmtShort=min=>hplus(Math.max(0,Math.floor(min)));
+const wallNow=()=>new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+function mcAdd(txt,k){const l=LV();l.log.push({at:elMs(),wall:Date.now(),txt,k:k||"note"});save()}
+let pendingReset=false;
+function relanceMsg(i){return `${i.from} relance : « Nous n'avons pas de retour sur notre message de ${hplus(i.t)}. Où en êtes-vous ? »`}
+function vLive(){
+  const l=LV(),em=elMin(),inj=S.injects;
+  const pending=inj.map((i,n)=>({i,n})).filter(o=>l.sent[o.n]==null);
+  const due=pending.filter(o=>o.i.t<=em+5);
+  const next=pending.filter(o=>o.i.t>em+5).slice(0,3);
+  const watch=inj.map((i,n)=>({i,n})).filter(o=>l.sent[o.n]!=null&&l.done[o.n]==null&&o.i.obj!=="FIN");
+  const card=(o,kind)=>{const i=o.i,late=Math.floor(em-i.t);
+    let badge="";
+    if(kind==="due")badge=late>2?`<span class="badge late">En retard de ${late} min</span>`:i.t<=em?`<span class="badge late">À envoyer</span>`:`<span class="badge">Dans ${Math.ceil(i.t-em)} min</span>`;
+    if(kind==="watch"){const w=Math.floor(em-l.sent[o.n]);badge=w>=15?`<span class="badge late">Sans réaction depuis ${w} min</span>`:`<span class="badge">Envoyé il y a ${w} min</span>`}
+    const acts=kind==="due"?`<button class="btn sm primary" type="button" data-lsent="${o.n}">Envoyé</button>`:
+      `<button class="btn sm primary" type="button" data-ldone="${o.n}">Réaction constatée</button>${Math.floor(em-l.sent[o.n])>=15&&!l.rel[o.n]?`<button class="btn sm" type="button" data-lrel="${o.n}">Relance envoyée</button>`:""}`;
+    return `<div class="lcard ${kind==="due"&&i.t<=em?"due":""}"><div class="lt"><b>${hplus(i.t)}</b>${tagOf(i.obj)}<span>${esc(i.from)} → ${esc(i.to)} · ${esc(i.via)}</span>${badge}</div>
+      <div class="lm">${esc(kind==="watch"&&Math.floor(em-l.sent[o.n])>=15&&!l.rel[o.n]?relanceMsg(i):i.msg)}</div><div class="le"><b>Attendu :</b> ${esc(i.exp)}</div><div class="lact">${acts}</div></div>`};
+  const started=l.run||l.acc>0;
+  return docHead("Conduite")+`<div class="docbody"><h3>Conduite de l'exercice</h3>
+    <p class="note">Pour le directeur d'exercice et la cellule d'animation. Lancez l'horloge à H : les messages à envoyer apparaissent à leur heure ; marquez-les envoyés, puis notez la réaction des joueurs. Les délais mesurés alimentent le RETEX.</p>
+    <div class="lhead"><div class="lclock" id="lclock">${fmtEl(elMs())}<small id="lreal">${S.p.heureH?"Heure simulée "+clock(Math.floor(em))+" · ":""}heure réelle ${wallNow()}</small></div>
+      <div class="lbtns">${l.run?`<button class="btn" type="button" id="lpause">Pause</button>`:`<button class="btn primary" type="button" id="lstart">${started?"Reprendre":"Démarrer l'exercice"}</button>`}
+      ${started?`<button class="btn ghost" type="button" id="lreset">${pendingReset?"Confirmer la remise à zéro":"Remettre à zéro"}</button>`:""}</div></div>
+    <div class="sec"><h4>À envoyer</h4>${due.length?due.map(o=>card(o,"due")).join(""):`<p class="note">${pending.length?"Aucun message dans les cinq prochaines minutes.":"Tous les messages ont été envoyés."}</p>`}</div>
+    ${watch.length?`<div class="sec"><h4>Réactions attendues</h4>${watch.map(o=>card(o,"watch")).join("")}</div>`:""}
+    ${next.length?`<div class="sec"><h4>À venir</h4><ul>${next.map(o=>`<li>${hplus(o.i.t)} · ${esc(o.i.from)} → ${esc(o.i.to)} : ${esc(o.i.msg.slice(0,110))}${o.i.msg.length>110?"…":""}</li>`).join("")}</ul></div>`:""}
+    <div class="sec"><h4>Main courante</h4>
+      <div class="mcrow"><input type="text" id="lmc" placeholder="Décision, information, incident…" aria-label="Nouvelle entrée de main courante"><button class="btn sm" type="button" id="lmcadd">Ajouter</button><button class="btn sm ghost" type="button" id="lmccopy">Copier</button></div>
+      ${l.log.length?`<ul class="mclist">${l.log.slice().reverse().map(x=>`<li><time>${fmtEl(x.at).slice(0,-3)}</time><span>${esc(x.txt)}</span></li>`).join("")}</ul>`:`<p class="note">Les envois, les réactions et vos notes s'inscrivent ici, horodatés.</p>`}
+    </div>
+  </div>`;
+}
+function mcText(){return LV().log.map(x=>fmtEl(x.at).slice(0,-3)+" ("+new Date(x.wall).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})+") — "+x.txt).join("\n")}
+let lastMin=-1;
+setInterval(()=>{
+  if(!S||S.tab!=="conduite"||document.body.classList.contains("obsmode"))return;
+  const c=$("#lclock");if(!c)return;
+  const em=elMin();c.firstChild.nodeValue=fmtEl(elMs());const r=$("#lreal");if(r)r.textContent=(S.p.heureH?"Heure simulée "+clock(Math.floor(em))+" · ":"")+"heure réelle "+wallNow();
+  const m=Math.floor(em);if(m!==lastMin){lastMin=m;const a=document.activeElement;if(!(a&&a.closest&&a.closest("#view")&&/INPUT|TEXTAREA/.test(a.tagName)))render()}
+},1000);
+document.addEventListener("click",e=>{
+  if(!S||document.body.classList.contains("obsmode"))return;
+  const t=e.target,l=S.live?LV():null,id=t.id;
+  if(id==="lstart"){const L=LV();if(!L.acc)mcAdd("Début de l'exercice (STARTEX)","sys");else mcAdd("Reprise du jeu","sys");L.start=Date.now();L.run=true;save();render();return}
+  if(id==="lpause"){const L=LV();L.acc=elMs();L.run=false;mcAdd("Pause","sys");save();render();return}
+  if(id==="lreset"){if(!pendingReset){pendingReset=true;render();return}pendingReset=false;S.live=null;save();render();toast("Horloge et main courante remises à zéro.");return}
+  if(id==="lmcadd"){const i=$("#lmc");const v=i.value.trim();if(v){mcAdd(v);render();setTimeout(()=>{const n=$("#lmc");if(n)n.focus()},0)}return}
+  if(id==="lmccopy"){copy(mcText()||"Main courante vide.","Main courante copiée.");return}
+  const sb=t.closest&&t.closest("[data-lsent]");if(sb){const L=LV(),n=+sb.dataset.lsent,i=S.injects[n];L.sent[n]=elMin();mcAdd(`Envoyé : ${i.from} → ${i.to} (${hplus(i.t)}) — ${i.msg.slice(0,90)}${i.msg.length>90?"…":""}`,"inj");if(i.obj==="FIN"){L.acc=elMs();L.run=false;mcAdd("Fin de l'exercice (ENDEX)","sys")}save();render();return}
+  const db=t.closest&&t.closest("[data-ldone]");if(db){const L=LV(),n=+db.dataset.ldone,i=S.injects[n];L.done[n]=elMin();mcAdd(`Réaction constatée (${Math.round(L.done[n]-L.sent[n])} min après l'envoi) : ${i.exp.slice(0,90)}${i.exp.length>90?"…":""}`,"inj");save();render();return}
+  const rb=t.closest&&t.closest("[data-lrel]");if(rb){const L=LV(),n=+rb.dataset.lrel;L.rel[n]=elMin();mcAdd("Relance envoyée : "+relanceMsg(S.injects[n]),"inj");save();render();return}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="lmc"){e.preventDefault();const b=$("#lmcadd");if(b)b.click()}});
+function delays(){
+  const l=S.live;if(!l)return [];
+  return S.injects.map((i,n)=>({i,n,s:l.sent[n],d:l.done[n],r:l.rel[n]})).filter(o=>o.s!=null&&o.i.obj!=="FIN");
+}
 function vRoles(){
   const p=S.p;
   const R=[
@@ -1826,10 +1910,16 @@ function vModeles(){
     <div class="callout warn">${info}<span>FR-Alert est déclenché par le préfet, sur proposition du maire. Les arrêtés sont des modèles : faites-les relire avant toute signature réelle.</span></div>
   </div>`;
 }
+const b64e=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const b64d=t=>JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g,"+").replace(/_/g,"/")))));
+function nowStamp(){const l=S&&S.live;return l&&(l.run||l.acc>0)?fmtShort(elMin()):wallNow()}
+function obsLink(){const p=S.p,l=S.live;return location.href.split("#")[0]+"#obs="+b64e({c:p.commune,t:riskTitle(p),o:p.objs,k:comboOf(p).length?1:0,s:l&&l.run?Date.now()-elMs():null})}
 function vObs(){
   return docHead("Grille d'observation")+`<div class="docbody"><h3>Grille d'observation</h3>
+    <div class="lbtns" style="margin:4px 0 6px"><button class="btn sm" type="button" id="obsLinkBtn">Copier le lien pour les observateurs</button></div>
+    <details class="more"><summary>Importer les cotations d'un observateur</summary><div class="inner"><p class="note">Chaque observateur ouvre le lien sur son téléphone, cote, puis vous transmet son code. Collez-le ici : les cotations vides sont complétées et les remarques ajoutées avec son nom.</p><textarea id="obsImport" rows="3" style="width:100%" placeholder="COMMUNE-PRETE-OBS:…"></textarea><div style="margin-top:8px"><button class="btn sm" type="button" id="obsImportBtn">Importer</button></div></div></details>
     <p class="note">À renseigner par les observateurs pendant le jeu : notez l'heure ou le délai constaté, puis cotez. Les délais cibles sont indicatifs ; adaptez-les à votre PCS. La synthèse apparaît dans l'onglet RETEX.</p>
-    ${S.p.objs.map(o=>{const t=tally(o);return `<div class="obsg"><div class="gh"><span>${esc(OBJS[o].label)}</span><span class="score">${t.a+t.p+t.k}/${t.n} cotés</span></div>${crit(o).map((c,j)=>{const id=o+"-"+j,v=S.cot[id]||"";return `<div class="obsr"><span>${esc(c)}<input class="obsv" type="text" data-obsv="${id}" value="${esc((S.obsv||{})[id]||"")}" placeholder="Constaté : heure, délai, remarque" aria-label="Constaté"></span><span class="cot" role="group" aria-label="Cotation">${[["ok","Atteint"],["part","Partiel"],["ko","Non atteint"]].map(x=>`<button type="button" data-cot="${id}" data-v="${x[0]}" aria-pressed="${v===x[0]}">${x[1]}</button>`).join("")}</span></div>`}).join("")}</div>`}).join("")}
+    ${S.p.objs.map(o=>{const t=tally(o);return `<div class="obsg"><div class="gh"><span>${esc(OBJS[o].label)}</span><span class="score">${t.a+t.p+t.k}/${t.n} cotés</span></div>${crit(o).map((c,j)=>{const id=o+"-"+j,v=S.cot[id]||"";return `<div class="obsr"><span>${esc(c)}<span class="obsv-wrap"><input class="obsv" type="text" data-obsv="${id}" value="${esc((S.obsv||{})[id]||"")}" placeholder="Constaté : heure, délai, remarque" aria-label="Constaté"><button class="btn sm nowb" type="button" data-now="${id}">Maintenant</button></span></span><span class="cot" role="group" aria-label="Cotation">${[["ok","Atteint"],["part","Partiel"],["ko","Non atteint"]].map(x=>`<button type="button" data-cot="${id}" data-v="${x[0]}" aria-pressed="${v===x[0]}">${x[1]}</button>`).join("")}</span></div>`}).join("")}</div>`}).join("")}
   </div>`;
 }
 function vRetex(){
@@ -1838,6 +1928,8 @@ function vRetex(){
   return docHead("Retour d'expérience")+`<div class="docbody"><h3>Retour d'expérience</h3>
     <div class="sec"><h4>Synthèse des cotations</h4><div class="legend"><span style="--c:var(--ok)">Atteint</span><span style="--c:var(--warn)">Partiel</span><span style="--c:var(--bad)">Non atteint</span></div><div class="bars">${bars}</div></div>
     <div class="sec"><h4>Débriefing à chaud</h4><ul><li>Qu'est-ce qui a bien fonctionné et doit être conservé ?</li><li>Qu'est-ce qui vous a manqué : information, moyen, procédure ?</li><li>Que changeriez-vous dans le PCS dès demain ?</li></ul></div>
+    ${(()=>{const D=delays();if(!D.length)return "";const done=D.filter(o=>o.d!=null),avg=done.length?Math.round(done.reduce((a,o)=>a+(o.d-o.s),0)/done.length):null;
+      return `<div class="sec"><h4>Délais de réaction mesurés</h4><p class="note">${(()=>{const pl=(n,w)=>n+" "+w+(n>1?"s":""),nr=D.filter(o=>o.r!=null).length;return pl(D.length,"message")+" envoyé"+(D.length>1?"s":"")+", "+pl(done.length,"réaction")+" constatée"+(done.length>1?"s":"")+(avg!=null?", délai moyen "+avg+" min":"")+", "+pl(nr,"relance")+"."})()}</p><div class="tablewrap"><table style="min-width:540px"><thead><tr><th>Message</th><th>Objectif</th><th>Envoyé</th><th>Réaction</th><th>Délai</th></tr></thead><tbody>${D.map(o=>`<tr><td>${esc(o.i.from)} : ${esc(o.i.msg.slice(0,70))}${o.i.msg.length>70?"…":""}</td><td>${esc(OBJS[o.i.obj]?OBJS[o.i.obj].short:o.i.obj)}</td><td>${fmtShort(o.s)}</td><td>${o.d!=null?fmtShort(o.d):"—"}</td><td>${o.d!=null?Math.round(o.d-o.s)+" min":"aucune"}${o.r!=null?" · relancé":""}</td></tr>`).join("")}</tbody></table></div></div>`})()}
     <div class="two"><div class="field"><label for="rf">Points forts</label><textarea id="rf" data-r="forts">${esc(S.retex.forts)}</textarea></div><div class="field"><label for="ra">Axes d'amélioration</label><textarea id="ra" data-r="axes">${esc(S.retex.axes)}</textarea></div></div>
     <div class="sec"><h4>Plan d'actions correctives</h4><div class="tablewrap"><table style="min-width:540px"><thead><tr><th>Action</th><th>Pilote</th><th>Échéance</th><th></th></tr></thead><tbody>${acts}</tbody></table></div><div><button class="btn sm" type="button" id="addAct">+ Ajouter une action</button></div></div>
     <div class="callout">${info}<span>Le retour d'expérience associe l'ensemble des acteurs et formule des recommandations pour ajuster le plan ${refLink("CSI D731-9 à D731-13")}. Le PCS se révise ensuite, et au moins tous les cinq ans.</span></div>
@@ -1876,7 +1968,7 @@ function vCarte(){
     <div class="callout">${info}<span>Les données OpenStreetMap sont collaboratives : vérifiez les lieux sur le terrain avant l'exercice. Un lieu manquant peut être saisi à la main dans « Lieux utilisés dans le scénario ».</span></div>
   </div>`;
 }
-const VIEWS={cadrage:vCadrage,carte:vCarte,scenario:vScenario,chrono:vChrono,roles:vRoles,modeles:vModeles,obs:vObs,retex:vRetex,regl:vRegl};
+const VIEWS={cadrage:vCadrage,carte:vCarte,scenario:vScenario,chrono:vChrono,conduite:vLive,roles:vRoles,modeles:vModeles,obs:vObs,retex:vRetex,regl:vRegl};
 
 function render(){
   const p=S.p;
@@ -1922,6 +2014,10 @@ $("#view").addEventListener("input",e=>{const t=e.target;if(t.dataset.r){S.retex
 $("#view").addEventListener("click",e=>{
   const cc=e.target.closest("[data-cat]");if(cc){const k=cc.dataset.cat;hiddenCats.has(k)?hiddenCats.delete(k):hiddenCats.add(k);cc.setAttribute("aria-pressed",!hiddenCats.has(k));drawMap();return}
   const d=e.target.closest("[data-del]");if(d){S.injects.splice(+d.dataset.del,1);S.edited=true;save();render();return}
+  const nw=e.target.closest("[data-now]");if(nw){const id=nw.dataset.now,inp=nw.parentNode.querySelector("input");const v=nowStamp()+(inp.value?" · "+inp.value:"");inp.value=v;S.obsv=S.obsv||{};S.obsv[id]=v;save();return}
+  if(e.target.id==="obsLinkBtn"){copy(obsLink(),"Lien observateurs copié. Envoyez-le aux observateurs.");return}
+  if(e.target.id==="obsImportBtn"){const raw=($("#obsImport").value||"").trim();const m=raw.match(/COMMUNE-PRETE-OBS:([\w-]+)/);if(!m){toast("Code non reconnu.");return}
+    try{const d=b64d(m[1]);let n=0;S.cot=S.cot||{};S.obsv=S.obsv||{};Object.entries(d.cot||{}).forEach(([k,v])=>{if(v&&!S.cot[k]){S.cot[k]=v;n++}});Object.entries(d.obsv||{}).forEach(([k,v])=>{if(v){S.obsv[k]=(S.obsv[k]?S.obsv[k]+" | ":"")+(d.n||"Observateur")+" : "+v;n++}});save();render();toast(n+" éléments importés de "+(d.n||"l'observateur")+".")}catch(err){toast("Code illisible.")}return}
   const ct=e.target.closest("[data-copytpl]");if(ct){const m=MODELES[+ct.dataset.copytpl];if(m)copy(m.x,m.t+" copié.");return}
   const ad=e.target.closest("[data-adel]");if(ad){S.retex.actions.splice(+ad.dataset.adel,1);save();render();return}
   const c=e.target.closest("[data-cot]");if(c){const id=c.dataset.cot;S.cot[id]=S.cot[id]===c.dataset.v?"":c.dataset.v;save();render();return}
@@ -1947,6 +2043,8 @@ function asText(){
   o.push("","4. GRILLE D'OBSERVATION");p.objs.forEach(x=>{o.push(OBJS[x].label);crit(x).forEach((c,j)=>{const v=S.cot[x+"-"+j],ob=(S.obsv||{})[x+"-"+j];o.push("- "+c+" : "+({ok:"atteint",part:"partiel",ko:"non atteint"}[v]||"à coter")+(ob?" ("+ob+")":""))})});
   o.push("","5. RETEX","Points forts : "+(S.retex.forts||"—"),"Axes d'amélioration : "+(S.retex.axes||"—"),"Actions :",...S.retex.actions.map(a=>"- "+a.a+" · "+a.pilote+" · "+a.ech));
   o.push("","MODÈLES DE MESSAGES",...modeles(p).flatMap(m=>["",m.t.toUpperCase(),m.x]));
+  if(S.live&&S.live.log.length)o.push("","MAIN COURANTE",mcText());
+  {const D=delays();if(D.length)o.push("","DÉLAIS DE RÉACTION MESURÉS",...D.map(x=>"- "+hplus(x.i.t)+" "+x.i.from+" : "+(x.d!=null?Math.round(x.d-x.s)+" min":"aucune réaction")+(x.r!=null?" (relancé)":"")))}
   o.push("","6. CADRE RÉGLEMENTAIRE (vérifié le "+VERIF+")",...REGL.map(r=>"- "+r.ref+" ["+STAT[r.statut]+"] : "+r.objet+" "+r.url),"","EXERCICE EXERCICE EXERCICE");
   return o.join("\n");
 }
@@ -1954,7 +2052,32 @@ function copy(text,msg){try{navigator.clipboard.writeText(text).then(()=>toast(m
 function fallback(text,msg){const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand("copy")}catch(e){}ta.remove();toast(ok?msg:"Copie refusée par le navigateur. Sélectionnez le texte à la main.")}
 let tt;function toast(m){const el=$("#toast");el.textContent=m;el.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>el.classList.remove("on"),3200)}
 
+/* ---------- Mode observateur ---------- */
+function initObs(){
+  let d;try{d=b64d(location.hash.slice(5))}catch(e){d=null}
+  document.body.classList.add("obsmode");
+  const sh=document.querySelector(".shell");
+  if(!d){sh.innerHTML='<main class="work"><article class="card doc"><div class="docbody"><h3>Lien observateur illisible</h3><p>Demandez un nouveau lien au directeur d\'exercice.</p></div></article></main>';return}
+  const KEYO="commune-prete-obs-"+b64e([d.c,d.t]).slice(0,40);
+  let O;try{O=JSON.parse(localStorage.getItem(KEYO))||{}}catch(e){O={}}O.cot=O.cot||{};O.obsv=O.obsv||{};
+  const sv=()=>{try{localStorage.setItem(KEYO,JSON.stringify(O))}catch(e){}};
+  const cr=o=>d.k&&o==="EVAL"?CRIT.EVAL.concat(["Le PCC hiérarchise les événements simultanés et réaffecte ses moyens"]):CRIT[o];
+  const stamp=()=>d.s?fmtShort((Date.now()-d.s)/60000):wallNow();
+  const draw=()=>{sh.innerHTML=`<main class="work"><article class="card doc"><div class="docbody">
+    <h3>Observation · ${esc(d.c)}</h3><p class="note">${esc(d.t)}. Notez l'heure ou le délai constaté, cotez, puis envoyez votre code au directeur d'exercice. Vos saisies restent sur ce téléphone.</p>
+    <div class="field"><label for="oname">Votre nom</label><input type="text" id="oname" value="${esc(O.n||"")}"></div>
+    ${(d.o||[]).filter(o=>OBJS[o]).map(o=>`<div class="obsg"><div class="gh"><span>${esc(OBJS[o].label)}</span></div>${cr(o).map((c,j)=>{const id=o+"-"+j,v=O.cot[id]||"";return `<div class="obsr"><span>${esc(c)}<span class="obsv-wrap"><input class="obsv" type="text" data-oid="${id}" value="${esc(O.obsv[id]||"")}" placeholder="Constaté" aria-label="Constaté"><button class="btn sm nowb" type="button" data-onow="${id}">Maintenant</button></span></span><span class="cot" role="group" aria-label="Cotation">${[["ok","Atteint"],["part","Partiel"],["ko","Non atteint"]].map(x=>`<button type="button" data-ocot="${id}" data-v="${x[0]}" aria-pressed="${v===x[0]}">${x[1]}</button>`).join("")}</span></div>`}).join("")}</div>`).join("")}
+    <div style="margin-top:14px"><button class="btn primary" type="button" id="ocopy">Copier mon code pour le directeur</button></div>
+  </div></article></main>`};
+  draw();
+  sh.addEventListener("input",e=>{const t=e.target;if(t.id==="oname"){O.n=t.value;sv()}if(t.dataset.oid){O.obsv[t.dataset.oid]=t.value;sv()}});
+  sh.addEventListener("click",e=>{const t=e.target;
+    const n=t.closest("[data-onow]");if(n){const id=n.dataset.onow,i=n.parentNode.querySelector("input");i.value=stamp()+(i.value?" · "+i.value:"");O.obsv[id]=i.value;sv();return}
+    const c=t.closest("[data-ocot]");if(c){const id=c.dataset.ocot;O.cot[id]=O.cot[id]===c.dataset.v?"":c.dataset.v;sv();c.parentNode.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",O.cot[id]===b.dataset.v));return}
+    if(t.id==="ocopy")copy("COMMUNE-PRETE-OBS:"+b64e({n:O.n||"",cot:O.cot,obsv:O.obsv}),"Code copié. Envoyez-le au directeur d'exercice.");});
+}
 /* ---------- Démarrage ---------- */
+if(location.hash.indexOf("#obs=")===0){initObs()}else{
 S=load();
 if(!(S&&S.p&&LIB[S.p.risk]&&Array.isArray(S.injects))){
   S={p:{...DEFAULTS,objs:[...DEFAULTS.objs]},tab:"cadrage",view:"tl",isExample:true,cot:{},ctx:null,retex:{forts:"",axes:"",actions:ACTIONS0()}};
@@ -1963,6 +2086,7 @@ if(!(S&&S.p&&LIB[S.p.risk]&&Array.isArray(S.injects))){
 S.p={...DEFAULTS,...S.p};
 writeForm();render();
 probe().then(()=>{if(live&&S.p.insee){loadRisks(S.p.insee);if(!S.places)loadPlaces();else fetchContour()}});
+}
 async function fetchContour(){try{contourGeo=await getJSON(API.contour(S.p.insee),8000);if(S.tab==="carte")drawMap()}catch(e){}}
 })();
 </script>
