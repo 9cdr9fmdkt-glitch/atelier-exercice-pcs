@@ -340,6 +340,10 @@ const ICONS = {
   tmd:'<path d="M1.5 4.5h8v6.5h-8zM9.5 7h3l2 2.2V11h-5z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/><circle cx="4" cy="12.6" r="1.3" stroke="currentColor" stroke-width="1.4" fill="none"/><circle cx="11.6" cy="12.6" r="1.3" stroke="currentColor" stroke-width="1.4" fill="none"/>',
   seisme:'<path d="M1 8h3l1.5-4 2.5 9 2-6.5L11.5 8H15" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
   coupure:'<path d="M9 1.5L3.5 9H8l-1 5.5L12.5 7H8z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>',
+  industriel:'<path d="M1.5 14.5V7l4 2.5V7l4 2.5V3.5h3v11zM1 14.5h14" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round" stroke-linecap="round"/>',
+  terrorisme:'<path d="M8 1.5l5.5 2.3v4.1c0 3.2-2.3 5.6-5.5 6.6-3.2-1-5.5-3.4-5.5-6.6V3.8z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/><path d="M8 5v3.6M8 10.8v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  cyber:'<rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2M8 9.8v1.6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>',
+  canicule:'<circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9L13 13M3 13l1.1-1.1M11.9 4.1L13 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
   autre:'<path d="M8 2l6.5 11.5h-13zM8 6.5v3.2M8 11.6v.1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
 };
 const ico=k=>`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">${ICONS[k]||ICONS.autre}</svg>`;
@@ -350,12 +354,16 @@ const RISKS = {
   tempete:{label:"Tempête, grand froid, neige", re:/temp[êe]te|grain|neige|météo|vent|cyclone|grand froid|orage/i},
   tmd:{label:"Transport de matières dangereuses", re:/transport de marchandises dangereuses|matières dangereuses|\bTMD\b|canalisation/i},
   seisme:{label:"Séisme", re:/s[ée]isme/i},
-  coupure:{label:"Coupure électrique prolongée", re:null}
+  industriel:{label:"Accident industriel", re:/industriel|seveso|ICPE/i},
+  terrorisme:{label:"Attentat lors d'un événement communal", re:null, transverse:true},
+  cyber:{label:"Cyberattaque contre la mairie", re:null, transverse:true},
+  canicule:{label:"Canicule", re:/canicule|vague de chaleur/i, transverse:true},
+  coupure:{label:"Coupure électrique prolongée", re:null, transverse:true}
 };
 const OTHER = [
   {re:/mouvement de terrain|glissement|éboulement|chute de blocs|effondrement|cavité|affaissement|argile/i,label:"Mouvement de terrain"},
   {re:/rupture de barrage|barrage/i,label:"Rupture de barrage"},
-  {re:/industriel|nucléaire|radiologique|minier/i,label:"Risque industriel ou nucléaire"},
+  {re:/nucléaire|radiologique|minier/i,label:"Risque nucléaire ou minier"},
   {re:/avalanche/i,label:"Avalanche"},
   {re:/radon/i,label:"Radon"}
 ];
@@ -386,7 +394,11 @@ const REGL = [
   {ref:"Décret n° 2022-1532 du 8 décembre 2022", objet:"Modalités d'organisation des exercices des PCS et PICS.", statut:"vig", url:"https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000046710933"},
   {ref:"Loi n° 2021-1520 du 25 novembre 2021 (loi Matras)", objet:"Extension de l'obligation de PCS (inondation, feux de forêt…) et création des PICS.", statut:"vig", url:"https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000044367862"},
   {ref:"Projet de loi de modernisation de la sécurité civile (présenté le 8 septembre 2026)", objet:"Rendrait le PCS obligatoire dans toutes les communes, avec une entrée en vigueur envisagée en 2029. Texte non adopté à ce jour.", statut:"pro", url:"https://www.amf.asso.fr/documents-le-gouvernement-veut-rendre-obligatoire-plan-communal-sauvegarde-dans-toutes-les-communes/43319"},
-  {ref:"Ministère de l'Intérieur (DGSCGC) : guides et exemples de PCS", objet:"Guide d'élaboration, mémento des exercices, trame simplifiée et exemples par taille de commune.", statut:"gui", url:"https://www.securite-civile.interieur.gouv.fr/reagir/comment-se-preparer-face-aux-risques/plans-communaux-et"}
+  {ref:"Ministère de l'Intérieur (DGSCGC) : guides et exemples de PCS", objet:"Guide d'élaboration, mémento des exercices, trame simplifiée et exemples par taille de commune.", statut:"gui", url:"https://www.securite-civile.interieur.gouv.fr/reagir/comment-se-preparer-face-aux-risques/plans-communaux-et"},
+  {ref:"Plan Vigipirate (SGDSN) : guides pour les élus et les collectivités", objet:"Posture de vigilance face à la menace terroriste, bonnes pratiques pour les maires, sécurisation des rassemblements. En cas d'attentat, le préfet dirige les opérations ; la commune agit en appui.", statut:"gui", url:"https://www.sgdsn.gouv.fr/vigipirate/les-guides"},
+  {ref:"Règlement général sur la protection des données, art. 33 (CNIL)", objet:"Toute violation de données personnelles présentant un risque se notifie à la CNIL dans les 72 heures après sa découverte. Cas typique : rançongiciel avec vol de données.", statut:"vig", url:"https://www.cnil.fr/fr/violations-de-donnees-personnelles-les-regles-suivre"},
+  {ref:"ANSSI : kit d'exercice de crise cyber pour les collectivités", objet:"Scénarios, chronogrammes et fiches pour s'entraîner à une cyberattaque. Complément utile au scénario cyber de l'atelier.", statut:"gui", url:"https://cyber.gouv.fr/securisation/gestion-de-crise/entrainement-crise/kit-exercice-collectivites-territoriales/"},
+  {ref:"Code de l'action sociale et des familles, art. L121-6-1", objet:"Le maire tient un registre nominatif des personnes âgées et handicapées vivant à domicile qui en font la demande, mobilisé lors des canicules.", statut:"vig", url:"https://nausica-avocats.fr/maire-et-canicule-quels-pouvoirs-quels-responsabilites/"}
 ];
 const STAT={vig:"En vigueur",pro:"En discussion",gui:"Doctrine"};
 const EXREF=REGL[2].url;
@@ -513,6 +525,93 @@ coupure:{
    [140,"LIAI","Préfecture","Maire","Téléphone","Point de situation : personnes vulnérables prises en charge, hébergés, besoins en groupes électrogènes.","Point de situation structuré, demande de moyens."],
    [160,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Rumeur de pillages dans les commerces fermés.","Vérification avec la gendarmerie, message factuel."],
    [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
+  ]},
+industriel:{
+  contexte:"Un incendie se déclare dans l'entrepôt d'une coopérative agricole qui stocke engrais et produits phytosanitaires, en limite de {commune}.",
+  initiale:"À H, un panache de fumée noire se dirige vers le {secteur}. L'exploitant a déclenché son plan d'urgence et le SDIS est engagé. La composition des fumées n'est pas encore connue.",
+  hypotheses:["Le vent pousse les fumées vers les habitations","L'{etab} se trouve sous le panache","Des suies retombent sur les jardins et les cultures","Le suivi environnemental se poursuit au-delà de l'exercice"],
+  phases:[["Alerte","Information par les secours, déclenchement du PCS, armement du PCC."],["Protection","Confinement sous le panache, évacuation du périmètre de danger."],["Inquiétude","Retombées, questions sanitaires, pression médiatique."],["Maîtrise","Feu maîtrisé, levée des mesures, suivi environnemental et FINEX."]],
+  note:"Pour un site classé Seveso, le plan particulier d'intervention (PPI) arrêté par le préfet prime : le PCS de la commune doit s'y articuler, notamment pour l'alerte et le confinement.",
+  injects:[
+   [0,"ALERTE","CODIS (SDIS)","Maire","Téléphone","Incendie en cours dans l'entrepôt de la coopérative, panache important vers le {secteur}. Déclenchez votre PCS.","Déclenchement du PCS, armement du PCC, information de la préfecture."],
+   [10,"POP","COS","PCC","Radio","Confinement immédiat des habitations sous le panache. Fermez portes, fenêtres et ventilations.","Diffusion de la consigne de confinement, compte rendu au COS."],
+   [20,"SAUV","Direction de l'{etab}","Maire","Téléphone","De la fumée entre dans les classes, des enfants toussent. Faut-il évacuer ?","Maintien du confinement dans les locaux les plus étanches, relais vers le COS."],
+   [35,"EVAL","Exploitant du site","PCC","Téléphone","Environ 400 tonnes d'engrais sont stockées. Risque de décomposition et d'explosion : le COS établit un périmètre de 500 mètres.","Report du périmètre sur la carte, recensement des habitations concernées."],
+   [45,"SAUV","COS","PCC","Radio","Évacuation des habitations situées dans les 500 mètres, environ 30 foyers.","Organisation de l'évacuation : itinéraire hors panache, recensement."],
+   [60,"CARE","Agent communal","PCC","Sur place","Les premiers évacués arrivent au lieu d'accueil ({heberg}), plusieurs se plaignent d'irritations.","Accueil, enregistrement, orientation vers les secours des personnes symptomatiques."],
+   [75,"EVAL","Agriculteur","Accueil mairie","Téléphone","Des suies noires recouvrent mes champs et le potager de mes voisins. On peut récolter ?","Consigne de précaution en attente des autorités sanitaires, remontée à la préfecture."],
+   [90,"COM","Presse régionale","Maire","Téléphone","On parle d'un nuage toxique. Les habitants doivent-ils s'inquiéter pour leur santé ?","Réponse du porte-parole sur éléments validés, coordination avec la préfecture."],
+   [105,"LIAI","Préfecture (avec l'ARS)","Maire","Courriel","Consigne : ne pas consommer les fruits et légumes des jardins sous le panache, des prélèvements sont en cours.","Relais de la consigne à la population, information des écoles et commerces."],
+   [120,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Rumeur : l'eau du robinet serait contaminée et il faudrait quitter la commune.","Vérification auprès du syndicat des eaux, démenti factuel coordonné."],
+   [140,"LIAI","Préfecture","Maire","Téléphone","Point de situation attendu : confinés, évacués, accueillis, signalements sanitaires.","Point de situation structuré et horodaté."],
+   [160,"EVAL","COS","PCC","Radio","Incendie maîtrisé. Levée du confinement possible, le périmètre d'évacuation est maintenu cette nuit.","Levée partielle des mesures, hébergement de nuit, suivi des retombées."],
+   [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
+  ]},
+terrorisme:{
+  contexte:"{commune} organise sa fête annuelle sur la place principale ; environ 800 personnes sont présentes. Le plan Vigipirate est en posture renforcée sur l'ensemble du territoire.",
+  initiale:"À H, une attaque est signalée sur le lieu de la fête. Les forces de l'ordre interviennent et bouclent le secteur. Le nombre de victimes est inconnu et l'auteur est en fuite.",
+  hypotheses:["Le préfet prend la direction des opérations ; la commune agit en appui","Une animation pour enfants est organisée par l'{etab} au moment des faits","Les réseaux sociaux diffusent images et fausses informations","Les familles affluent vers la mairie pour retrouver leurs proches"],
+  phases:[["Choc","Alerte, confinement des lieux communaux, armement du PCC hors zone."],["Accueil","Prise en charge des personnes non blessées et choquées."],["Familles et médias","Information des familles, maîtrise de la communication."],["Après","Levée des mesures, soutien dans la durée et FINEX."]],
+  note:"La gestion de l'attaque relève exclusivement des forces de l'ordre et du préfet. L'exercice évalue les missions de la commune : mise à l'abri, accueil des impliqués, soutien aux familles, communication et continuité.",
+  noteRef:["Guides Vigipirate","https://www.sgdsn.gouv.fr/vigipirate/les-guides"],
+  injects:[
+   [0,"ALERTE","Gendarmerie","Maire","Téléphone","Attaque en cours sur la place de la fête, auteur en fuite. Faites mettre à l'abri le public des bâtiments communaux.","Déclenchement du PCS, mise à l'abri dans les bâtiments communaux, armement du PCC hors zone."],
+   [10,"POP","Préfecture","Maire","Téléphone","Le préfet dirige les opérations. Relayez uniquement les consignes officielles : rester à l'abri, ne pas diffuser d'images.","Alignement sur les consignes préfectorales, relais par les moyens du PCS."],
+   [20,"SAUV","Responsable de l'animation enfants","Maire","Téléphone","Nous sommes 40 enfants et 6 adultes enfermés dans la salle. Des parents veulent venir les chercher.","Maintien de la mise à l'abri, information des parents, aucun déplacement vers la zone."],
+   [35,"EVAL","Agent communal","PCC","Téléphone","Une cinquantaine de personnes choquées se sont réfugiées dans la mairie et les commerces voisins.","Recensement, regroupement en lieu sûr, signalement aux secours."],
+   [50,"CARE","SAMU (via le COS)","PCC","Téléphone","Ouvrez un centre d'accueil des impliqués au {heberg} pour les personnes non blessées.","Ouverture du centre, enregistrement nominatif, eau et couvertures, attente des psychologues."],
+   [65,"LIAI","Préfecture","PCC","Téléphone","La cellule d'urgence médico-psychologique est engagée. Donnez l'adresse et la capacité du centre d'accueil.","Transmission des informations, accueil des intervenants."],
+   [80,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Des vidéos de la scène circulent et une rumeur annonce une seconde attaque près de l'école.","Vérification auprès des forces de l'ordre, démenti coordonné avec la préfecture, appel à ne pas diffuser d'images."],
+   [95,"CARE","Accueil mairie","PCC","Sur place","Des dizaines de familles arrivent sans nouvelles de leurs proches.","Ouverture d'un espace d'accueil des familles distinct, relais vers le numéro d'information de la préfecture."],
+   [110,"COM","Presse nationale","Maire","Téléphone","Plusieurs chaînes demandent une déclaration du maire en direct.","Déclaration sobre validée par la préfecture, sans bilan ni élément d'enquête."],
+   [125,"EVAL","Gendarmerie","PCC","Téléphone","L'auteur est interpellé. Levée progressive de la mise à l'abri, la place reste fermée pour l'enquête.","Levée coordonnée, information de la population, gestion des accès."],
+   [145,"LIAI","Préfecture","Maire","Téléphone","Point de situation attendu : personnes accueillies, besoins en soutien psychologique, transport, hébergement.","Point de situation structuré et horodaté."],
+   [162,"CARE","Maire (inject animateur)","PCC","Inject animateur","Préparez les mesures de soutien pour les jours suivants.","Cellule d'écoute, ouverture élargie de la mairie, coordination d'un hommage avec la préfecture."],
+   [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
+  ]},
+cyber:{
+  contexte:"Un lundi matin, les agents de la mairie de {commune} découvrent leurs écrans bloqués par un message de rançon. Les fichiers partagés sont chiffrés.",
+  initiale:"À H, la messagerie, le logiciel d'état civil et la téléphonie de la mairie sont indisponibles. La commune ignore si des données personnelles ont été dérobées.",
+  hypotheses:["Une partie des sauvegardes est touchée","Un mariage est célébré en fin de semaine","Les attaquants publient un échantillon de données d'habitants","Le prestataire informatique n'intervient qu'en milieu de journée"],
+  phases:[["Détection","Découverte de l'attaque, isolement du réseau, armement de la cellule."],["Obligations","Plainte, notification à la CNIL, information de la préfecture."],["Mode dégradé","Accueil des usagers et services essentiels sans informatique."],["Reprise","Restauration priorisée, mesures de sécurité et FINEX."]],
+  note:"Un rançongiciel avec vol de données impose une notification à la CNIL dans les 72 heures. Ne payez jamais la rançon et conservez les preuves pour la plainte.",
+  noteRef:["Kit d'exercice cyber ANSSI","https://cyber.gouv.fr/securisation/gestion-de-crise/entrainement-crise/kit-exercice-collectivites-territoriales/"],
+  injects:[
+   [0,"ALERTE","Secrétaire de mairie","Maire","Sur place","Tous les écrans affichent une demande de rançon. Plus rien ne fonctionne, ni la messagerie ni le téléphone.","Activation de la cellule de crise, consigne de ne rien éteindre ni payer, appel au prestataire."],
+   [10,"SAUV","Prestataire informatique","Maire","Téléphone portable","Débranchez tous les postes du réseau et déconnectez les sauvegardes encore accessibles.","Isolement du réseau, inventaire des postes touchés, protection des sauvegardes."],
+   [20,"LIAI","Gendarmerie (référent cyber)","Maire","Téléphone portable","Avez-vous déposé plainte ? Conservez les preuves, ne réinstallez rien pour l'instant.","Dépôt de plainte, conservation des preuves, information de la préfecture."],
+   [35,"EVAL","Agent d'état civil","PCC","Sur place","Un décès doit être déclaré aujourd'hui et un mariage est prévu samedi. Je n'ai plus accès aux registres.","Procédure dégradée sur papier, liste des actes urgents, contacts avec les partenaires."],
+   [50,"CARE","Accueil mairie","PCC","Sur place","Une file d'usagers se forme et personne ne peut joindre la mairie par téléphone.","Accueil physique renforcé, affichage, numéro de téléphone de secours communiqué."],
+   [65,"POP","Maire (inject animateur)","Cellule communication","Inject animateur","Les habitants doivent savoir comment joindre la mairie et quels services sont maintenus.","Message aux habitants par les canaux non touchés : affichage, site hébergé à l'extérieur, réseaux sociaux."],
+   [80,"LIAI","Délégué à la protection des données","Maire","Téléphone portable","Des fichiers d'habitants ont pu être copiés. Le délai de 72 heures pour notifier la CNIL court depuis ce matin.","Préparation et envoi de la notification à la CNIL, décision d'informer les personnes concernées."],
+   [95,"COM","Presse locale","Maire","Téléphone portable","On nous dit que la mairie est piratée. Les données des habitants sont-elles dans la nature ?","Réponse factuelle et prudente du porte-parole, sans détail technique."],
+   [110,"EVAL","Prestataire informatique","PCC","Téléphone portable","Les sauvegardes de la semaine dernière sont intactes. Restauration complète en cinq jours.","Priorisation des services à restaurer : état civil, paie, finances, urbanisme."],
+   [125,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Les attaquants publient un extrait du fichier des inscrits à la cantine.","Information des familles concernées, signalement, coordination avec la CNIL et la gendarmerie."],
+   [145,"LIAI","Préfecture","Maire","Téléphone portable","Point de situation attendu : services touchés, données concernées, démarches engagées, besoins.","Point de situation structuré et horodaté."],
+   [162,"EVAL","Prestataire informatique","PCC","Réunion","Quelles mesures pour éviter que cela se reproduise ?","Plan d'actions : sauvegardes hors ligne, double authentification, sensibilisation des agents."],
+   [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
+  ]},
+canicule:{
+  contexte:"Météo-France place le département en vigilance rouge canicule pour cinq jours. Les températures dépassent 40 °C le jour et ne descendent pas sous 25 °C la nuit sur {commune}.",
+  initiale:"À H, la préfecture demande l'activation des mesures de gestion de la vague de chaleur. Le registre communal des personnes vulnérables compte 47 inscrits.",
+  hypotheses:["La vague de chaleur dure au-delà de l'exercice","La consommation d'eau atteint un niveau record","L'{etab} est ouvert malgré la chaleur","Les agents techniques travaillent en extérieur"],
+  phases:[["Alerte","Vigilance rouge, déclenchement du PCS, mobilisation du registre."],["Vulnérables","Appels, visites, prise en charge des personnes isolées."],["Durée","Lieux rafraîchis, eau, adaptation des activités."],["Tenue","Organisation dans la durée, relève et FINEX."]],
+  note:"Le maire tient le registre nominatif des personnes vulnérables qui en font la demande et le mobilise dès la vigilance canicule.",
+  noteRef:["CASF L121-6-1","https://nausica-avocats.fr/maire-et-canicule-quels-pouvoirs-quels-responsabilites/"],
+  injects:[
+   [0,"ALERTE","Préfecture","Maire","SMS + courriel","Vigilance rouge canicule. Activez vos mesures et mobilisez le registre des personnes vulnérables.","Déclenchement du PCS, armement du PCC, organisation des appels du registre."],
+   [10,"POP","CCAS","PCC","Sur place","Nous commençons les appels aux 47 inscrits. Qui renforce l'équipe ?","Répartition des appels entre élus et agents, fiche de suivi des contacts."],
+   [25,"EVAL","CCAS","PCC","Sur place","Six inscrits ne répondent pas après deux appels.","Visites à domicile par binômes, sollicitation des proches référents."],
+   [40,"SAUV","Équipe de visite","PCC","Téléphone","Une dame de 91 ans est trouvée confuse et déshydratée, seule chez elle.","Appel au 15, mise en sécurité, information de la famille."],
+   [55,"CARE","Maire (inject animateur)","PCC","Inject animateur","Ouvrez une salle rafraîchie pour les personnes fragiles, avec des horaires élargis.","Ouverture du lieu d'accueil ({heberg}), eau, transport des personnes sans véhicule."],
+   [70,"EVAL","Syndicat des eaux","PCC","Téléphone","Consommation record, la pression baisse dans les quartiers hauts. Des restrictions sont nécessaires.","Arrêté de restriction, information de la population, priorité aux usages vitaux."],
+   [85,"POP","Direction de l'{etab}","Maire","Téléphone","Il fait 35 °C dans les classes. Faut-il fermer ou adapter les horaires ?","Décision coordonnée avec l'Éducation nationale, information des familles."],
+   [100,"COM","Radio locale","Maire","Téléphone","Les auditeurs demandent où se mettre au frais et comment aider leurs voisins âgés.","Message clair : lieux rafraîchis, horaires, consignes, numéro du CCAS."],
+   [115,"EVAL","Responsable des services techniques","PCC","Téléphone","Deux agents ont eu un malaise sur un chantier de voirie.","Adaptation des horaires de travail, suspension des tâches exposées."],
+   [130,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Rumeur : l'eau sera coupée totalement demain dans toute la commune.","Démenti coordonné avec le syndicat des eaux, rappel des restrictions réelles."],
+   [145,"LIAI","Préfecture","Maire","Téléphone","Point de situation : personnes contactées, visites, interventions, besoins.","Point de situation structuré et horodaté."],
+   [162,"EVAL","Météo-France","PCC","Bulletin","Vigilance rouge prolongée de trois jours.","Organisation dans la durée : relève des équipes, rythme des appels, ressources."],
+   [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
   ]}
 };
 const FORMATS = {
@@ -557,6 +656,7 @@ function setPill(){
   else el.innerHTML='<span class="dot warn"></span>Bases publiques hors ligne';
 }
 function classify(label){
+  if(RISKS.canicule.re.test(label)) return {key:"canicule"};
   for(const [k,v] of Object.entries(RISKS)) if(v.re&&v.re.test(label)) return {key:k};
   for(const o of OTHER) if(o.re.test(label)) return {key:"autre",group:o.label};
   return {key:"autre",group:label};
@@ -605,7 +705,7 @@ function renderRisks(){
     const e=prof&&prof.find(x=>x.key===k);const tags=[];
     if(e&&e.labels.length)tags.push('<span class="tg src">Recensé Géorisques</span>');
     if(e&&e.catnat)tags.push(`<span class="tg cat">${e.catnat} arrêté${e.catnat>1?"s":""} CatNat${e.last?" · dernier en "+e.last.getFullYear():""}</span>`);
-    if(prof&&!(e&&e.labels.length))tags.push(k==="coupure"?'<span class="tg no">Risque transverse</span>':'<span class="tg no">Non recensé</span>');
+    if(prof&&!(e&&e.labels.length))tags.push(RISKS[k].transverse?'<span class="tg no">Risque transverse</span>':'<span class="tg no">Non recensé</span>');
     if(!prof)tags.push('<span class="tg">Scénario disponible</span>');
     return `<div class="rk"><input type="radio" name="risk" id="r-${k}" value="${k}" ${p.risk===k?"checked":""}><label for="r-${k}"><span class="ic">${ico(k)}</span><span class="tx"><b>${esc(RISKS[k].label)}</b><span class="tags">${tags.join("")}</span></span></label></div>`;
   }).join("");
@@ -736,6 +836,7 @@ function vScenario(){
     ${hist}
     <div class="sec"><h4>Déroulement</h4><div class="phases">${ph}</div></div>
     <div class="sec"><h4>Hypothèses de jeu</h4><ul>${L.hypotheses.map(h=>`<li>${esc(fill(h,p))}</li>`).join("")}</ul></div>
+    ${L.note?`<div class="callout">${info}<span>${esc(L.note)}${L.noteRef?` <a class="ref" href="${L.noteRef[1]}" target="_blank" rel="noopener">${esc(L.noteRef[0])}</a>`:""}</span></div>`:""}
     <div class="callout warn">${info}<span>Document réservé à l'équipe d'animation. Les joueurs ne reçoivent que la situation initiale.</span></div>
   </div>`;
 }
