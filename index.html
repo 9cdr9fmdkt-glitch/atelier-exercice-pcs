@@ -246,6 +246,7 @@ td.tm{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap;font-variant
 .obsv-wrap{display:flex;align-items:center;margin-top:6px}.obsv-wrap .obsv{margin-top:0}
 body.obsmode .shell{grid-template-columns:minmax(0,760px);justify-content:center}
 body.obsmode .status{display:none}
+.checks{list-style:none;padding:0;margin:6px 0}.checks li{padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}.checks input{margin-right:8px}
 .obsr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:10px 14px;border-top:1px solid var(--line);align-items:center;font-size:14px}
 @media (max-width:620px){.obsr{grid-template-columns:minmax(0,1fr)}}
 .cot{display:inline-grid;grid-auto-flow:column;gap:2px;background:var(--surface-2);border-radius:8px;padding:2px;justify-self:start}
@@ -1625,6 +1626,7 @@ function vCadrage(){
     <h3>Convention d'exercice</h3>
     <dl class="kv">
       <dt>Commune</dt><dd>${esc(p.commune)}${p.pop?" · "+nf(p.pop)+" habitants":""}${p.dept?" · "+esc(p.dept):""}</dd>
+      ${(()=>{const l=hCommune().filter(x=>x.id!==S.archId),d=nextDue(l);return l.length?`<dt>Dernier exercice</dt><dd>${esc(fmtDate(l[0].date))} · ${esc(l[0].titre)}${d?" · prochain avant le "+d.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"}):""}</dd>`:""})()}
       <dt>Risque joué</dt><dd>${esc(RISKS[p.risk].label)}${comboOf(p).length?" · en cascade : "+esc(comboOf(p).map(c=>RISKS[c].label.toLowerCase()).join(", ")):""}</dd>
       <dt>Format</dt><dd>${esc(f.label)}</dd>
       <dt>Date</dt><dd>${esc(cap(fmtDate(p.date)))}</dd>
@@ -1922,10 +1924,91 @@ function vObs(){
     ${S.p.objs.map(o=>{const t=tally(o);return `<div class="obsg"><div class="gh"><span>${esc(OBJS[o].label)}</span><span class="score">${t.a+t.p+t.k}/${t.n} cotés</span></div>${crit(o).map((c,j)=>{const id=o+"-"+j,v=S.cot[id]||"";return `<div class="obsr"><span>${esc(c)}<span class="obsv-wrap"><input class="obsv" type="text" data-obsv="${id}" value="${esc((S.obsv||{})[id]||"")}" placeholder="Constaté : heure, délai, remarque" aria-label="Constaté"><button class="btn sm nowb" type="button" data-now="${id}">Maintenant</button></span></span><span class="cot" role="group" aria-label="Cotation">${[["ok","Atteint"],["part","Partiel"],["ko","Non atteint"]].map(x=>`<button type="button" data-cot="${id}" data-v="${x[0]}" aria-pressed="${v===x[0]}">${x[1]}</button>`).join("")}</span></div>`}).join("")}</div>`}).join("")}
   </div>`;
 }
+/* ---------- Rapport et historique ---------- */
+const HKEY="commune-prete-historique";
+function hLoad(){try{return JSON.parse(localStorage.getItem(HKEY))||[]}catch(e){return []}}
+function hSave(h){try{localStorage.setItem(HKEY,JSON.stringify(h))}catch(e){}}
+const sameCommune=(x,p)=>p.insee?x.insee===p.insee:x.commune===p.commune;
+function hCommune(){return hLoad().filter(x=>sameCommune(x,S.p)).sort((a,b)=>String(b.date).localeCompare(String(a.date)))}
+function scoreAll(){let a=0,pa=0,k=0,n=0;S.p.objs.forEach(o=>{const t=tally(o);a+=t.a;pa+=t.p;k+=t.k;n+=t.n});const c=a+pa+k;return {a,p:pa,k,n,c,taux:c?Math.round((a+pa/2)/c*100):null}}
+const pl=(n,w,f)=>n+" "+w+(n>1?"s":"")+(f?" "+f+(n>1?"s":""):"");
+function avgDelay(){const D=delays().filter(o=>o.d!=null);return D.length?Math.round(D.reduce((x,o)=>x+(o.d-o.s),0)/D.length):null}
+function isoDate(){return S.p.date||new Date().toISOString().slice(0,10)}
+let pendingArch=false;
+function archive(){
+  const p=S.p,h=hLoad(),sc=scoreAll();
+  const e={id:S.archId||("ex"+Date.now()),commune:p.commune,insee:p.insee||"",date:isoDate(),titre:riskTitle(p),format:FORMATS[p.format].label,
+    taux:sc.taux,cot:sc,delai:avgDelay(),forts:S.retex.forts,axes:S.retex.axes,
+    actions:S.retex.actions.filter(x=>x.a&&x.a!=="Nouvelle action").map(x=>({a:x.a,pilote:x.pilote,ech:x.ech,done:false}))};
+  const i=h.findIndex(x=>x.id===e.id);
+  if(i>=0){e.actions=e.actions.map(a=>{const o=(h[i].actions||[]).find(y=>y.a===a.a);return o?{...a,done:o.done}:a});h[i]=e}else h.push(e);
+  S.archId=e.id;hSave(h);save();
+}
+function nextDue(list){if(!list.length)return null;const d=new Date(list[0].date+"T12:00:00");if(isNaN(d))return null;d.setFullYear(d.getFullYear()+5);return d}
+function reportHTML(){
+  const p=S.p,f=FORMATS[p.format],sc=scoreAll(),D=delays(),av=avgDelay(),a=actors(p);
+  const row=(c)=>`<tr>${c.map(x=>`<td>${x}</td>`).join("")}</tr>`;
+  const lab={ok:"Atteint",part:"Partiel",ko:"Non atteint"};
+  const prev=hCommune().filter(x=>x.id!==S.archId);
+  const css=`body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#1a1a1a;line-height:1.45;margin:2cm}h1{font-size:20pt;margin:0 0 4pt}h2{font-size:13pt;margin:18pt 0 6pt;border-bottom:1px solid #999;padding-bottom:3pt}table{border-collapse:collapse;width:100%;margin:6pt 0}td,th{border:1px solid #bbb;padding:4pt 6pt;vertical-align:top;text-align:left;font-size:10pt}th{background:#eee}.mark{color:#c2410c;font-weight:bold;letter-spacing:2pt;font-size:9pt}.muted{color:#555}`;
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport de fin d'exercice — ${esc(p.commune)}</title><style>${css}</style></head><body>
+  <p class="mark">EXERCICE · EXERCICE · EXERCICE</p>
+  <h1>Rapport de fin d'exercice</h1>
+  <p><b>Commune de ${esc(p.commune)}</b>${p.pop?" · "+nf(p.pop)+" habitants":""}${p.dept?" · "+esc(p.dept):""}<br>
+  ${esc(riskTitle(p))} · ${esc(f.label)} · ${esc(fmtDate(p.date))}${p.heureH?" · H = "+esc(p.heureH):""} · ${Number(p.duree)/60} h de jeu</p>
+  <h2>1. Synthèse</h2>
+  <p>Taux d'atteinte : <b>${sc.taux!=null?sc.taux+" %":"aucun critère coté"}</b>${sc.c?` sur ${pl(sc.c,"critère","coté")} (${pl(sc.a,"atteint")}, ${pl(sc.p,"partiel")}, ${sc.k} non atteint${sc.k>1?"s":""}) ; ${sc.n-sc.c} non coté${sc.n-sc.c>1?"s":""} sur ${sc.n}`:""}. Un critère partiel compte pour moitié.${av!=null?" Délai moyen de réaction de la cellule de crise : <b>"+av+" min</b>.":""}${D.length?" "+pl(D.length,"message","joué")+", "+pl(D.filter(o=>o.r!=null).length,"relance")+".":""}</p>
+  ${prev.length&&prev[0].taux!=null&&sc.taux!=null?`<p>Exercice précédent (${esc(fmtDate(prev[0].date))}, ${esc(prev[0].titre)}) : ${prev[0].taux} %. Évolution : ${sc.taux-prev[0].taux>=0?"+":""}${sc.taux-prev[0].taux} points.</p>`:""}
+  <h2>2. Résultats par objectif</h2>
+  <table><tr><th>Objectif</th><th>Atteints</th><th>Partiels</th><th>Non atteints</th><th>Non cotés</th></tr>${p.objs.map(o=>{const t=tally(o);return row([esc(OBJS[o].label),t.a,t.p,t.k,t.n-t.a-t.p-t.k])}).join("")}</table>
+  <h2>3. Points forts</h2><p>${esc(S.retex.forts||"—").replace(/\n/g,"<br>")}</p>
+  <h2>4. Axes d'amélioration</h2><p>${esc(S.retex.axes||"—").replace(/\n/g,"<br>")}</p>
+  <h2>5. Plan d'actions correctives</h2>
+  <table><tr><th>Action</th><th>Pilote</th><th>Échéance</th></tr>${S.retex.actions.map(x=>row([esc(x.a),esc(x.pilote),esc(x.ech)])).join("")}</table>
+  ${D.length?`<h2>6. Délais de réaction mesurés</h2><table><tr><th>Heure</th><th>Émetteur</th><th>Message</th><th>Délai</th></tr>${D.map(o=>row([hplus(o.i.t),esc(o.i.from),esc(o.i.msg),o.d!=null?Math.round(o.d-o.s)+" min":"aucune réaction"+(o.r!=null?" (relancé)":"")])).join("")}</table>`:""}
+  <h2>${D.length?7:6}. Grille d'observation détaillée</h2>
+  ${p.objs.map(o=>`<p><b>${esc(OBJS[o].label)}</b></p><table><tr><th>Critère</th><th>Cotation</th><th>Constaté</th></tr>${crit(o).map((c,j)=>row([esc(c),lab[S.cot[o+"-"+j]]||"—",esc((S.obsv||{})[o+"-"+j]||"")])).join("")}</table>`).join("")}
+  ${S.live&&S.live.log.length?`<h2>Annexe : main courante</h2><table><tr><th>Heure de jeu</th><th>Heure réelle</th><th>Événement</th></tr>${S.live.log.map(x=>row([fmtEl(x.at).slice(0,-3),new Date(x.wall).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),esc(x.txt)])).join("")}</table>`:""}
+  <p class="muted" style="margin-top:18pt">Rapport établi avec Commune Prête. Exercice réalisé au titre des articles D731-9 à D731-13 du code de la sécurité intérieure ; transmis pour information à ${esc(a.Pref.replace(/^Préfecture/,"la préfecture"))}.</p>
+  </body></html>`;
+}
+function dl(name,mime,content){try{const b=new Blob([content],{type:mime}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);return true}catch(e){return false}}
+const fileBase=()=>"exercice-"+String(S.p.commune).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w]+/g,"-").toLowerCase()+"-"+isoDate();
+function printReport(){
+  const fr=document.createElement("iframe");fr.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";document.body.appendChild(fr);
+  const d=fr.contentWindow.document;d.open();d.write(reportHTML());d.close();
+  setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){toast("Impression bloquée par le navigateur.")}setTimeout(()=>fr.remove(),4000)},300);
+}
+document.addEventListener("click",e=>{
+  if(!S||document.body.classList.contains("obsmode"))return;
+  const id=e.target.id;
+  if(id==="repDoc"){const ok=dl(fileBase()+".doc","application/msword","﻿"+reportHTML());toast(ok?"Rapport Word téléchargé.":"Téléchargement bloqué par le navigateur.");return}
+  if(id==="repPdf"){printReport();toast("Choisissez « Enregistrer au format PDF » dans la fenêtre d'impression.");return}
+  if(id==="archBtn"){if(!pendingArch){pendingArch=true;render();return}pendingArch=false;archive();render();toast("Exercice archivé dans l'historique de la commune.");return}
+  if(id==="histExport"){const ok=dl("historique-commune-prete.json","application/json",JSON.stringify(hLoad(),null,1));toast(ok?"Historique exporté.":"Téléchargement bloqué par le navigateur.");return}
+  const hd=e.target.closest("[data-hact]");if(hd){const [hid,ai]=hd.dataset.hact.split("|"),h=hLoad(),x=h.find(y=>y.id===hid);if(x&&x.actions[+ai]){x.actions[+ai].done=hd.checked;hSave(h);render()}return}
+});
+document.addEventListener("change",e=>{
+  if(e.target.id!=="histImport")return;const f=e.target.files&&e.target.files[0];if(!f)return;
+  f.text().then(t=>{const imp=JSON.parse(t);if(!Array.isArray(imp))throw 0;const h=hLoad();imp.forEach(x=>{if(x&&x.id&&!h.some(y=>y.id===x.id))h.push(x)});hSave(h);render();toast("Historique importé.")}).catch(()=>toast("Fichier d'historique illisible."));
+});
+function vHist(){
+  const list=hCommune(),due=nextDue(list),open=[];
+  list.forEach(x=>(x.actions||[]).forEach((a,i)=>{if(x.id!==S.archId||true)open.push({x,a,i})}));
+  const pend=open.filter(o=>!o.a.done&&o.x.id!==S.archId);
+  return `<div class="sec"><h4>Historique des exercices de ${esc(S.p.commune)}</h4>
+    ${list.length?`<div class="tablewrap"><table style="min-width:540px"><thead><tr><th>Date</th><th>Scénario</th><th>Format</th><th>Atteinte</th><th>Délai moyen</th></tr></thead><tbody>${list.map(x=>`<tr><td>${esc(fmtDate(x.date))}</td><td>${esc(x.titre)}</td><td>${esc(x.format)}</td><td>${x.taux!=null?x.taux+" %":"—"}</td><td>${x.delai!=null?x.delai+" min":"—"}</td></tr>`).join("")}</tbody></table></div>
+    <p class="note">${due?`Prochain exercice à organiser avant le ${due.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})} (un exercice au moins tous les cinq ans).`:""}</p>`:`<p class="note">Aucun exercice archivé pour cette commune. Clôturez celui-ci pour démarrer l'historique.</p>`}
+    ${pend.length?`<h4 style="margin-top:14px">Actions correctives des exercices précédents</h4><ul class="checks">${pend.map(o=>`<li><label><input type="checkbox" data-hact="${esc(o.x.id)}|${o.i}"> ${esc(o.a.a)} <span class="note">· ${esc(o.a.pilote)} · ${esc(o.a.ech)} · exercice du ${esc(fmtDate(o.x.date))}</span></label></li>`).join("")}</ul>`:""}
+    <div class="lbtns" style="margin-top:10px"><button class="btn sm ghost" type="button" id="histExport">Sauvegarder l'historique</button><label class="btn sm ghost" for="histImport">Restaurer une sauvegarde</label><input type="file" id="histImport" accept="application/json,.json" hidden></div>
+    <p class="note">L'historique est conservé dans ce navigateur. Sauvegardez-le régulièrement pour ne pas le perdre.</p>
+  </div>`;
+}
 function vRetex(){
   const bars=S.p.objs.map(o=>{const t=tally(o),pc=x=>(x/t.n*100)+"%";return `<div class="brow"><span>${esc(OBJS[o].short)}</span><div class="track" role="img" aria-label="${t.a} atteints, ${t.p} partiels, ${t.k} non atteints sur ${t.n}"><i class="a" style="width:${pc(t.a)}"></i><i class="p" style="width:${pc(t.p)}"></i><i class="k" style="width:${pc(t.k)}"></i></div><span class="score">${t.a+t.p+t.k}/${t.n}</span></div>`}).join("");
   const acts=S.retex.actions.map((x,n)=>`<tr data-a="${n}"><td><div contenteditable="true" data-af="a">${esc(x.a)}</div></td><td><div contenteditable="true" data-af="pilote">${esc(x.pilote)}</div></td><td><div contenteditable="true" data-af="ech">${esc(x.ech)}</div></td><td><button class="del" type="button" data-adel="${n}" aria-label="Supprimer l'action">×</button></td></tr>`).join("");
   return docHead("Retour d'expérience")+`<div class="docbody"><h3>Retour d'expérience</h3>
+    <div class="lbtns" style="margin:4px 0 10px"><button class="btn sm" type="button" id="repDoc">Rapport Word</button><button class="btn sm" type="button" id="repPdf">Rapport PDF</button><button class="btn sm ${pendingArch?"primary":""}" type="button" id="archBtn">${pendingArch?"Confirmer l'archivage":S.archId?"Mettre à jour l'archive":"Clôturer et archiver l'exercice"}</button></div>
     <div class="sec"><h4>Synthèse des cotations</h4><div class="legend"><span style="--c:var(--ok)">Atteint</span><span style="--c:var(--warn)">Partiel</span><span style="--c:var(--bad)">Non atteint</span></div><div class="bars">${bars}</div></div>
     <div class="sec"><h4>Débriefing à chaud</h4><ul><li>Qu'est-ce qui a bien fonctionné et doit être conservé ?</li><li>Qu'est-ce qui vous a manqué : information, moyen, procédure ?</li><li>Que changeriez-vous dans le PCS dès demain ?</li></ul></div>
     ${(()=>{const D=delays();if(!D.length)return "";const done=D.filter(o=>o.d!=null),avg=done.length?Math.round(done.reduce((a,o)=>a+(o.d-o.s),0)/done.length):null;
@@ -1933,6 +2016,7 @@ function vRetex(){
     <div class="two"><div class="field"><label for="rf">Points forts</label><textarea id="rf" data-r="forts">${esc(S.retex.forts)}</textarea></div><div class="field"><label for="ra">Axes d'amélioration</label><textarea id="ra" data-r="axes">${esc(S.retex.axes)}</textarea></div></div>
     <div class="sec"><h4>Plan d'actions correctives</h4><div class="tablewrap"><table style="min-width:540px"><thead><tr><th>Action</th><th>Pilote</th><th>Échéance</th><th></th></tr></thead><tbody>${acts}</tbody></table></div><div><button class="btn sm" type="button" id="addAct">+ Ajouter une action</button></div></div>
     <div class="callout">${info}<span>Le retour d'expérience associe l'ensemble des acteurs et formule des recommandations pour ajuster le plan ${refLink("CSI D731-9 à D731-13")}. Le PCS se révise ensuite, et au moins tous les cinq ans.</span></div>
+    ${vHist()}
   </div>`;
 }
 function vRegl(){
@@ -1993,7 +2077,7 @@ $("#combo").addEventListener("click",e=>{const b=e.target.closest("[data-combo]"
 $("#comboAdd").addEventListener("change",e=>{const c=e.target.value;if(!c)return;const a=S.p.combo||[];if(a.length>=2){toast("Deux événements en cascade au maximum.");renderCombo();return}a.push(c);S.p.combo=a;renderCombo();save()});
 $("#gen").addEventListener("click",()=>{
   if(S.edited&&!pendingRegen){pendingRegen=true;$("#genLabel").textContent="Confirmer : remplacer le chronogramme modifié";return}
-  pendingRegen=false;$("#genLabel").textContent="Générer le dossier";generate();toast("Dossier généré.");
+  pendingRegen=false;$("#genLabel").textContent="Générer le dossier";S.archId=null;S.live=null;generate();toast("Dossier généré.");
 });
 $("#tabs").addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(!b)return;S.tab=b.dataset.tab;save();render()});
 $("#tabs").addEventListener("keydown",e=>{if(e.key!=="ArrowRight"&&e.key!=="ArrowLeft")return;const i=TABS.findIndex(t=>t[0]===S.tab);S.tab=TABS[(i+(e.key==="ArrowRight"?1:-1)+TABS.length)%TABS.length][0];save();render();$("#tab-"+S.tab).focus()});
