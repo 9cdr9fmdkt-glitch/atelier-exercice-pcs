@@ -382,6 +382,11 @@ td.tm{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap;font-variant
               <div class="field"><label for="aero">Aérodrome</label><input type="text" id="aero" list="dl-aero"></div>
             </div>
             <div class="field"><label for="axe">Axe routier principal</label><input type="text" id="axe" list="dl-axe"></div>
+            <div class="row2">
+              <div class="field"><label for="riviere">Cours d'eau</label><input type="text" id="riviere" list="dl-riviere"></div>
+              <div class="field"><label for="massif">Massif boisé</label><input type="text" id="massif" list="dl-massif"></div>
+            </div>
+            <div class="field"><label for="icpe">Site industriel (installations classées)</label><input type="text" id="icpe" list="dl-icpe" placeholder="Aucun : site fictif"></div>
             <div class="field"><label for="fdo">Forces de l'ordre compétentes</label><select id="fdo"><option value="auto">Selon la taille de la commune</option><option value="gendarmerie">Gendarmerie nationale</option><option value="police">Police nationale</option></select></div>
             <div id="datalists" hidden></div>
           </div>
@@ -417,6 +422,8 @@ const API = {
   overpass: ["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"],
   risques: insee => "https://georisques.gouv.fr/api/v1/gaspar/risques?code_insee="+insee,
   catnat: insee => "https://georisques.gouv.fr/api/v1/gaspar/catnat?code_insee="+insee+"&page_size=100",
+  icpe: insee => "https://georisques.gouv.fr/api/v1/installations_classees?code_insee="+insee+"&page_size=100",
+  rapport: (lon,lat) => "https://georisques.gouv.fr/api/v1/resultats_rapport_risque?latlon="+Number(lon).toFixed(5)+","+Number(lat).toFixed(5),
   fiche: insee => "https://www.georisques.gouv.fr/mes-risques/connaitre-les-risques-pres-de-chez-moi/rapport2?form-commune=true&codeInsee="+insee
 };
 const VERIF = "2 octobre 2026";
@@ -515,12 +522,12 @@ const EXREF=REGL[2].url;
 
 const LIB = {
 inondation:{
-  contexte:"Après plusieurs jours de pluies soutenues sur le bassin versant, les sols sont saturés. Un épisode orageux stationnaire provoque une montée rapide du cours d'eau qui traverse {commune}.",
+  contexte:"Après plusieurs jours de pluies soutenues sur le bassin versant, les sols sont saturés. Un épisode orageux stationnaire provoque une montée rapide {du_riviere}, qui traverse {commune}.",
   initiale:"À H, Vigicrues place le tronçon en vigilance rouge. Le pic de crue est attendu vers H+3. {Le_secteur} est situé en zone inondable.",
   hypotheses:["Le pic de crue intervient en fin d'exercice","{Le_etab} accueille élèves et personnels","{La_axe} est coupé à hauteur du pont en cours d'exercice","Le réseau téléphonique fonctionne normalement"],
   phases:[["Alerte","Réception de la vigilance, déclenchement du PCS, armement du PCC."],["Montée en puissance","Alerte des riverains, premières mises en sécurité, ouverture de l'accueil."],["Gestion de crise","Évacuations, hébergement, pression médiatique, points de situation."],["Décrue","Préparation du retour à la normale et FINEX."]],
   injects:[
-   [0,"ALERTE","{Pref_sidpc}","Maire","SMS + appel","Vigilance crue rouge sur le tronçon. Pic attendu vers H+3. Merci de déclencher votre PCS et de confirmer.","Déclenchement du PCS, convocation de la cellule de crise, accusé de réception à la préfecture."],
+   [0,"ALERTE","{Pref_sidpc}","Maire","SMS + appel","Vigilance crue rouge sur {la_riviere}. Pic attendu vers H+3. Merci de déclencher votre PCS et de confirmer.","Déclenchement du PCS, convocation de la cellule de crise, accusé de réception à la préfecture."],
    [10,"EVAL","Habitant","Accueil mairie","Téléphone","L'eau commence à recouvrir la chaussée en bas {du_secteur}. Est-ce qu'on doit partir ?","Recueil de l'information, report sur la carte, consigne d'attente donnée à l'appelant."],
    [20,"LIAI","{Secours}","PCC","Téléphone","Le COS demande la liste des personnes vulnérables {du_secteur} et vos points de rassemblement.","Transmission du recensement des personnes vulnérables et des points de rassemblement."],
    [30,"POP","{Pref}","Maire","Téléphone","Merci d'alerter sans délai les riverains de la zone inondable et de me rendre compte.","Mise en œuvre des moyens d'alerte du PCS, compte rendu à la préfecture."],
@@ -536,7 +543,7 @@ inondation:{
    [175,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
   ]},
 feu:{
-  contexte:"Après six semaines sans pluie et sous un vent soutenu, le niveau de danger feu de forêt est très sévère. Un départ de feu est signalé dans le massif boisé qui borde {commune}.",
+  contexte:"Après six semaines sans pluie et sous un vent soutenu, le niveau de danger feu de forêt est très sévère. Un départ de feu est signalé dans {le_massif}, qui borde {commune}.",
   initiale:"À H, un feu d'environ 5 hectares progresse vers {le_secteur}, en interface forêt-habitat. Les moyens aériens sont engagés sur un autre incendie du département.",
   hypotheses:["Le vent tourne et accélère la propagation vers H+1","Des fumées gênent la circulation sur {la_axe}","{Le_etab} accueille du public au moment de l'alerte","Une coupure électrique touche une partie du secteur"],
   phases:[["Alerte","Signalement du feu, déclenchement du PCS, armement du PCC."],["Menace","Confinement ou évacuation du secteur, gestion des fumées et des axes."],["Crise","Accueil des évacués, pression médiatique, coupure de réseaux."],["Fixation","Feu fixé, retour progressif et FINEX."]],
@@ -579,7 +586,7 @@ tempete:{
   ]},
 tmd:{
   contexte:"Un camion-citerne transportant un produit chimique toxique se renverse sur {la_axe}, à l'entrée de {commune}. Une fuite est constatée.",
-  initiale:"À H, les secours sont sur place. Le nuage se déplace avec le vent vers {le_secteur}, situé à 400 mètres. Un périmètre de sécurité est en cours de définition.",
+  initiale:"À H, les secours sont sur place. Poussé par un vent {vent_tmd}, le nuage se dirige vers {le_secteur}, situé à {dist_tmd}. Un périmètre de sécurité est en cours de définition.",
   hypotheses:["Le vent pousse le nuage vers les habitations","{Le_etab} se trouve dans le périmètre de confinement","{La_axe} reste fermé pendant toute la durée de l'exercice","La nature exacte du produit n'est confirmée qu'à H+45"],
   phases:[["Alerte","Information par les secours, déclenchement du PCS, armement du PCC."],["Protection","Confinement de la population, fermeture des axes."],["Gestion","Inquiétude des familles, accueil, médias."],["Levée","Fin de la fuite, levée du confinement et FINEX."]],
   injects:[
@@ -637,19 +644,19 @@ coupure:{
    [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
   ]},
 industriel:{
-  contexte:"Un incendie se déclare dans l'entrepôt d'une coopérative agricole qui stocke engrais et produits phytosanitaires, en limite de {commune}.",
-  initiale:"À H, un panache de fumée noire se dirige vers {le_secteur}. L'exploitant a déclenché son plan d'urgence et les sapeurs-pompiers sont engagés. La composition des fumées n'est pas encore connue.",
+  contexte:"{icpe_ctx}",
+  initiale:"À H, poussé par un vent {vent_ind}, un panache de fumée noire se dirige vers {le_secteur}, situé à {dist_ind}. L'exploitant a déclenché son plan d'urgence et les sapeurs-pompiers sont engagés. La composition des fumées n'est pas encore connue.",
   hypotheses:["Le vent pousse les fumées vers les habitations","{Le_etab} se trouve sous le panache","Des suies retombent sur les jardins et les cultures","Le suivi environnemental se poursuit au-delà de l'exercice"],
   phases:[["Alerte","Information par les secours, déclenchement du PCS, armement du PCC."],["Protection","Confinement sous le panache, évacuation du périmètre de danger."],["Inquiétude","Retombées, questions sanitaires, pression médiatique."],["Maîtrise","Feu maîtrisé, levée des mesures, suivi environnemental et FINEX."]],
   note:"Pour un site classé Seveso, le plan particulier d'intervention (PPI) arrêté par le préfet prime : le PCS de la commune doit s'y articuler, notamment pour l'alerte et le confinement.",
   injects:[
-   [0,"ALERTE","{Secours}","Maire","Téléphone","Incendie en cours dans l'entrepôt de la coopérative, panache important vers {le_secteur}. Déclenchez votre PCS.","Déclenchement du PCS, armement du PCC, information de la préfecture."],
+   [0,"ALERTE","{Secours}","Maire","Téléphone","Incendie en cours sur {le_icpe}, panache important vers {le_secteur}. Déclenchez votre PCS.","Déclenchement du PCS, armement du PCC, information de la préfecture."],
    [10,"POP","COS","PCC","Radio","Confinement immédiat des habitations sous le panache. Fermez portes, fenêtres et ventilations.","Diffusion de la consigne de confinement, compte rendu au COS."],
    [20,"SAUV","Direction {du_etab}","Maire","Téléphone","De la fumée entre dans les classes, des enfants toussent. Faut-il évacuer ?","Maintien du confinement dans les locaux les plus étanches, relais vers le COS."],
-   [35,"EVAL","Exploitant du site","PCC","Téléphone","Environ 400 tonnes d'engrais sont stockées. Risque de décomposition et d'explosion : le COS établit un périmètre de 500 mètres.","Report du périmètre sur la carte, recensement des habitations concernées."],
+   [35,"EVAL","Exploitant du site","PCC","Téléphone","{icpe_stock} : le COS établit un périmètre de 500 mètres.","Report du périmètre sur la carte, recensement des habitations concernées."],
    [45,"SAUV","COS","PCC","Radio","Évacuation des habitations situées dans les 500 mètres, environ {n_foyers2} foyers.","Organisation de l'évacuation : itinéraire hors panache, recensement."],
    [60,"CARE","Agent communal","PCC","Sur place","Les premiers évacués arrivent au lieu d'accueil ({heberg}), plusieurs se plaignent d'irritations.","Accueil, enregistrement, orientation vers les secours des personnes symptomatiques."],
-   [75,"EVAL","Agriculteur","Accueil mairie","Téléphone","Des suies noires recouvrent mes champs et le potager de mes voisins. On peut récolter ?","Consigne de précaution en attente des autorités sanitaires, remontée à la préfecture."],
+   [75,"EVAL","{Agri_from}","Accueil mairie","Téléphone","{Agri_msg}","Consigne de précaution en attente des autorités sanitaires, remontée à la préfecture."],
    [90,"COM","Presse régionale","Maire","Téléphone","On parle d'un nuage toxique. Les habitants doivent-ils s'inquiéter pour leur santé ?","Réponse du porte-parole sur éléments validés, coordination avec la préfecture."],
    [105,"LIAI","{Pref} (avec l'ARS)","Maire","Courriel","Consigne : ne pas consommer les fruits et légumes des jardins sous le panache, des prélèvements sont en cours.","Relais de la consigne à la population, information des écoles et commerces."],
    [120,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Rumeur : l'eau du robinet serait contaminée et il faudrait quitter la commune.","Vérification auprès du syndicat des eaux, démenti factuel coordonné."],
@@ -862,9 +869,9 @@ const DEFAULTS = {
   commune:"Sainte-Croix-du-Lez", insee:"", pop:1240, dept:"Ariège (09)", risk:"inondation", format:"cadre",
   duree:"180", heureH:"09:00", date:"", objs:[...OKEYS],
   secteur:"quartier du Moulin", etab:"école primaire", heberg:"salle des fêtes", axe:"RD 119",
-  erp:"supermarché", hopital:"centre hospitalier de secteur", gare:"gare", aero:"aérodrome", evt:"place de la mairie", fdo:"auto", focus:null, lat:null, lon:null, combo:[]
+  erp:"supermarché", hopital:"centre hospitalier de secteur", gare:"gare", aero:"aérodrome", evt:"place de la mairie", riviere:"cours d'eau principal", massif:"massif boisé", icpe:"", fdo:"auto", focus:null, lat:null, lon:null, combo:[]
 };
-const PLACE_KEYS=["secteur","evt","etab","heberg","erp","hopital","gare","aero","axe"];
+const PLACE_KEYS=["secteur","evt","etab","heberg","erp","hopital","gare","aero","axe","riviere","massif","icpe"];
 const ACTIONS0=()=>[{a:"Mettre à jour l'annuaire de crise du PCS",pilote:"Secrétariat de mairie",ech:"1 mois"},{a:"Compléter le recensement des personnes vulnérables",pilote:"Élu référent CCAS",ech:"3 mois"}];
 
 const KEY="atelier-pcs-v2";
@@ -873,9 +880,9 @@ function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r)}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const GEN={ecole:"f",college:"m",lycee:"m",groupe:"m",creche:"f",institut:"m",centre:"m",etablissement:"m",salle:"f",foyer:"m",maison:"f",espace:"m",halle:"f",hall:"m",gymnase:"m",stade:"m",complexe:"m",hopital:"m",clinique:"f",polyclinique:"f",chu:"m",ch:"m",ehpad:"m",residence:"f",gare:"f",halte:"f",aerodrome:"m",aeroport:"m",base:"f",supermarche:"m",hypermarche:"m",magasin:"m",marche:"m",mairie:"f",hotel:"m",piscine:"f",cinema:"m",eglise:"f",mediatheque:"f",bibliotheque:"f",quartier:"m",hameau:"m",lotissement:"m",zone:"f",route:"f",avenue:"f",rue:"f",place:"f",village:"m",bourg:"m",camping:"m",parc:"m",ecole_:"f",esplanade:"f",parvis:"m",square:"m",jardin:"m",cours:"m",allee:"f",faubourg:"m",cite:"f",lieu:"m",plaine:"f",promenade:"f",port:"m",quai:"m",boulevard:"m",champ:"m",pre:"m",foirail:"m",mail:"m",parking:"m",ile:"f",butte:"f",colline:"f",commerce:"m",epicerie:"f",boulangerie:"f",superette:"f",cafe:"m",restaurant:"m",auberge:"f",arrondissement:"m",secteur:"m",centreville:"m",domaine:"m",terrain:"m",theatre:"m",salle_:"f",kiosque:"m",foire:"f"};
+const GEN={ecole:"f",college:"m",lycee:"m",groupe:"m",creche:"f",institut:"m",centre:"m",etablissement:"m",salle:"f",foyer:"m",maison:"f",espace:"m",halle:"f",hall:"m",gymnase:"m",stade:"m",complexe:"m",hopital:"m",clinique:"f",polyclinique:"f",chu:"m",ch:"m",ehpad:"m",residence:"f",gare:"f",halte:"f",aerodrome:"m",aeroport:"m",base:"f",supermarche:"m",hypermarche:"m",magasin:"m",marche:"m",mairie:"f",hotel:"m",piscine:"f",cinema:"m",eglise:"f",mediatheque:"f",bibliotheque:"f",quartier:"m",hameau:"m",lotissement:"m",zone:"f",route:"f",avenue:"f",rue:"f",place:"f",village:"m",bourg:"m",camping:"m",parc:"m",ecole_:"f",esplanade:"f",parvis:"m",square:"m",jardin:"m",cours:"m",allee:"f",faubourg:"m",cite:"f",lieu:"m",plaine:"f",promenade:"f",port:"m",quai:"m",boulevard:"m",champ:"m",pre:"m",foirail:"m",mail:"m",parking:"m",ile:"f",butte:"f",colline:"f",commerce:"m",epicerie:"f",boulangerie:"f",superette:"f",cafe:"m",restaurant:"m",auberge:"f",arrondissement:"m",secteur:"m",centreville:"m",domaine:"m",terrain:"m",theatre:"m",salle_:"f",kiosque:"m",foire:"f",massif:"m",foret:"f",bois:"m",riviere:"f",ruisseau:"m",canal:"m",fleuve:"m",gave:"m",torrent:"m",site:"m",societe:"f",usine:"f",entrepot:"m",cooperative:"f",depot:"m",lac:"m",etang:"m"};
 const ASPIRE=["halle","hall","hangar","hameau"];
-const ROLE_NOUN={etab:["établissement","m"],heberg:["salle","f"],erp:["magasin","m"],hopital:["centre hospitalier","m"],gare:["gare","f"],aero:["aérodrome","m"],mairie:["mairie","f"],evt:["site","m"]};
+const ROLE_NOUN={etab:["établissement","m"],heberg:["salle","f"],erp:["magasin","m"],hopital:["centre hospitalier","m"],gare:["gare","f"],aero:["aérodrome","m"],mairie:["mairie","f"],evt:["site","m"],riviere:["cours d'eau","m"],massif:["massif","m"],icpe:["site","m"]};
 const norm=w=>String(w||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z_]/g,"");
 function art(name,role){
   let s=String(name||"").trim();if(!s)return null;
@@ -922,6 +929,32 @@ function actors(p){
     Secours:bspp?"BSPP (centre opérationnel)":bmpm?"BMPM (centre opérationnel)":"CODIS (SDIS)",
     secLabel:bspp?"Brigade de sapeurs-pompiers de Paris":bmpm?"Bataillon de marins-pompiers de Marseille":"SDIS du département"};
 }
+const DIRS=["nord","nord-est","est","sud-est","sud","sud-ouest","ouest","nord-ouest"];
+function bearing(a,b){const r=Math.PI/180,y=Math.sin((b.lon-a.lon)*r)*Math.cos(b.lat*r),x=Math.cos(a.lat*r)*Math.sin(b.lat*r)-Math.sin(a.lat*r)*Math.cos(b.lat*r)*Math.cos((b.lon-a.lon)*r);return (Math.atan2(y,x)/r+360)%360}
+const windFrom=(a,b)=>a&&b&&a.lat!=null&&b.lat!=null&&dist(a.lat,a.lon,b.lat,b.lon)>.05?"de secteur "+DIRS[Math.round(((bearing(a,b)+180)%360)/45)%8]:"d'ouest";
+const fmtDist=(a,b,def)=>{if(!(a&&b&&a.lat!=null&&b.lat!=null))return def;const k=dist(a.lat,a.lon,b.lat,b.lon);return k<1?Math.max(100,Math.round(k*20)*50)+" mètres":String(Math.round(k*10)/10).replace(".",",")+" km"};
+const titleCase=t=>t.toLowerCase().replace(/(^|[\s'’(-])([a-zà-ÿ])/g,(m,a,b)=>a+b.toUpperCase()).replace(/\b(Sas|Sa|Sarl|Sasu|Snc|Eurl)\b/g,x=>x.toUpperCase()).replace(/\b(De|Du|Des|La|Le|Les|Et|Sur|En)\b/g,x=>x.toLowerCase());
+const statutOK=s=>!!s&&!/^risque non/i.test(s)&&/existant|concern/i.test(s);
+function terrain(p){
+  const v={},pop=Number(p.pop)||0;
+  const rf=art(p.riviere||DEFAULTS.riviere,"riviere");v.la_riviere=rf.le;v.La_riviere=rf.Le;v.du_riviere=rf.du;
+  const mf=art(p.massif||DEFAULTS.massif,"massif");v.le_massif=mf.le;v.du_massif=mf.du;
+  const q=(S&&S.quartiers||[]).find(x=>x.name===p.secteur);
+  const ic=(S&&S.icpe||[]).find(x=>x.name===p.icpe);
+  const sev=ic&&/seveso/i.test(ic.seveso)&&!/non/i.test(ic.seveso)?ic.seveso.replace(/^seveso/i,"Seveso"):"";
+  if(p.icpe){const nm=String(p.icpe).trim(),f=/^(le|la|les|l['’])\s*/i.test(nm)?art(nm,"icpe"):{le:"le site "+nm,Le:"Le site "+nm};v.le_icpe=f.le;v.Le_icpe=f.Le;
+    v.icpe_ctx="Un incendie se déclare sur "+f.le+(ic&&ic.act?" ("+ic.act.toLowerCase()+")":"")+", à "+p.commune+"."+(sev?" Le site est classé "+sev+".":"");
+    v.icpe_stock="Des produits dangereux sont stockés sur le site ; leur nature exacte reste à confirmer. Risque d'explosion"}
+  else{v.le_icpe="l'entrepôt de la coopérative agricole";v.Le_icpe="L'entrepôt de la coopérative agricole";
+    v.icpe_ctx="Un incendie se déclare dans l'entrepôt d'une coopérative agricole qui stocke engrais et produits phytosanitaires, en limite de "+p.commune+".";
+    v.icpe_stock="Environ 400 tonnes d'engrais sont stockées. Risque de décomposition et d'explosion"}
+  const rp=S&&S.roadPts&&S.roadPts[p.axe];
+  v.vent_ind=windFrom(ic,q);v.dist_ind=fmtDist(ic,q,"un kilomètre");
+  v.vent_tmd=windFrom(rp,q);v.dist_tmd=fmtDist(rp,q,"400 mètres");
+  v.Agri_from=pop<10000?"Agriculteur":"Habitant";
+  v.Agri_msg=pop<10000?"Des suies noires recouvrent mes champs et le potager de mes voisins. On peut récolter ?":"Des suies noires recouvrent mon balcon et les jardins partagés du quartier. Peut-on consommer les légumes ?";
+  return v;
+}
 const SUR=["place","esplanade","parvis","quai","cours","mail","parking","champ","pre","foirail","promenade","terrain","plaine","butte","ile","allee"];
 function evtForms(name){
   const f=art(name,"evt");if(!f)return null;
@@ -945,7 +978,7 @@ function vars(p){
     Agents_abs:pop<200?"L'unique agent technique est absent":pop<2000?"Deux agents techniques sur trois sont absents":pop<10000?"Six agents techniques sur quinze sont absents":pop<100000?"Un agent technique sur trois est absent":"Près d'un agent de terrain sur trois est absent",
     la_fete:pop<2000?"la fête du village":pop<20000?"la fête communale":"la fête de quartier"});
   v.La_fete=cap(v.la_fete);
-  Object.assign(v,actors(p));
+  Object.assign(v,actors(p),terrain(p));
   ["etab","heberg","erp","hopital","gare","aero"].forEach(k=>{const f=art(p[k]||DEFAULTS[k],k);if(f){v["le_"+k]=f.le;v["Le_"+k]=f.Le;v["du_"+k]=f.du;v["au_"+k]=f.au}});
   const a=axeForms(p.axe||DEFAULTS.axe);if(a){v.la_axe=a.le;v.La_axe=a.Le;v.de_axe=a.du}
   return v;
@@ -1022,8 +1055,8 @@ const CATS = {
   aero:{label:"Aérodromes", def:"Aérodrome", t:g=>g.aeroway==="aerodrome"}
 };
 const CAT_KEYS=Object.keys(CATS);
-const ROLE_CAT={evt:"place",etab:"ecole",heberg:"salle",erp:"commerce",hopital:"sante",gare:"gare",aero:"aero"};
-const ROLE_LABEL={evt:"lieu de rassemblement",etab:"établissement sensible",heberg:"lieu d'accueil",erp:"lieu très fréquenté",hopital:"établissement de santé de référence",gare:"gare",aero:"aérodrome"};
+const ROLE_CAT={icpe:"industrie",evt:"place",etab:"ecole",heberg:"salle",erp:"commerce",hopital:"sante",gare:"gare",aero:"aero"};
+const ROLE_LABEL={icpe:"site industriel du scénario",evt:"lieu de rassemblement",etab:"établissement sensible",heberg:"lieu d'accueil",erp:"lieu très fréquenté",hopital:"établissement de santé de référence",gare:"gare",aero:"aérodrome"};
 let map=null, contourGeo=null, hiddenCats=new Set();
 function overpassQuery(p){
   const big=isBig(p),f=zoneCenter(p);
@@ -1040,8 +1073,10 @@ function overpassQuery(p){
     'nwr'+far(big?5000:20000)+'["amenity"="hospital"];nwr'+far(big?30000:20000)+'["aeroway"="aerodrome"];nwr'+far(big?3000:20000)+'["railway"~"^(station|halt)$"];'+
     ');out center tags 700;'+
     'node'+Z+'["place"~"^(suburb|quarter|neighbourhood|hamlet|village|isolated_dwelling|locality)$"]["name"];out tags 200;'+
-    'way'+Z+'["highway"~"^(trunk|primary|secondary)$"]["ref"];out tags 80;'+
-    (big?'way'+Z+'["highway"~"^(trunk|primary|secondary)$"]["name"];out tags 120;':'')+
+    'way'+Z+'["waterway"~"^(river|canal)$"]["name"];out center tags 150;'+
+    '(nwr'+Z+'["landuse"="forest"]["name"];nwr'+Z+'["natural"="wood"]["name"];);out center tags 60;'+
+    'way'+Z+'["highway"~"^(trunk|primary|secondary)$"]["ref"];out center tags 80;'+
+    (big?'way'+Z+'["highway"~"^(trunk|primary|secondary)$"]["name"];out center tags 120;':'')+
     'way'+Z+'["railway"="rail"];out tags 1;';
 }
 async function postOverpass(q){
@@ -1061,12 +1096,15 @@ async function loadPlaces(opt={}){
     const [j,ct]=await Promise.allSettled([postOverpass(overpassQuery(p)),getJSON(API.contour(p.insee),8000)]);
     if(ct.status==="fulfilled"){contourGeo=ct.value;const c=ct.value&&ct.value.properties&&ct.value.properties.centre;if(c&&p.lat==null){p.lon=c.coordinates[0];p.lat=c.coordinates[1]}}
     if(j.status!=="fulfilled")throw j.reason;
-    const seen=new Set(),places=[],roads={},quart=[];let rail=false;
+    const seen=new Set(),places=[],roads={},quart=[],rivers={},forests=[],roadPts={};let rail=false;
     const zc=zoneCenter(p),big=isBig(p),cn=norm(p.commune);
     (j.value.elements||[]).forEach(e=>{
       const g=e.tags||{};
       if(e.type==="node"&&/^(suburb|quarter|neighbourhood|hamlet|village|isolated_dwelling|locality)$/.test(g.place||"")){const nm=(g.name||"").trim();if(nm&&norm(nm)!==cn&&!quart.some(q=>q.name===nm))quart.push({name:nm,kind:g.place,lat:e.lat,lon:e.lon,d:zc?Math.round(dist(zc.lat,zc.lon,e.lat,e.lon)*10)/10:null});return}
-      if(e.type==="way"&&/^(trunk|primary|secondary)$/.test(g.highway||"")&&!e.center){const r=String(g.ref||g.name||"").split(";")[0].trim();if(r)roads[r]=(roads[r]||0)+(g.ref?1:0)+(g.highway==="trunk"?3:g.highway==="primary"?2:1);return}
+      const pt=e.center||(e.lat!=null?{lat:e.lat,lon:e.lon}:null),dd=pt&&zc?dist(zc.lat,zc.lon,pt.lat,pt.lon):null;
+      if(e.type==="way"&&/^(trunk|primary|secondary)$/.test(g.highway||"")){const r=String(g.ref||g.name||"").split(";")[0].trim();if(r){roads[r]=(roads[r]||0)+(g.ref?1:0)+(g.highway==="trunk"?3:g.highway==="primary"?2:1);if(pt&&(!roadPts[r]||dd<roadPts[r].dd))roadPts[r]={lat:pt.lat,lon:pt.lon,dd}}return}
+      if(g.waterway&&g.name){const r=rivers[g.name]=rivers[g.name]||{name:g.name,n:0};r.n++;if(pt&&(r.dd==null||dd<r.dd)){r.lat=pt.lat;r.lon=pt.lon;r.dd=dd}return}
+      if((g.landuse==="forest"||g.natural==="wood")&&g.name){if(pt&&!forests.some(f=>f.name===g.name))forests.push({name:g.name,lat:pt.lat,lon:pt.lon,d:dd!=null?Math.round(dd*10)/10:null});return}
       if(e.type==="way"&&g.railway==="rail"&&!e.center){rail=true;return}
       const lat=e.lat!=null?e.lat:e.center&&e.center.lat, lon=e.lon!=null?e.lon:e.center&&e.center.lon;if(lat==null)return;
       const cat=CAT_KEYS.find(k=>CATS[k].t(g));if(!cat)return;
@@ -1076,12 +1114,49 @@ async function loadPlaces(opt={}){
     });
     places.sort((a,b)=>(a.d??0)-(b.d??0));
     quart.sort((a,b)=>(a.d??0)-(b.d??0));S.quartiers=quart;
+    S.rivers=Object.values(rivers).sort((a,b)=>b.n-a.n);S.forests=forests.sort((a,b)=>(a.d??0)-(b.d??0));S.roadPts=roadPts;S.icpe=null;S.icpeLoaded=false;S.floodChecked=false;
     S.places=places;S.roads=Object.entries(roads).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);S.rail=rail||places.some(x=>x.cat==="gare");
     S.geo={status:"ok",at:new Date().toISOString(),insee:p.insee};
     autoAssign(opt);save();
     toast(places.length+" lieux "+(big?"de la zone d'exercice":"de "+p.commune)+" chargés depuis OpenStreetMap.");
   }catch(e){S.geo={status:"error"}}
   renderDatalists();renderRisks();if(S.tab==="carte"||S.tab==="scenario")render();else renderMapState();
+  if(S.geo.status==="ok")loadTerrain();
+}
+/* ---------- Terrain : installations classées et zones inondables (Géorisques) ---------- */
+async function loadTerrain(){
+  await Promise.allSettled([loadICPE(),checkFlood()]);
+  save();renderDatalists();if(S.tab==="carte"||S.tab==="scenario")render();
+}
+async function loadICPE(){
+  const p=S.p,zc=zoneCenter(p),big=isBig(p);
+  try{
+    const j=await getJSON(API.icpe(p.insee),9000);
+    const num=x=>{x=parseFloat(x);return isFinite(x)?x:null};
+    const L=(j.data||[]).map(x=>{
+      let name=String(x.raisonSociale||x.nomEts||x.nom||"").trim();if(name&&name===name.toUpperCase())name=titleCase(name);
+      const lat=num(x.latitude??x.lat),lon=num(x.longitude??x.lon);
+      const seveso=String(x.statutSeveso||x.seveso||""),regime=String(x.regime||""),etat=String(x.etatActivite||x.etat||"");
+      const act=String(x.libelleNaf||x.activite||x.libelleActivite||"").trim();
+      let rank=/seuil haut/i.test(seveso)?4:/seuil bas/i.test(seveso)?3:/autorisation/i.test(regime)?2:/enregistrement/i.test(regime)?1:0;
+      if(/^(earl|gaec|scea|sci)/i.test(name))rank-=2;
+      return {name,lat,lon,seveso,regime,act,etat,rank,d:lat!=null&&zc?Math.round(dist(zc.lat,zc.lon,lat,lon)*10)/10:null};
+    }).filter(x=>x.name&&!/cess|arr[eê]t/i.test(x.etat)&&(!big||x.d==null||x.d<=3));
+    L.sort((a,b)=>b.rank-a.rank||(a.d??99)-(b.d??99));
+    S.icpe=L.slice(0,40);S.icpeLoaded=true;
+    if(!p.icpeUser){p.icpe=L[0]&&L[0].rank>=1?L[0].name:"";const el=$("#icpe");if(el)el.value=p.icpe}
+    L.filter(x=>x.lat!=null).slice(0,15).forEach(x=>{if(!(S.places||[]).some(y=>y.name===x.name))S.places.push({id:"icpe"+x.name,cat:"industrie",name:x.name,named:true,lat:x.lat,lon:x.lon,d:x.d,seveso:x.seveso})});
+  }catch(e){S.icpeLoaded=false}
+}
+async function checkFlood(){
+  const p=S.p,cand=(S.quartiers||[]).slice(0,8);
+  ["heberg","etab"].forEach(k=>{const x=(S.places||[]).find(y=>y.name===p[k]);if(x&&!cand.includes(x))cand.push(x)});
+  if(!cand.length)return;
+  const r=await Promise.allSettled(cand.map(async c=>{const j=await getJSON(API.rapport(c.lon,c.lat),8000);const n=j&&j.risquesNaturels&&j.risquesNaturels.inondation;c.inond=!!(n&&statutOK(n.libelleStatutAdresse));}));
+  if(!r.some(x=>x.status==="fulfilled"))return;
+  S.floodChecked=true;
+  const fq=(S.quartiers||[]).find(q=>q.inond);
+  if(fq&&p.secteurAuto!==false){p.secteur=fq.name;const el=$("#secteur");if(el)el.value=fq.name}
 }
 function best(cat,opts={}){
   let list=(S.places||[]).filter(x=>x.cat===cat&&x.named);
@@ -1101,7 +1176,10 @@ function autoAssign(opt={}){
   const g=best("gare");if(g)p.gare=g.name;
   const a=best("aero",{pref:x=>x.big?1:0});if(a)p.aero=a.name;
   if(S.roads&&S.roads[0])p.axe=S.roads[0];
-  if(!opt.keepSecteur){const q=(S.quartiers||[]).filter(x=>!isBig(p)||/^(suburb|quarter|neighbourhood)$/.test(x.kind));if(q[0])p.secteur=q[0].name}
+  if(!opt.keepSecteur){const q=(S.quartiers||[]).filter(x=>!isBig(p)||/^(suburb|quarter|neighbourhood)$/.test(x.kind));if(q[0]){p.secteur=q[0].name;p.secteurAuto=true}}
+  p.riviere=S.rivers&&S.rivers[0]?S.rivers[0].name:DEFAULTS.riviere;
+  p.massif=S.forests&&S.forests[0]?S.forests[0].name:DEFAULTS.massif;
+  p.icpeUser=false;
   PLACE_KEYS.forEach(k=>{const el=$("#"+k);if(el)el.value=p[k]||""});
   const n=$("#lieuxNote");if(n)n.textContent="Lieux proposés à partir de la carte"+(isBig(p)?" (zone d'exercice)":"")+". Vous pouvez les modifier ou en choisir d'autres dans les suggestions.";
 }
@@ -1109,7 +1187,10 @@ function renderDatalists(){
   const pl=S.places||[];
   const opts=cat=>pl.filter(x=>x.cat===cat&&x.named).slice(0,40).map(x=>`<option value="${esc(x.name)}">${x.d!=null?x.d+" km":""}</option>`).join("");
   $("#datalists").innerHTML=["ecole","salle","commerce","sante","gare","aero","place"].map(c=>`<datalist id="dl-${c}">${opts(c)}</datalist>`).join("")+
-    `<datalist id="dl-quartier">${(S.quartiers||[]).slice(0,60).map(q=>`<option value="${esc(q.name)}">${q.d!=null?q.d+" km":""}</option>`).join("")}</datalist>`+
+    `<datalist id="dl-riviere">${(S.rivers||[]).slice(0,15).map(r=>`<option value="${esc(r.name)}">`).join("")}</datalist>`+
+    `<datalist id="dl-massif">${(S.forests||[]).slice(0,20).map(r=>`<option value="${esc(r.name)}">${r.d!=null?r.d+" km":""}</option>`).join("")}</datalist>`+
+    `<datalist id="dl-icpe">${(S.icpe||[]).map(r=>`<option value="${esc(r.name)}">${esc([r.seveso&&!/non/i.test(r.seveso)?r.seveso:r.regime,r.d!=null?r.d+" km":""].filter(Boolean).join(" · "))}</option>`).join("")}</datalist>`+
+    `<datalist id="dl-quartier">${(S.quartiers||[]).slice(0,60).map(q=>`<option value="${esc(q.name)}">${[q.inond?"zone inondable":"",q.d!=null?q.d+" km":""].filter(Boolean).join(" · ")}</option>`).join("")}</datalist>`+
     `<datalist id="dl-axe">${(S.roads||[]).slice(0,15).map(r=>`<option value="${esc(r)}">`).join("")}</datalist>`;
 }
 function riskSites(k,limit=8){
@@ -1167,7 +1248,7 @@ document.addEventListener("click",e=>{
   const fz=e.target.closest("[data-focus]");
   if(fz){const [la,lo]=fz.dataset.focus.split(",").map(Number);S.p.focus={lat:la,lon:lo};save();if(map)map.closePopup();toast("Zone d'exercice déplacée. Chargement des lieux…");loadPlaces();return}
   const b=e.target.closest("[data-assign]");if(!b)return;
-  const r=b.dataset.assign;S.p[r]=b.dataset.name;const el=$("#"+r);if(el)el.value=b.dataset.name;
+  const r=b.dataset.assign;S.p[r]=b.dataset.name;if(r==="icpe")S.p.icpeUser=true;if(r==="secteur")S.p.secteurAuto=false;const el=$("#"+r);if(el)el.value=b.dataset.name;
   save();if(map)map.closePopup();toast(cap(ROLE_LABEL[r])+" : "+b.dataset.name+". Régénérez le dossier pour l'appliquer.");
 });
 
@@ -1332,6 +1413,38 @@ function vCadrage(){
     <div class="callout">${info}<span>Cet exercice répond à l'obligation d'exercer le plan au moins tous les cinq ans et doit donner lieu à un retour d'expérience ${refLink("CSI D731-9 à D731-13")}. Informez le SIDPC de la préfecture et le SDIS au moins un mois avant.</span></div>
   </div>`;
 }
+const JOURS=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"],MOIS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+function checks(p){
+  const w=[],R=RISKS[p.risk],all=[p.risk].concat(comboOf(p)),prof=geoRisks&&geoRisks.status==="ok"?geoRisks.items:null,osm=S.geo&&S.geo.status==="ok";
+  if(prof&&!R.transverse&&!R.site&&!R.rail&&!prof.some(x=>x.key===p.risk))w.push(`Le risque « ${R.label} » n'est pas recensé par Géorisques à ${p.commune}. Le scénario reste jouable, mais annoncez-le aux joueurs comme fictif.`);
+  if(all.includes("feu")&&osm&&!(S.forests||[]).length)w.push("Aucun massif boisé nommé n'apparaît sur la carte de la zone : vérifiez que le feu de forêt est vraisemblable, ou saisissez le massif à la main.");
+  if(all.includes("inondation")&&S.floodChecked){
+    const q=(S.quartiers||[]).find(x=>x.name===p.secteur);
+    if(!(S.quartiers||[]).some(x=>x.inond))w.push("Géorisques ne situe aucun des quartiers ou hameaux testés en zone inondable. Choisissez à la main un secteur réellement exposé.");
+    else if(q&&q.inond===false)w.push(`Le secteur retenu (${p.secteur}) n'est pas en zone inondable selon Géorisques. Préférez : ${(S.quartiers||[]).filter(x=>x.inond).slice(0,3).map(x=>x.name).join(", ")}.`);
+    const h=(S.places||[]).find(x=>x.name===p.heberg);if(h&&h.inond)w.push(`Le lieu d'accueil (${p.heberg}) est lui-même en zone inondable. Prévoyez un autre lieu.`);
+  }
+  if(all.includes("industriel")&&S.icpeLoaded&&!p.icpe)w.push("Aucune installation classée exploitable n'est recensée sur la commune : le site industriel du scénario est fictif.");
+  const ic=(S.icpe||[]).find(x=>x.name===p.icpe);
+  if(all.includes("industriel")&&ic&&/seuil haut/i.test(ic.seveso))w.push(`${p.icpe} est classé Seveso seuil haut : le plan particulier d'intervention du préfet s'applique. Associez la préfecture à la préparation de l'exercice.`);
+  if(all.includes("ferroviaire")&&osm&&!S.rail)w.push("Aucune voie ferrée n'est recensée sur la commune.");
+  if(all.includes("aerien")&&osm&&!(S.places||[]).some(x=>x.cat==="aero"))w.push("Aucun aérodrome n'est recensé à proximité.");
+  if(p.date){
+    const d=new Date(p.date+"T12:00:00");if(!isNaN(d)){
+      const m=d.getMonth(),j=d.getDay();
+      if(all.includes("canicule")&&(m<5||m>8))w.push(`Une canicule en ${MOIS[m]} est peu vraisemblable. Changez la date ou le risque.`);
+      if(all.includes("tempete")&&m>=4&&m<=8)w.push(`Le scénario annonce de la neige : peu vraisemblable en ${MOIS[m]}.`);
+      const school=/école|collège|lycée|groupe scolaire|maternelle|élémentaire/i.test(p.etab);
+      const uses=["inondation","feu","tmd","seisme","industriel","canicule","bombe","masse"].some(k=>all.includes(k));
+      if(school&&uses&&(j===0||j===6))w.push(`L'exercice tombe un ${JOURS[j]} : l'établissement scolaire (${p.etab}) sera fermé, alors que le scénario y place des élèves.`);
+      if(all.includes("masse")||all.includes("terrorisme")){}
+      if(all.includes("cyber")&&j!==1)w.push(`Le scénario cyber commence « un lundi matin » ; l'exercice est un ${JOURS[j]}. Adaptez le contexte ou la date.`);
+    }
+  }
+  if(p.heureH){const h=+p.heureH.split(":")[0];const school=/école|collège|lycée|groupe scolaire|maternelle|élémentaire/i.test(p.etab);
+    if(school&&(h<8||h>=17)&&["inondation","tmd","industriel","seisme"].some(k=>all.includes(k)))w.push(`H est fixé à ${p.heureH} : les élèves ne seront plus à l'école. Avancez l'heure ou adaptez les hypothèses.`)}
+  return w;
+}
 function vScenario(){
   const p=S.p,L=LIB[p.risk],dur=Number(p.duree);
   const ph=L.phases.map((x,i)=>`<div class="phase"><span class="t">${hplus(Math.round(dur*i/4))} → ${hplus(Math.round(dur*(i+1)/4))}</span><b>${esc(x[0])}</b><p>${esc(fill(x[1],p))}</p></div>`).join("");
@@ -1346,6 +1459,7 @@ function vScenario(){
   }
   return docHead("Scénario")+`<div class="docbody">
     <h3>${esc(riskTitle(p))} à ${esc(p.commune)}</h3>
+    ${(()=>{const w=checks(p);return w.length?`<div class="callout warn">${info}<span><b>Points de cohérence à vérifier</b><br>${w.map(esc).join("<br>")}</span></div>`:""})()}
     <div class="sec"><h4>Contexte</h4><p>${esc(fill(L.contexte,p))}</p></div>
     <div class="sec"><h4>Situation initiale</h4><p>${esc(fill(L.initiale,p))}</p></div>
     ${comboOf(p).length?`<div class="sec"><h4>Effets en cascade</h4><ul>${comboOf(p).map(c=>`<li><b>${esc(RISKS[c].label)}</b>, à partir de ${hplus(comboStart(p,c))} : un nouvel événement se superpose à la crise en cours. La cellule de crise doit hiérarchiser les priorités et réaffecter ses moyens.</li>`).join("")}</ul></div>`:""}
@@ -1443,6 +1557,12 @@ function vCarte(){
     ${zn}
     <div class="mapwrap"><div id="map" role="region" aria-label="Carte de la commune"></div><div class="mapmsg" id="mapmsg" hidden></div></div>
     ${chips?`<div class="catchips" aria-label="Catégories affichées">${chips}</div>`:""}
+    ${(()=>{const rows=[];
+      if(S.rivers&&S.rivers.length)rows.push(["Cours d'eau",S.rivers.slice(0,3).map(r=>r.name).join(", ")]);
+      if(S.forests&&S.forests.length)rows.push(["Massifs boisés",S.forests.slice(0,3).map(r=>r.name).join(", ")]);
+      if(S.icpe&&S.icpe.length)rows.push(["Installations classées",S.icpe.filter(x=>x.rank>=1).slice(0,3).map(r=>r.name+(r.seveso&&!/non/i.test(r.seveso)?" ("+r.seveso+")":"")).join(", ")||"aucune soumise à autorisation"]);
+      if(S.floodChecked)rows.push(["En zone inondable",(S.quartiers||[]).filter(x=>x.inond).map(x=>x.name).join(", ")||"aucun quartier testé"]);
+      return rows.length?`<div class="sec"><h4>Éléments du terrain</h4><div class="facts">${rows.map(r=>`<div class="fact"><b>${esc(r[1])}</b><span>${esc(r[0])}</span></div>`).join("")}</div><p class="note">Sources : OpenStreetMap ; Géorisques (installations classées, zones inondables au point de chaque quartier).</p></div>`:""})()}
     ${sites.length?`<div class="sec"><h4>Sites concernés par le risque « ${esc(RISKS[p.risk].label)} »</h4><div class="sites">${sites.map(x=>`<div class="site c-${x.cat}"><i></i><div><b>${esc(x.name)}</b><span>${esc(CATS[x.cat].label)}${x.d!=null?" · "+String(x.d).replace(".",",")+" km":""}</span></div></div>`).join("")}</div><p class="note">Les sites mis en évidence sur la carte sont ceux qu'un événement de ce type menacerait en priorité, ou dont la commune aurait besoin pour y faire face.</p></div>`:""}
     <div class="callout">${info}<span>Les données OpenStreetMap sont collaboratives : vérifiez les lieux sur le terrain avant l'exercice. Un lieu manquant peut être saisi à la main dans « Lieux utilisés dans le scénario ».</span></div>
   </div>`;
@@ -1498,7 +1618,9 @@ $("#view").addEventListener("click",e=>{
   if(e.target.id==="addAct"){S.retex.actions.push({a:"Nouvelle action",pilote:"À désigner",ech:"À fixer"});save();render()}
 });
 [...PLACE_KEYS,"fdo","heureH","date","pop","dept"].forEach(id=>$("#"+id).addEventListener("change",()=>{readForm();save()}));
+$("#icpe").addEventListener("change",()=>{S.p.icpeUser=true;save()});
 $("#secteur").addEventListener("change",()=>{
+  S.p.secteurAuto=false;save();
   const q=(S.quartiers||[]).find(x=>x.name===S.p.secteur);
   if(q&&isBig(S.p)&&live){S.p.focus={lat:q.lat,lon:q.lon,name:q.name};save();toast("Zone d'exercice recentrée sur "+q.name+".");loadPlaces({keepSecteur:true})}
 });
