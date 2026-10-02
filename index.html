@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Commune Prête : préparer, conduire et évaluer les exercices de crise des communes.">
+<meta name="theme-color" content="#1d3557">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <!-- debut-contenu -->
 <title>Commune Prête</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1974,14 +1978,54 @@ function reportHTML(){
 }
 function dl(name,mime,content){try{const b=new Blob([content],{type:mime}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);return true}catch(e){return false}}
 const fileBase=()=>"exercice-"+String(S.p.commune).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w]+/g,"-").toLowerCase()+"-"+isoDate();
-function printReport(){
+function printReport(){printHTML(reportHTML())}
+function printHTML(html){
   const fr=document.createElement("iframe");fr.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";document.body.appendChild(fr);
-  const d=fr.contentWindow.document;d.open();d.write(reportHTML());d.close();
+  const d=fr.contentWindow.document;d.open();d.write(html);d.close();
   setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){toast("Impression bloquée par le navigateur.")}setTimeout(()=>fr.remove(),4000)},300);
 }
+/* ---------- Dossier complet et fiches joueurs ---------- */
+const DOC_CSS=`body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#1a1a1a;line-height:1.45;margin:1.8cm}h1{font-size:20pt;margin:0 0 4pt}h2{font-size:15pt;margin:0 0 8pt}h3{font-size:14pt;margin:10pt 0 6pt}h4{font-size:11pt;text-transform:uppercase;letter-spacing:1pt;color:#555;margin:14pt 0 5pt}table{border-collapse:collapse;width:100%;margin:6pt 0}td,th{border:1px solid #bbb;padding:4pt 6pt;vertical-align:top;text-align:left;font-size:9.5pt}th{background:#eee}.mark{color:#c2410c;font-weight:bold;letter-spacing:2pt;font-size:9pt}.note{color:#555;font-size:9.5pt}.tag{font-size:8.5pt;font-weight:bold;color:#444;border:1px solid #bbb;border-radius:8pt;padding:0 4pt;margin-right:3pt}.piece{page-break-before:always}dl.kv dt{font-weight:bold;margin-top:4pt}dl.kv dd{margin:0 0 4pt 0}.callout{border-left:3px solid #999;padding:4pt 8pt;margin:8pt 0;background:#f6f6f6}.chk{font-size:9pt;color:#333;white-space:nowrap}ul{margin:4pt 0 4pt 16pt;padding:0}pre{white-space:pre-wrap;font-family:inherit;border:1px solid #ccc;padding:6pt}`;
+function cleanView(html){
+  const d=document.createElement("div");d.innerHTML=html;
+  d.querySelectorAll(".dochead,button,.lbtns,details,.mapwrap,.catchips,.obsv-wrap input,.tools,script").forEach(x=>{if(x.classList&&x.classList.contains("cot")){return}x.remove()});
+  d.querySelectorAll(".cot").forEach(x=>{x.outerHTML='<span class="chk">☐ Atteint ☐ Partiel ☐ Non atteint</span>'});
+  d.querySelectorAll("input.tmin").forEach(x=>x.remove());
+  d.querySelectorAll(".callout.warn").forEach(x=>{if(/Points de cohérence/.test(x.textContent))x.remove()});
+  d.querySelectorAll("table").forEach(t=>{const hs=[...t.querySelectorAll("thead th")];hs.forEach((h,ci)=>{if(!h.textContent.trim())[...t.rows].forEach(r=>{if(r.cells[ci])r.cells[ci].dataset.drop=1})});t.querySelectorAll("[data-drop]").forEach(c=>c.remove())});
+  d.querySelectorAll("input,select,textarea").forEach(x=>{const v=x.value||x.getAttribute("value")||"";x.outerHTML=v?`<span>${esc(v)}</span>`:""});
+  d.querySelectorAll("[contenteditable]").forEach(x=>x.removeAttribute("contenteditable"));
+  d.querySelectorAll("svg").forEach(x=>x.remove());
+  return d.innerHTML;
+}
+function dossierHTML(){
+  const p=S.p,keepView=S.view;S.view="table";
+  const parts=[["Convention d'exercice",vCadrage],["Scénario (réservé à l'animation)",vScenario],["Chronogramme (réservé à l'animation)",vChrono],["Fiches rôles",vRoles],["Modèles de messages",vModeles],["Grille d'observation",vObs],["Cadre réglementaire",vRegl]];
+  let body="";try{body=parts.map(([t,f],i)=>`<div class="${i?"piece":""}">${cleanView(f())}</div>`).join("")}finally{S.view=keepView}
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Dossier d'exercice — ${esc(p.commune)}</title><style>${DOC_CSS}</style></head><body>
+  <p class="mark">EXERCICE · EXERCICE · EXERCICE</p><h1>Dossier d'exercice de crise</h1>
+  <p><b>Commune de ${esc(p.commune)}</b> · ${esc(riskTitle(p))} · ${esc(FORMATS[p.format].label)} · ${esc(fmtDate(p.date))}${p.heureH?" · H = "+esc(p.heureH):""}</p>
+  <p class="note">Sommaire : convention · scénario · chronogramme · fiches rôles · modèles · grille d'observation · cadre réglementaire. Le scénario et le chronogramme ne sont pas remis aux joueurs.</p>
+  ${body}</body></html>`;
+}
+const CARD_CSS=`body{font-family:Arial,sans-serif;margin:1.2cm;color:#111}.card{border:2px solid #222;border-radius:10px;padding:14px 16px;height:12.3cm;box-sizing:border-box;margin-bottom:.8cm;page-break-inside:avoid;display:flex;flex-direction:column;gap:8px;position:relative}.card:nth-of-type(2n){page-break-after:always}.ex{font-weight:bold;letter-spacing:3px;color:#c2410c;font-size:11px}.meta{display:flex;justify-content:space-between;font-size:12px;color:#444;border-bottom:1px solid #ccc;padding-bottom:6px}.k{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#666}.mail{border:1px solid #bbb;border-radius:6px;padding:8px 10px;font-size:13px}.mail div{margin:2px 0}.body{font-size:16px;line-height:1.45}.sms{align-self:flex-start;background:#e9e9ef;border-radius:16px;padding:10px 14px;max-width:85%;font-size:16px}.post{border:1px solid #bbb;border-radius:10px;padding:10px 12px}.post .who{font-weight:bold;font-size:13px}.post .stats{font-size:12px;color:#666;margin-top:6px}.bull{border:2px solid #444;padding:10px 12px}.bull .t{font-weight:bold;text-transform:uppercase;font-size:13px;margin-bottom:6px}.script{border-left:4px solid #888;padding:6px 12px;font-style:italic}.foot{margin-top:auto;font-size:10px;color:#777;border-top:1px solid #ddd;padding-top:5px}`;
+function cardHTML(i,n){
+  const via=String(i.via||""),clk=S.p.heureH?clock(i.t):"",msg=esc(i.msg).replace(/^\[Nouvel événement\] /,"<b>Nouvel événement — </b>");
+  let core;
+  if(/courriel/i.test(via))core=`<div class="mail"><div><span class="k">De</span> ${esc(i.from)}</div><div><span class="k">À</span> ${esc(i.to)}</div><div><span class="k">Objet</span> ${esc(i.msg.replace(/^\[[^\]]+\]\s*/,"").split(/[.:!?]/)[0].slice(0,70))}</div>${clk?`<div><span class="k">Envoyé</span> ${clk}</div>`:""}</div><div class="body">${msg}</div>`;
+  else if(/sms/i.test(via))core=`<div class="k">SMS de ${esc(i.from)}</div><div class="sms">${msg}</div>`;
+  else if(/capture/i.test(via))core=`<div class="k">Capture d'écran d'une publication</div><div class="post"><div class="who">Compte local fictif · @infos_locales</div><div class="body">${msg}</div><div class="stats">312 partages · 87 commentaires</div></div>`;
+  else if(/bulletin/i.test(via))core=`<div class="bull"><div class="t">Bulletin — ${esc(i.from)}</div><div class="body">${msg}</div></div>`;
+  else core=`<div class="k">${esc(via)} · à jouer par l'animateur</div><div class="script body">« ${msg} »</div>`;
+  return `<div class="card"><div class="ex">EXERCICE · EXERCICE · EXERCICE</div><div class="meta"><span>Message ${n+1} · ${hplus(i.t)}${clk?" · "+clk:""}</span><span>${esc(i.from)} → ${esc(i.to)}</span></div>${core}<div class="foot">Document d'exercice — ${esc(S.p.commune)} — ne pas diffuser en dehors de l'exercice.</div></div>`;
+}
+function cardsHTML(){return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Fiches joueurs — ${esc(S.p.commune)}</title><style>${CARD_CSS}</style></head><body>${S.injects.filter(i=>i.obj!=="FIN").map(cardHTML).join("")}</body></html>`}
 document.addEventListener("click",e=>{
   if(!S||document.body.classList.contains("obsmode"))return;
   const id=e.target.id;
+  if(id==="dosDoc"){const ok=dl(fileBase().replace(/^exercice/,"dossier")+".doc","application/msword","﻿"+dossierHTML());toast(ok?"Dossier Word téléchargé.":"Téléchargement bloqué par le navigateur.");return}
+  if(id==="dosPdf"){printHTML(dossierHTML());toast("Choisissez « Enregistrer au format PDF » dans la fenêtre d'impression.");return}
+  if(id==="cardsPrint"){printHTML(cardsHTML());toast("Fiches joueurs : deux par page, à découper.");return}
   if(id==="repDoc"){const ok=dl(fileBase()+".doc","application/msword","﻿"+reportHTML());toast(ok?"Rapport Word téléchargé.":"Téléchargement bloqué par le navigateur.");return}
   if(id==="repPdf"){printReport();toast("Choisissez « Enregistrer au format PDF » dans la fenêtre d'impression.");return}
   if(id==="archBtn"){if(!pendingArch){pendingArch=true;render();return}pendingArch=false;archive();render();toast("Exercice archivé dans l'historique de la commune.");return}
@@ -2059,8 +2103,8 @@ function render(){
   const k=[["Risque joué",RISKS[p.risk].label+(comboOf(p).length?" +"+comboOf(p).length:""),1],["Format",FORMATS[p.format].short],["Durée de jeu",Number(p.duree)/60+" h"],["Injects",S.injects.length],["Objectifs",p.objs.length+" sur 7"]];
   $("#kpis").innerHTML=k.map(x=>`<div class="card kpi ${x[2]?"hl":""}"><span>${x[0]}</span><b title="${esc(x[1])}">${esc(x[1])}</b></div>`).join("");
   $("#tabs").innerHTML=TABS.map(t=>`<button class="tab" role="tab" type="button" id="tab-${t[0]}" aria-selected="${S.tab===t[0]}" data-tab="${t[0]}">${t[1]}</button>`).join("");
-  let tools=`<button class="btn sm ghost" type="button" id="copyAll">Copier le dossier</button>`;
-  if(S.tab==="chrono")tools=`<div class="seg" role="group" aria-label="Affichage du chronogramme"><button type="button" data-view="tl" aria-pressed="${S.view!=="table"}">Frise</button><button type="button" data-view="table" aria-pressed="${S.view==="table"}">Tableau</button></div><button class="btn sm" type="button" id="addInj">+ Inject</button><button class="btn sm" type="button" id="copyTsv">Copier pour un tableur</button>`+tools;
+  let tools=`<button class="btn sm ghost" type="button" id="dosDoc">Word</button><button class="btn sm ghost" type="button" id="dosPdf">PDF</button><button class="btn sm ghost" type="button" id="copyAll">Copier le dossier</button>`;
+  if(S.tab==="chrono")tools=`<div class="seg" role="group" aria-label="Affichage du chronogramme"><button type="button" data-view="tl" aria-pressed="${S.view!=="table"}">Frise</button><button type="button" data-view="table" aria-pressed="${S.view==="table"}">Tableau</button></div><button class="btn sm" type="button" id="addInj">+ Inject</button><button class="btn sm" type="button" id="copyTsv">Copier pour un tableur</button><button class="btn sm" type="button" id="cardsPrint">Fiches joueurs</button>`+tools;
   $("#tools").innerHTML=tools;
   if(map){map.remove();map=null}
   $("#view").innerHTML=`<article class="card doc">${VIEWS[S.tab]()}</article>`;
@@ -2160,6 +2204,10 @@ function initObs(){
     const c=t.closest("[data-ocot]");if(c){const id=c.dataset.ocot;O.cot[id]=O.cot[id]===c.dataset.v?"":c.dataset.v;sv();c.parentNode.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",O.cot[id]===b.dataset.v));return}
     if(t.id==="ocopy")copy("COMMUNE-PRETE-OBS:"+b64e({n:O.n||"",cot:O.cot,obsv:O.obsv}),"Code copié. Envoyez-le au directeur d'exercice.");});
 }
+/* ---------- Hors ligne ---------- */
+if("serviceWorker" in navigator&&location.protocol==="https:"&&/github\.io$/.test(location.hostname)){try{navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}}
+addEventListener("offline",()=>toast("Hors ligne : l'outil continue de fonctionner. Les bases publiques reviendront avec le réseau."));
+addEventListener("online",()=>toast("Connexion rétablie."));
 /* ---------- Démarrage ---------- */
 if(location.hash.indexOf("#obs=")===0){initObs()}else{
 S=load();
