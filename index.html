@@ -1,0 +1,882 @@
+<title>Atelier Exercice PCS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout : barre d'application, colonne de configuration en étapes, espace de travail du dossier en onglets */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --surface-2:#f0f2f5; --ink:#131923; --muted:#5d6876; --faint:#8a94a1; --line:#e2e6eb;
+  --primary:#1d3557; --primary-ink:#ffffff; --primary-soft:#e6edf6;
+  --accent:#e2550f; --accent-soft:#fdeee5;
+  --ok:#1f7a4c; --ok-soft:#e2f3ea; --warn:#9a6110; --warn-soft:#fbf1df; --bad:#b4261a; --bad-soft:#fbe6e3;
+  --violet:#7c4dde; --teal:#0e8080;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
+  --shadow-lg:0 12px 32px -12px rgba(16,24,40,.18);
+  --f-ui:"Geist",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"Geist Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:12px; --r-sm:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c1016; --surface:#141a22; --surface-2:#1b222c; --ink:#e7ecf2; --muted:#9aa6b4; --faint:#6d7886; --line:#26303c;
+  --primary:#9cc0ee; --primary-ink:#0c1016; --primary-soft:#1a2738;
+  --accent:#ff8748; --accent-soft:#36210f;
+  --ok:#5cc28d; --ok-soft:#13291d; --warn:#e3aa4e; --warn-soft:#2f2410; --bad:#f2786b; --bad-soft:#371614;
+  --violet:#b39cf5; --teal:#4cc6c6;
+  --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 40px -16px rgba(0,0,0,.6); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1016; --surface:#141a22; --surface-2:#1b222c; --ink:#e7ecf2; --muted:#9aa6b4; --faint:#6d7886; --line:#26303c;
+  --primary:#9cc0ee; --primary-ink:#0c1016; --primary-soft:#1a2738;
+  --accent:#ff8748; --accent-soft:#36210f;
+  --ok:#5cc28d; --ok-soft:#13291d; --warn:#e3aa4e; --warn-soft:#2f2410; --bad:#f2786b; --bad-soft:#371614;
+  --violet:#b39cf5; --teal:#4cc6c6;
+  --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 40px -16px rgba(0,0,0,.6); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+a{color:var(--primary)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.appbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:saturate(1.4) blur(10px);-webkit-backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line)}
+.appbar .in{max-width:1400px;margin:0 auto;padding-inline:20px;padding-block:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15.5px;letter-spacing:-.01em}
+.logo svg{flex:none}
+.logo small{display:block;font-weight:500;font-size:12px;color:var(--muted);letter-spacing:0}
+.status{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;color:var(--muted);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+.dot.ok{background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+.dot.warn{background:var(--warn);box-shadow:0 0 0 3px var(--warn-soft)}
+.dot.wait{background:var(--primary);animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.35}}
+
+.shell{max-width:1400px;margin:0 auto;padding-inline:20px;padding-block:22px 56px;display:grid;grid-template-columns:380px minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:980px){.shell{grid-template-columns:minmax(0,1fr)}}
+
+.config{display:flex;flex-direction:column;gap:14px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 74px)}
+@media (max-width:980px){.config{position:static}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.step{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.step + .step{border-top:1px solid var(--line)}
+.stephead{display:flex;align-items:center;gap:10px}
+.num{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;background:var(--primary-soft);color:var(--primary);flex:none;font-variant-numeric:tabular-nums}
+.stephead h2{margin:0;font-size:14px;font-weight:600;letter-spacing:-.005em}
+.stephead .aside{margin-left:auto;font-size:12px;color:var(--faint)}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field>label,.lab{font-size:12.5px;font-weight:500;color:var(--muted)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input[type=text],input[type=number],input[type=time],input[type=date],input[type=search],select,textarea{font:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;width:100%;min-width:0;transition:border-color .15s,box-shadow .15s}
+input:hover,select:hover,textarea:hover{border-color:color-mix(in srgb,var(--muted) 45%,var(--line))}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+textarea{resize:vertical;min-height:84px}
+
+.combo{position:relative}
+.combo .ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--faint);pointer-events:none}
+.combo input{padding-left:32px}
+.sugg{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 4px);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);box-shadow:var(--shadow-lg);margin:0;padding:4px;list-style:none;max-height:300px;overflow:auto}
+.sugg li{padding:8px 10px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.sugg li span{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sugg li[aria-selected=true],.sugg li:hover{background:var(--surface-2)}
+.idcard{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.idcard div{background:var(--surface-2);border-radius:var(--r-sm);padding:8px 10px;min-width:0}
+.idcard b{display:block;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.idcard span{font-size:11.5px;color:var(--muted)}
+
+.risklist{display:flex;flex-direction:column;gap:8px}
+.rk{position:relative}
+.rk input{position:absolute;opacity:0;pointer-events:none}
+.rk label{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;background:var(--surface);transition:border-color .15s,background .15s}
+.rk label:hover{border-color:color-mix(in srgb,var(--muted) 40%,var(--line))}
+.rk input:checked + label{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent) inset}
+.rk input:focus-visible + label{outline:2px solid var(--accent);outline-offset:2px}
+.rk input:disabled + label{cursor:default;opacity:.62}
+.rk .ic{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:var(--surface-2);color:var(--ink);flex:none}
+.rk input:checked + label .ic{background:var(--accent);color:#fff}
+.rk .tx{min-width:0;display:flex;flex-direction:column;gap:3px}
+.rk .tx b{font-size:14px;font-weight:600}
+.rk .tags{display:flex;flex-wrap:wrap;gap:4px}
+.tg{font-size:11px;font-weight:500;padding:1px 7px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.tg.src{background:var(--primary-soft);color:var(--primary)}
+.tg.cat{background:var(--warn-soft);color:var(--warn)}
+.tg.no{background:transparent;border:1px dashed var(--line)}
+.note{font-size:12.5px;color:var(--muted);margin:0}
+.banner{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface-2);font-size:12.5px;color:var(--muted)}
+.banner b{color:var(--ink);font-weight:600}
+.banner svg{flex:none;margin-top:2px;color:var(--warn)}
+
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);border-radius:9px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;border-radius:7px;padding:7px 8px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;line-height:1.25;white-space:nowrap}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:500;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed=true]{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
+.chip[aria-pressed=true]::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+details.more summary{cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);list-style:none;display:flex;align-items:center;gap:6px}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::before{content:"›";display:inline-block;transition:transform .15s;font-size:16px;line-height:1}
+details.more[open] summary::before{transform:rotate(90deg)}
+details.more .inner{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.btn{font-size:14px;font-weight:600;border-radius:var(--r-sm);padding:9px 14px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,border-color .15s,transform .05s}
+.btn:hover{background:var(--surface-2)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:color-mix(in srgb,var(--accent) 88%,#000)}
+.btn.sm{padding:6px 11px;font-size:13px;font-weight:500}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{background:var(--surface-2);color:var(--ink)}
+.cta{padding:16px 18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+
+.work{min-width:0;display:flex;flex-direction:column;gap:16px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi span{font-size:12px;color:var(--muted)}
+.kpi b{font-size:16.5px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kpi.hl b{color:var(--accent)}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:2px;background:var(--surface-2);padding:3px;border-radius:10px;overflow-x:auto;max-width:100%}
+.tab{border:0;background:transparent;font-size:13px;font-weight:500;color:var(--muted);padding:7px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.tab[aria-selected=true]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13.5px;font-weight:500;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;max-width:calc(100% - 32px)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.doc{overflow:hidden}
+.dochead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:12px 22px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.exmark{font-family:var(--f-mono);font-size:11px;font-weight:600;letter-spacing:.16em;color:var(--accent);display:flex;align-items:center;gap:8px}
+.exmark::before{content:"";width:18px;height:6px;border-radius:2px;background:repeating-linear-gradient(-45deg,var(--accent) 0 3px,transparent 3px 6px)}
+.dochead .meta{font-size:12.5px;color:var(--muted)}
+.docbody{padding:22px;display:flex;flex-direction:column;gap:20px}
+.docbody h3{font-size:21px;font-weight:700;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.docbody h4{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:0}
+.docbody p{margin:0;max-width:74ch}
+.docbody ul{margin:0;padding-left:18px;max-width:74ch;display:flex;flex-direction:column;gap:5px}
+.sec{display:flex;flex-direction:column;gap:9px}
+.kv{display:grid;grid-template-columns:minmax(140px,200px) minmax(0,1fr);gap:8px 18px;margin:0}
+.kv dt{color:var(--muted);font-size:13.5px}
+.kv dd{margin:0;font-weight:500}
+@media (max-width:560px){.kv{grid-template-columns:minmax(0,1fr);gap:2px}.kv dd{margin-bottom:8px}}
+.ref{font-size:12px;font-weight:500;color:var(--primary);background:var(--primary-soft);padding:1px 7px;border-radius:999px;white-space:nowrap;text-decoration:none}
+.ref:hover{text-decoration:underline}
+.callout{display:flex;gap:10px;border-radius:10px;padding:12px 14px;background:var(--primary-soft);color:var(--ink);font-size:13.5px;max-width:84ch}
+.callout svg{flex:none;color:var(--primary);margin-top:2px}
+.callout.warn{background:var(--warn-soft)}
+.callout.warn svg{color:var(--warn)}
+.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.phase{border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.phase .t{font-family:var(--f-mono);font-size:11.5px;color:var(--accent);font-variant-numeric:tabular-nums}
+.phase b{font-size:14.5px}
+.phase p{font-size:13.5px;color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.fact{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;display:flex;flex-direction:column;min-width:0}
+.fact b{font-weight:600}
+.fact span{font-size:11.5px;color:var(--muted)}
+
+.timeline{position:relative;display:flex;flex-direction:column;gap:12px;padding-left:22px}
+.timeline::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line);border-radius:2px}
+.inj{position:relative;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.inj::before{content:"";position:absolute;left:-21px;top:16px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:3px solid var(--c,var(--muted))}
+.inj .top{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.time{font-family:var(--f-mono);font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px}
+.time .clk{color:var(--muted);font-weight:400}
+input.tmin{width:64px;padding:3px 6px;font-family:var(--f-mono);font-size:12px}
+.flow{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-width:0}
+.flow [contenteditable]{color:var(--ink);font-weight:500}
+.inj .spacer{margin-left:auto;display:flex;gap:4px;align-items:center}
+.inj .msg{font-size:14px;line-height:1.5}
+.inj .exp{font-size:13px;color:var(--muted);display:flex;gap:8px}
+.inj .exp b{color:var(--ink);font-weight:600;white-space:nowrap}
+[contenteditable]{border-radius:5px;padding:1px 4px;margin:-1px -4px;transition:background .15s}
+[contenteditable]:hover{background:var(--surface-2)}
+[contenteditable]:focus{outline:none;background:var(--primary-soft)}
+.tag{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c);white-space:nowrap}
+.via{font-size:11.5px;color:var(--muted);border:1px solid var(--line);padding:1px 7px;border-radius:999px}
+.o-ALERTE{--c:var(--bad)} .o-EVAL{--c:var(--primary)} .o-POP{--c:var(--warn)} .o-SAUV{--c:var(--accent)} .o-CARE{--c:var(--ok)} .o-COM{--c:var(--violet)} .o-LIAI{--c:var(--teal)} .o-FIN{--c:var(--muted)}
+.del{background:none;border:0;color:var(--faint);cursor:pointer;font-size:17px;line-height:1;padding:3px 7px;border-radius:6px}
+.del:hover{color:var(--bad);background:var(--bad-soft)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+table.big{min-width:960px}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}
+th{font-size:11.5px;font-weight:600;color:var(--muted);background:var(--surface-2);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.tm{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+.roles{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.role{border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.role .who{font-size:11.5px;font-weight:600;color:var(--primary)}
+.role.anim{background:var(--surface-2)}
+.role.anim .who{color:var(--accent)}
+.role b{font-size:15px;letter-spacing:-.01em}
+.role ul{font-size:13.5px;color:var(--muted)}
+.obsg{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.obsg .gh{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 14px;background:var(--surface-2);font-weight:600;font-size:14px}
+.obsr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:10px 14px;border-top:1px solid var(--line);align-items:center;font-size:14px}
+@media (max-width:620px){.obsr{grid-template-columns:minmax(0,1fr)}}
+.cot{display:inline-grid;grid-auto-flow:column;gap:2px;background:var(--surface-2);border-radius:8px;padding:2px;justify-self:start}
+.cot button{border:0;background:transparent;font-size:12px;font-weight:500;color:var(--muted);padding:5px 9px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.cot button[aria-pressed=true][data-v=ok]{background:var(--ok);color:var(--surface)}
+.cot button[aria-pressed=true][data-v=part]{background:var(--warn);color:var(--surface)}
+.cot button[aria-pressed=true][data-v=ko]{background:var(--bad);color:var(--surface)}
+.score{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
+.bars{display:flex;flex-direction:column;gap:9px}
+.brow{display:grid;grid-template-columns:170px minmax(0,1fr) 46px;gap:12px;align-items:center;font-size:13.5px}
+@media (max-width:560px){.brow{grid-template-columns:100px minmax(0,1fr) 40px}}
+.track{height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden;display:flex}
+.track i{display:block;height:100%}
+.track .a{background:var(--ok)}.track .p{background:var(--warn)}.track .k{background:var(--bad)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--c)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:700px){.two{grid-template-columns:minmax(0,1fr)}}
+.st{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.st.vig{background:var(--ok-soft);color:var(--ok)}
+.st.pro{background:var(--warn-soft);color:var(--warn)}
+.st.gui{background:var(--primary-soft);color:var(--primary)}
+.exnote{font-size:12.5px;color:var(--faint);margin:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="appbar">
+  <div class="in">
+    <div class="logo">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="8" fill="var(--primary)"/><path d="M15 6l7 3v5.5c0 4.2-2.9 7.6-7 9.5-4.1-1.9-7-5.3-7-9.5V9z" fill="var(--primary-ink)"/><path d="M11.5 14.5l2.5 2.5 4.5-5" stroke="var(--accent)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div>Atelier Exercice PCS<small>Préparation des exercices de plan communal de sauvegarde</small></div>
+    </div>
+    <div class="status">
+      <span class="pill" id="pillData"><span class="dot wait"></span>Bases publiques : test en cours</span>
+      <span class="pill"><span class="dot ok"></span>Réglementation vérifiée le 2 oct. 2026</span>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="config">
+    <div class="card">
+      <section class="step" aria-labelledby="h1">
+        <div class="stephead"><span class="num">1</span><h2 id="h1">Commune</h2><span class="aside" id="srcAside"></span></div>
+        <div class="field">
+          <label for="commune">Nom de la commune</label>
+          <div class="combo">
+            <svg class="ico" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <input type="search" id="commune" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sugg" placeholder="Rechercher une commune">
+            <ul class="sugg" id="sugg" role="listbox" hidden></ul>
+          </div>
+        </div>
+        <div class="idcard" id="idcard"></div>
+        <div class="row2" id="manualId" hidden>
+          <div class="field"><label for="pop">Population</label><input type="number" id="pop" min="0" step="10"></div>
+          <div class="field"><label for="dept">Département</label><input type="text" id="dept"></div>
+        </div>
+      </section>
+
+      <section class="step" aria-labelledby="h2">
+        <div class="stephead"><span class="num">2</span><h2 id="h2">Risque joué</h2><span class="aside" id="riskAside"></span></div>
+        <div id="riskBanner"></div>
+        <div class="risklist" id="risks" role="radiogroup" aria-labelledby="h2"></div>
+      </section>
+
+      <section class="step" aria-labelledby="h3">
+        <div class="stephead"><span class="num">3</span><h2 id="h3">Format et horaires</h2></div>
+        <div class="seg" id="segFormat" role="group" aria-label="Format">
+          <button type="button" data-v="table">Sur table</button><button type="button" data-v="cadre">Cadre</button><button type="button" data-v="terrain">Avec terrain</button>
+        </div>
+        <div class="row2">
+          <div class="field"><span class="lab" id="ldur">Durée de jeu</span>
+            <div class="seg" id="segDuree" role="group" aria-labelledby="ldur"><button type="button" data-v="120">2 h</button><button type="button" data-v="180">3 h</button><button type="button" data-v="240">4 h</button></div>
+          </div>
+          <div class="field"><label for="heureH">Heure H</label><input type="time" id="heureH"></div>
+        </div>
+        <div class="field"><label for="date">Date de l'exercice</label><input type="date" id="date"></div>
+      </section>
+
+      <section class="step" aria-labelledby="h4">
+        <div class="stephead"><span class="num">4</span><h2 id="h4">Objectifs évalués</h2><span class="aside" id="objCount"></span></div>
+        <div class="chips" id="objs"></div>
+        <details class="more">
+          <summary>Lieux utilisés dans le scénario</summary>
+          <div class="inner">
+            <div class="field"><label for="secteur">Secteur exposé</label><input type="text" id="secteur"></div>
+            <div class="field"><label for="etab">Établissement sensible</label><input type="text" id="etab"></div>
+            <div class="field"><label for="heberg">Lieu d'accueil</label><input type="text" id="heberg"></div>
+            <div class="field"><label for="axe">Axe routier principal</label><input type="text" id="axe"></div>
+          </div>
+        </details>
+      </section>
+      <div class="cta">
+        <button class="btn primary" id="gen" type="button">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5l1.6 3.9 4.2.3-3.2 2.7 1 4.1L8 10.3 4.4 12.5l1-4.1L2.2 5.7l4.2-.3z" fill="currentColor"/></svg>
+          <span id="genLabel">Générer le dossier</span>
+        </button>
+        <p class="note">Le chronogramme modifié à la main est remplacé à chaque génération.</p>
+      </div>
+    </div>
+  </aside>
+
+  <main class="work">
+    <div class="kpis" id="kpis"></div>
+    <div class="bar">
+      <div class="tabs" role="tablist" id="tabs" aria-label="Pièces du dossier"></div>
+      <div class="tools" id="tools"></div>
+    </div>
+    <section id="view"></section>
+    <p class="exnote" id="exnote">Exemple pré-rempli sur une commune fictive. Recherchez votre commune pour démarrer.</p>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+const API = {
+  geo: q => "https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(q)+"&fields=nom,code,population,departement&boost=population&limit=7",
+  risques: insee => "https://georisques.gouv.fr/api/v1/gaspar/risques?code_insee="+insee,
+  catnat: insee => "https://georisques.gouv.fr/api/v1/gaspar/catnat?code_insee="+insee+"&page_size=100",
+  fiche: insee => "https://www.georisques.gouv.fr/mes-risques/connaitre-les-risques-pres-de-chez-moi/rapport2?form-commune=true&codeInsee="+insee
+};
+const VERIF = "2 octobre 2026";
+
+const ICONS = {
+  inondation:'<path d="M2 11c2 0 2-1.5 4-1.5S8 11 10 11s2-1.5 4-1.5M2 14c2 0 2-1.5 4-1.5S8 14 10 14s2-1.5 4-1.5M8 2c1.8 2.4 3 4 3 5.4A3 3 0 015 7.4C5 6 6.2 4.4 8 2z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>',
+  feu:'<path d="M8 1.5c2.5 2.6 4.5 4.8 4.5 8a4.5 4.5 0 01-9 0c0-1.7.8-3 1.8-4 .2 1.3.9 2.1 1.7 2.4C7 5.6 7.2 3.4 8 1.5z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>',
+  tempete:'<path d="M2 6h8a2 2 0 10-2-2M2 9.5h11a2 2 0 11-2 2M2 13h6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>',
+  tmd:'<path d="M1.5 4.5h8v6.5h-8zM9.5 7h3l2 2.2V11h-5z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/><circle cx="4" cy="12.6" r="1.3" stroke="currentColor" stroke-width="1.4" fill="none"/><circle cx="11.6" cy="12.6" r="1.3" stroke="currentColor" stroke-width="1.4" fill="none"/>',
+  seisme:'<path d="M1 8h3l1.5-4 2.5 9 2-6.5L11.5 8H15" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  coupure:'<path d="M9 1.5L3.5 9H8l-1 5.5L12.5 7H8z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>',
+  autre:'<path d="M8 2l6.5 11.5h-13zM8 6.5v3.2M8 11.6v.1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+};
+const ico=k=>`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">${ICONS[k]||ICONS.autre}</svg>`;
+
+const RISKS = {
+  inondation:{label:"Inondation", re:/inond|crue|submersion|ruissel|coulée de boue/i},
+  feu:{label:"Feu de forêt", re:/feu de for|incendie de for/i},
+  tempete:{label:"Tempête, grand froid, neige", re:/temp[êe]te|grain|neige|météo|vent|cyclone|grand froid|orage/i},
+  tmd:{label:"Transport de matières dangereuses", re:/transport de marchandises dangereuses|matières dangereuses|\bTMD\b|canalisation/i},
+  seisme:{label:"Séisme", re:/s[ée]isme/i},
+  coupure:{label:"Coupure électrique prolongée", re:null}
+};
+const OTHER = [
+  {re:/mouvement de terrain|glissement|éboulement|chute de blocs|effondrement|cavité|affaissement|argile/i,label:"Mouvement de terrain"},
+  {re:/rupture de barrage|barrage/i,label:"Rupture de barrage"},
+  {re:/industriel|nucléaire|radiologique|minier/i,label:"Risque industriel ou nucléaire"},
+  {re:/avalanche/i,label:"Avalanche"},
+  {re:/radon/i,label:"Radon"}
+];
+const OBJS = {
+  ALERTE:{label:"Réception de l'alerte et armement du PCC", short:"Alerte & PCC"},
+  EVAL:{label:"Évaluation et suivi de la situation", short:"Évaluation"},
+  POP:{label:"Alerte et information de la population", short:"Alerte population"},
+  SAUV:{label:"Mise en sécurité et évacuation", short:"Mise en sécurité"},
+  CARE:{label:"Accueil, hébergement et soutien (CARE)", short:"Accueil CARE"},
+  COM:{label:"Communication de crise et médias", short:"Communication"},
+  LIAI:{label:"Liaison avec la préfecture et les secours", short:"Liaison"}
+};
+const OKEYS=Object.keys(OBJS);
+const CRIT = {
+  ALERTE:["L'alerte est reçue, tracée et transmise au maire sans délai","Le PCS est déclenché par une décision explicite du maire (DOS)","Le PCC est armé : lieu, membres, moyens de liaison opérationnels","La main courante est ouverte et tenue dès le début"],
+  EVAL:["Une carte de situation est tenue à jour","Les enjeux exposés sont identifiés (personnes vulnérables, ERP, réseaux)","Des points de situation réguliers sont conduits","Les informations sont recoupées avant décision"],
+  POP:["Les moyens d'alerte prévus au PCS sont mobilisés","Les messages sont clairs : danger, consignes, zone concernée","Les personnes vulnérables recensées sont contactées","Le suivi de diffusion est assuré (qui a été prévenu, quand)"],
+  SAUV:["Les décisions de confinement ou d'évacuation sont prises et motivées","Les itinéraires et points de rassemblement sont définis","Le recensement des personnes évacuées est tenu","Les refus d'évacuer sont traités et signalés"],
+  CARE:["Le lieu d'accueil est ouvert et armé dans les délais","L'accueil, l'enregistrement et le ravitaillement sont organisés","Le soutien aux personnes est prévu (couchage, besoins spécifiques)","Les besoins logistiques sont anticipés et remontés"],
+  COM:["Un porte-parole unique est désigné","Les éléments de langage sont validés par le maire","Les rumeurs sont détectées et traitées","La communication est coordonnée avec la préfecture"],
+  LIAI:["Les points de situation remontent à la préfecture selon le rythme demandé","La liaison avec le COS est établie et maintenue","Les demandes de renfort sont formalisées","Les décisions sont tracées et horodatées"]
+};
+const REGL = [
+  {ref:"Code de la sécurité intérieure, art. L731-3 à L731-5", objet:"Obligation d'élaborer un PCS pour les communes exposées, et un plan intercommunal (PICS) pour les EPCI dont une commune y est soumise.", statut:"vig", url:"https://www.legifrance.gouv.fr/codes/id/LEGISCTA000044375302"},
+  {ref:"Code de la sécurité intérieure, art. R731-1 et suivants", objet:"Contenu du PCS : analyse des risques, recensement des personnes vulnérables, organisation de l'alerte, moyens communaux. Révision au moins tous les cinq ans.", statut:"vig", url:"https://www.legifrance.gouv.fr/codes/id/LEGISCTA000045942728"},
+  {ref:"Code de la sécurité intérieure, art. D731-9 à D731-13", objet:"Exercice de mise en œuvre au moins tous les cinq ans, associant si possible la population, suivi d'un retour d'expérience. Une crise réelle ayant activé le plan tient lieu d'exercice.", statut:"vig", url:"https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000046710933"},
+  {ref:"Décret n° 2022-907 du 20 juin 2022", objet:"Texte d'application de la loi Matras sur le contenu et l'élaboration des PCS et PICS.", statut:"vig", url:"https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000045940284"},
+  {ref:"Décret n° 2022-1532 du 8 décembre 2022", objet:"Modalités d'organisation des exercices des PCS et PICS.", statut:"vig", url:"https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000046710933"},
+  {ref:"Loi n° 2021-1520 du 25 novembre 2021 (loi Matras)", objet:"Extension de l'obligation de PCS (inondation, feux de forêt…) et création des PICS.", statut:"vig", url:"https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000044367862"},
+  {ref:"Projet de loi de modernisation de la sécurité civile (présenté le 8 septembre 2026)", objet:"Rendrait le PCS obligatoire dans toutes les communes, avec une entrée en vigueur envisagée en 2029. Texte non adopté à ce jour.", statut:"pro", url:"https://www.amf.asso.fr/documents-le-gouvernement-veut-rendre-obligatoire-plan-communal-sauvegarde-dans-toutes-les-communes/43319"},
+  {ref:"Ministère de l'Intérieur (DGSCGC) : guides et exemples de PCS", objet:"Guide d'élaboration, mémento des exercices, trame simplifiée et exemples par taille de commune.", statut:"gui", url:"https://www.securite-civile.interieur.gouv.fr/reagir/comment-se-preparer-face-aux-risques/plans-communaux-et"}
+];
+const STAT={vig:"En vigueur",pro:"En discussion",gui:"Doctrine"};
+const EXREF=REGL[2].url;
+
+const LIB = {
+inondation:{
+  contexte:"Après plusieurs jours de pluies soutenues sur le bassin versant, les sols sont saturés. Un épisode orageux stationnaire provoque une montée rapide du cours d'eau qui traverse {commune}.",
+  initiale:"À H, Vigicrues place le tronçon en vigilance rouge. Le pic de crue est attendu vers H+3. Le {secteur} est situé en zone inondable.",
+  hypotheses:["Le pic de crue intervient en fin d'exercice","L'{etab} accueille élèves et personnels","Le {axe} est coupé à hauteur du pont en cours d'exercice","Le réseau téléphonique fonctionne normalement"],
+  phases:[["Alerte","Réception de la vigilance, déclenchement du PCS, armement du PCC."],["Montée en puissance","Alerte des riverains, premières mises en sécurité, ouverture de l'accueil."],["Gestion de crise","Évacuations, hébergement, pression médiatique, points de situation."],["Décrue","Préparation du retour à la normale et FINEX."]],
+  injects:[
+   [0,"ALERTE","Préfecture (SIDPC)","Maire","SMS + appel","Vigilance crue rouge sur le tronçon. Pic attendu vers H+3. Merci de déclencher votre PCS et de confirmer.","Déclenchement du PCS, convocation de la cellule de crise, accusé de réception à la préfecture."],
+   [10,"EVAL","Habitant","Accueil mairie","Téléphone","L'eau commence à recouvrir la chaussée en bas du {secteur}. Est-ce qu'on doit partir ?","Recueil de l'information, report sur la carte, consigne d'attente donnée à l'appelant."],
+   [20,"LIAI","CODIS (SDIS)","PCC","Téléphone","Le COS demande la liste des personnes vulnérables du {secteur} et vos points de rassemblement.","Transmission du recensement des personnes vulnérables et des points de rassemblement."],
+   [30,"POP","Préfecture","Maire","Téléphone","Merci d'alerter sans délai les riverains de la zone inondable et de me rendre compte.","Mise en œuvre des moyens d'alerte du PCS, compte rendu à la préfecture."],
+   [45,"SAUV","Direction de l'{etab}","Maire","Téléphone","Des parents arrivent en masse pour récupérer les enfants, la cour donne sur le {secteur}. Que fait-on ?","Décision de mise à l'abri ou d'évacuation, coordination avec le PPMS de l'établissement."],
+   [60,"CARE","COS","PCC","Radio","Évacuation en cours d'environ 40 personnes. Ouvrez un lieu d'accueil.","Ouverture et armement du lieu d'accueil ({heberg}), désignation d'un responsable."],
+   [75,"COM","Journaliste presse locale","Maire","Téléphone","Bonjour, combien de personnes sont évacuées ? Pouvez-vous me répondre en direct ?","Orientation vers le porte-parole, réponse sur éléments validés uniquement."],
+   [90,"EVAL","Agent technique communal","PCC","Téléphone","Le pont du {axe} est submergé. La circulation continue malgré les barrières.","Fermeture de l'axe, demande d'appui gendarmerie, itinéraire de délestage."],
+   [100,"SAUV","Voisin","Accueil mairie","Téléphone","Ma voisine de 87 ans refuse de quitter sa maison, l'eau monte dans sa cour.","Signalement au COS, démarche de persuasion, traçabilité du refus."],
+   [115,"CARE","Responsable du lieu d'accueil","PCC","Téléphone","Nous avons 32 personnes, pas assez de couvertures et rien pour le repas du soir.","Sollicitation des fournisseurs ou associations recensés au PCS, remontée du besoin."],
+   [130,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Une publication partagée 300 fois annonce la rupture de la digue en amont.","Vérification auprès des secours, démenti coordonné avec la préfecture."],
+   [145,"LIAI","Préfecture","Maire","Téléphone","J'ai besoin d'un point de situation chiffré : évacués, hébergés, routes coupées, victimes.","Transmission d'un point de situation structuré et horodaté."],
+   [160,"EVAL","Vigicrues","PCC","Bulletin","Le pic est atteint, la décrue s'amorce. Retour en vigilance orange prévu dans la nuit.","Anticipation du retour à la normale : réintégration, nettoyage, soutien aux sinistrés."],
+   [175,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
+  ]},
+feu:{
+  contexte:"Après six semaines sans pluie et sous un vent soutenu, le niveau de danger feu de forêt est très sévère. Un départ de feu est signalé dans le massif boisé qui borde {commune}.",
+  initiale:"À H, un feu d'environ 5 hectares progresse vers le {secteur}, en interface forêt-habitat. Les moyens aériens sont engagés sur un autre incendie du département.",
+  hypotheses:["Le vent tourne et accélère la propagation vers H+1","Des fumées gênent la circulation sur le {axe}","L'{etab} accueille du public au moment de l'alerte","Une coupure électrique touche une partie du secteur"],
+  phases:[["Alerte","Signalement du feu, déclenchement du PCS, armement du PCC."],["Menace","Confinement ou évacuation du secteur, gestion des fumées et des axes."],["Crise","Accueil des évacués, pression médiatique, coupure de réseaux."],["Fixation","Feu fixé, retour progressif et FINEX."]],
+  injects:[
+   [0,"ALERTE","CODIS (SDIS)","Maire","Téléphone","Feu de forêt en cours, environ 5 hectares, progression vers le {secteur}. Merci de déclencher votre PCS.","Déclenchement du PCS, armement du PCC, information de la préfecture."],
+   [12,"EVAL","Habitant","Accueil mairie","Téléphone","Il y a de la fumée partout et des cendres tombent dans mon jardin. On doit partir ?","Consigne de confinement en attente de la décision du COS, report sur la carte."],
+   [25,"LIAI","COS","PCC","Radio","Je préconise le confinement des habitations du {secteur} pour le moment. Confirmez.","Décision du maire, relais de la consigne, compte rendu au COS."],
+   [35,"POP","Préfecture","Maire","Téléphone","Un message FR-Alert est envisagé. Quel est votre périmètre et votre consigne ?","Définition du périmètre et rédaction du message de consigne."],
+   [50,"SAUV","COS","PCC","Radio","Le vent tourne. Évacuation immédiate de la rue haute du {secteur}, environ 25 foyers.","Organisation de l'évacuation : itinéraire, point de rassemblement, recensement."],
+   [65,"CARE","Agent communal","PCC","Téléphone","Les premiers évacués arrivent au lieu d'accueil ({heberg}), certains avec des animaux.","Armement de l'accueil, gestion des animaux de compagnie, enregistrement."],
+   [80,"EVAL","Gendarmerie","PCC","Téléphone","La fumée rend le {axe} dangereux. Nous proposons une fermeture.","Fermeture coordonnée, déviation, information des usagers."],
+   [95,"COM","Télévision régionale","Maire","Sur place","Une équipe de télévision est devant la mairie et souhaite filmer le PCC.","Accueil du média hors PCC, porte-parole désigné, éléments validés."],
+   [110,"SAUV","Direction de l'{etab}","Maire","Téléphone","Nous sommes confinés mais deux personnes ont un malaise lié à la fumée.","Relais immédiat vers le SAMU via le COS, suivi de la situation."],
+   [125,"EVAL","Gestionnaire réseau électrique","PCC","Téléphone","Coupure sur 180 foyers pour la sécurité des secours, durée estimée 4 heures.","Identification des personnes électro-dépendantes, priorisation."],
+   [140,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Des internautes affirment que des maisons ont brûlé et que la mairie le cache.","Vérification, communication factuelle coordonnée avec la préfecture."],
+   [155,"LIAI","Préfecture","Maire","Téléphone","Point de situation attendu : évacués, hébergés, habitations menacées, besoins.","Point de situation structuré et horodaté."],
+   [168,"EVAL","COS","PCC","Radio","Le feu est fixé. Réintégration possible du bas du {secteur} sous conditions.","Préparation de la réintégration et du soutien aux sinistrés."],
+   [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
+  ]},
+tempete:{
+  contexte:"Météo-France place le département en vigilance rouge vent violent et neige. Des rafales supérieures à 130 km/h et 30 cm de neige lourde sont attendues sur {commune} en soirée.",
+  initiale:"À H, les premières chutes d'arbres sont signalées. Plusieurs secteurs sont privés d'électricité, dont le {secteur}. Des automobilistes sont bloqués sur le {axe}.",
+  hypotheses:["La coupure électrique dure au-delà de la fin de l'exercice","Les communications mobiles sont dégradées par endroits","Des usagers de la route doivent être hébergés pour la nuit","Les services techniques communaux sont réduits"],
+  phases:[["Alerte","Vigilance rouge, déclenchement du PCS, armement du PCC."],["Impacts","Chutes d'arbres, coupures, automobilistes bloqués."],["Soutien","Hébergement d'urgence, personnes isolées, ravitaillement."],["Stabilisation","Accalmie, rétablissement progressif et FINEX."]],
+  injects:[
+   [0,"ALERTE","Préfecture","Maire","SMS + courriel","Vigilance rouge vent violent et neige. Merci d'activer votre PCS et de confirmer.","Déclenchement du PCS, armement du PCC, accusé de réception."],
+   [10,"POP","Préfecture","Maire","Téléphone","Merci de relayer les consignes : rester chez soi, éviter les déplacements.","Diffusion des consignes par les moyens du PCS."],
+   [25,"EVAL","Agent technique","PCC","Téléphone","Un arbre est tombé sur une ligne et bloque la route d'accès au {secteur}.","Signalement au gestionnaire du réseau, balisage, carte mise à jour."],
+   [40,"LIAI","Gendarmerie","PCC","Téléphone","Une trentaine de véhicules sont bloqués sur le {axe}. Pouvez-vous les accueillir ?","Ouverture du lieu d'accueil ({heberg}), organisation du transfert."],
+   [55,"CARE","Responsable du lieu d'accueil","PCC","Téléphone","Le chauffage d'appoint ne suffit pas, il fait 12 °C dans la salle.","Recherche de moyens de chauffage, alternative d'hébergement."],
+   [70,"SAUV","Infirmière libérale","Accueil mairie","Téléphone","Un patient sous oxygène à domicile n'a plus d'électricité depuis une heure.","Priorisation de la personne électro-dépendante, relais vers les secours."],
+   [85,"EVAL","Gestionnaire réseau électrique","PCC","Téléphone","1 200 foyers privés d'électricité, rétablissement non envisagé avant demain.","Anticipation d'une nuit sans électricité, recensement des besoins."],
+   [100,"COM","Radio locale","Maire","Téléphone","Vos habitants appellent l'antenne : que doivent-ils faire cette nuit ?","Message clair et validé, consignes et numéros utiles."],
+   [115,"SAUV","Voisin","Accueil mairie","Téléphone","Un couple âgé isolé dans le {secteur} ne répond plus au téléphone.","Levée de doute par une équipe communale ou les secours."],
+   [130,"CARE","Association locale","PCC","Téléphone","Nous pouvons fournir 60 repas chauds, où devons-nous livrer ?","Intégration de l'offre, coordination de la livraison."],
+   [145,"LIAI","Préfecture","Maire","Téléphone","Point de situation attendu : hébergés, foyers privés d'électricité, routes coupées.","Point de situation structuré et horodaté."],
+   [160,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Des habitants se plaignent de ne recevoir aucune information de la mairie.","Message de situation sur tous les canaux, horaire du prochain point."],
+   [172,"EVAL","Météo-France","PCC","Bulletin","Accalmie en cours, passage en vigilance orange à 6 h.","Préparation de la journée suivante : déneigement, rétablissement."],
+   [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
+  ]},
+tmd:{
+  contexte:"Un camion-citerne transportant un produit chimique toxique se renverse sur le {axe}, à l'entrée de {commune}. Une fuite est constatée.",
+  initiale:"À H, les secours sont sur place. Le nuage se déplace avec le vent vers le {secteur}, situé à 400 mètres. Un périmètre de sécurité est en cours de définition.",
+  hypotheses:["Le vent pousse le nuage vers les habitations","L'{etab} se trouve dans le périmètre de confinement","Le {axe} reste fermé pendant toute la durée de l'exercice","La nature exacte du produit n'est confirmée qu'à H+45"],
+  phases:[["Alerte","Information par les secours, déclenchement du PCS, armement du PCC."],["Protection","Confinement de la population, fermeture des axes."],["Gestion","Inquiétude des familles, accueil, médias."],["Levée","Fin de la fuite, levée du confinement et FINEX."]],
+  injects:[
+   [0,"ALERTE","CODIS (SDIS)","Maire","Téléphone","Accident de poids lourd TMD sur le {axe}, fuite de produit toxique. Déclenchez votre PCS.","Déclenchement du PCS, armement du PCC."],
+   [10,"POP","COS","PCC","Radio","Confinement immédiat de la population du {secteur}. Fermez portes et ventilations.","Diffusion de la consigne de confinement, compte rendu au COS."],
+   [20,"SAUV","Direction de l'{etab}","Maire","Téléphone","Nous confinons, mais des parents veulent venir chercher leurs enfants.","Rappel de la consigne, information des parents, blocage des accès."],
+   [35,"EVAL","Gendarmerie","PCC","Téléphone","Nous mettons en place des déviations. Quels agents pouvez-vous fournir ?","Mise à disposition d'agents et de moyens de balisage."],
+   [45,"LIAI","COS","PCC","Radio","Le produit est confirmé : ammoniac. Le périmètre de confinement est étendu à 800 mètres.","Mise à jour de la carte, extension de l'alerte."],
+   [60,"POP","Habitant","Accueil mairie","Téléphone","Ça sent fort et j'ai les yeux qui piquent. Je prends ma voiture pour partir ?","Consigne de rester confiné, signalement au COS."],
+   [75,"CARE","Gendarmerie","PCC","Téléphone","Une vingtaine d'usagers de la route sont bloqués aux déviations, dont un car scolaire.","Ouverture d'un lieu d'accueil hors zone, accueil des usagers."],
+   [90,"COM","Presse nationale","Maire","Téléphone","On parle d'un nuage toxique sur la commune. La population est-elle en danger ?","Réponse du porte-parole, coordination avec la préfecture."],
+   [105,"SAUV","Aide à domicile","Accueil mairie","Téléphone","Je suis bloquée hors du périmètre, la personne que j'aide est seule et sous traitement.","Solution de prise en charge en lien avec le COS."],
+   [120,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Rumeur : le produit serait cancérigène et l'eau du robinet contaminée.","Vérification auprès des autorités sanitaires, démenti factuel."],
+   [140,"LIAI","Préfecture","Maire","Téléphone","Point de situation : personnes confinées, accueillies, établissements concernés.","Point de situation structuré et horodaté."],
+   [160,"EVAL","COS","PCC","Radio","Fuite colmatée, mesures conformes. Levée du confinement possible.","Levée du confinement par la consigne prévue, consigne d'aération."],
+   [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
+  ]},
+seisme:{
+  contexte:"Un séisme de magnitude 5,4 est ressenti fortement sur {commune}. L'épicentre se situe à une vingtaine de kilomètres.",
+  initiale:"À H, de nombreux appels arrivent en mairie. Des fissures sont signalées sur des bâtiments anciens du {secteur}. Le réseau mobile est saturé.",
+  hypotheses:["Une réplique intervient à H+1","L'{etab} déclenche son plan de mise en sûreté","Une partie de la population refuse de rentrer chez elle","Les moyens de secours sont engagés sur tout le département"],
+  phases:[["Choc","Secousse, afflux d'appels, déclenchement du PCS."],["Reconnaissance","Recensement des dégâts et des personnes, sécurisation."],["Soutien","Accueil des sinistrés, réplique, pression des familles."],["Bilan","Premier bilan, organisation des expertises et FINEX."]],
+  injects:[
+   [0,"ALERTE","Préfecture","Maire","Téléphone","Séisme ressenti sur le département. Merci d'activer votre PCS et de remonter un premier bilan.","Déclenchement du PCS, armement du PCC malgré la saturation des réseaux."],
+   [10,"EVAL","Habitants (multiples)","Accueil mairie","Téléphone","Afflux d'appels : fissures, chutes de tuiles, personnes paniquées dans la rue.","Organisation de la prise d'appels, tri des informations, carte des dégâts."],
+   [25,"SAUV","Direction de l'{etab}","Maire","Téléphone","Nous avons évacué dans la cour. Un mur du préau est fissuré. Peut-on rentrer ?","Interdiction d'accès en attendant une expertise, solution d'accueil."],
+   [40,"LIAI","CODIS (SDIS)","PCC","Téléphone","Nos moyens sont saturés. Pouvez-vous faire une reconnaissance des bâtiments du {secteur} ?","Envoi d'équipes communales pour reconnaissance visuelle, compte rendu."],
+   [55,"POP","Préfecture","Maire","Téléphone","Diffusez les consignes : ne pas rentrer dans un bâtiment endommagé, couper gaz et électricité.","Diffusion des consignes par tous les moyens du PCS."],
+   [65,"ALERTE","Réplique","Tous","Inject animateur","Une réplique de magnitude 4,6 est ressentie. Nouveaux appels.","Réévaluation de la situation, mise en sécurité du PCC lui-même."],
+   [80,"CARE","Agent communal","PCC","Sur place","150 personnes refusent de rentrer chez elles et se regroupent sur la place.","Ouverture du lieu d'accueil ({heberg}) après vérification de son état."],
+   [95,"EVAL","Gestionnaire réseau de gaz","PCC","Téléphone","Fuite de gaz suspectée dans le {secteur}. Intervention dans 2 heures.","Périmètre de sécurité, évacuation de proximité."],
+   [110,"COM","Radio nationale","Maire","Téléphone","Y a-t-il des victimes ? Combien de bâtiments sont détruits ?","Réponse sur éléments vérifiés, renvoi vers la préfecture."],
+   [125,"SAUV","Famille","Accueil mairie","Téléphone","Ma mère vit seule dans le {secteur}, je n'arrive pas à la joindre depuis la secousse.","Levée de doute, enregistrement de la demande."],
+   [145,"LIAI","Préfecture","Maire","Téléphone","Premier bilan attendu : bâtiments endommagés, personnes hébergées, besoins.","Point de situation structuré, demande d'expertise des bâtiments."],
+   [165,"EVAL","DDT","PCC","Courriel","Des experts bâtiment interviendront demain matin. Préparez la liste des bâtiments à visiter.","Liste priorisée des bâtiments, organisation de la nuit."],
+   [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
+  ]},
+coupure:{
+  contexte:"Un incident majeur sur le réseau de transport d'électricité prive {commune} et plusieurs communes voisines d'électricité, en plein épisode de grand froid.",
+  initiale:"À H, la coupure dure depuis deux heures. Le gestionnaire annonce un rétablissement incertain, au-delà de 24 heures. Les températures nocturnes descendent à -8 °C.",
+  hypotheses:["Le réseau mobile se dégrade à partir de H+1","La station de pompage d'eau potable n'a qu'une autonomie limitée","L'{etab} doit fermer","Les carburants deviennent difficiles à trouver"],
+  phases:[["Alerte","Information du gestionnaire, déclenchement du PCS."],["Vulnérables","Recensement et prise en charge des personnes fragiles."],["Durée","Chauffage, eau, communications dégradées."],["Tenue","Organisation de la nuit, relève et FINEX."]],
+  injects:[
+   [0,"ALERTE","Préfecture","Maire","Téléphone","Coupure électrique de longue durée sur le secteur. Activez votre PCS.","Déclenchement du PCS, armement du PCC avec moyens autonomes."],
+   [15,"SAUV","Infirmière libérale","Accueil mairie","Téléphone","Trois patients sous assistance respiratoire à domicile dans le {secteur}.","Priorisation des personnes électro-dépendantes, relais vers les secours."],
+   [30,"EVAL","Syndicat des eaux","PCC","Téléphone","La station de pompage tient 6 heures sur groupe électrogène, ensuite plus d'eau au robinet.","Anticipation d'une distribution d'eau, recherche de carburant."],
+   [45,"POP","Préfecture","Maire","Téléphone","Merci d'informer la population des consignes : chauffage d'appoint, risque de monoxyde de carbone.","Diffusion des consignes adaptées, y compris sans électricité."],
+   [60,"CARE","Agent communal","PCC","Sur place","Des habitants demandent un lieu chauffé pour la nuit.","Ouverture du lieu d'accueil ({heberg}) équipé d'un groupe électrogène."],
+   [75,"LIAI","Opérateur télécom","PCC","Courriel","Les antennes mobiles vont s'arrêter dans l'heure faute d'alimentation.","Mise en place de liaisons de secours, points d'information physiques."],
+   [90,"SAUV","Voisin","Accueil mairie","Sur place","Un homme âgé a été retrouvé en hypothermie légère chez lui.","Prise en charge médicale, porte-à-porte des personnes isolées."],
+   [105,"COM","Radio locale","Maire","Téléphone","Les auditeurs veulent savoir où trouver de l'eau et de la chaleur.","Message de situation clair : lieux, horaires, consignes."],
+   [120,"EVAL","Station-service","PCC","Sur place","Plus de pompes en service, des files d'attente se forment.","Priorisation du carburant pour les groupes électrogènes essentiels."],
+   [140,"LIAI","Préfecture","Maire","Téléphone","Point de situation : personnes vulnérables prises en charge, hébergés, besoins en groupes électrogènes.","Point de situation structuré, demande de moyens."],
+   [160,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Rumeur de pillages dans les commerces fermés.","Vérification avec la gendarmerie, message factuel."],
+   [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
+  ]}
+};
+const FORMATS = {
+  table:{label:"Exercice sur table", short:"Sur table", desc:"Les membres de la cellule de crise sont réunis autour d'une table. Les injects sont remis par l'animateur, oralement ou sur fiche. Aucun moyen n'est déplacé.", jeu:"Le jeu se déroule entièrement en salle. Les actions sont décrites, pas exécutées."},
+  cadre:{label:"Exercice cadre", short:"Cadre", desc:"Le PCC est armé dans ses locaux réels. Les injects arrivent par les vecteurs prévus (téléphone, courriel, radio) depuis une cellule d'animation installée dans une autre pièce.", jeu:"Les appels sortants vers des partenaires réels sont simulés et aboutissent à la cellule d'animation."},
+  terrain:{label:"Exercice avec volet terrain", short:"Avec terrain", desc:"Le PCC est armé et certaines actions sont exécutées réellement : ouverture du lieu d'accueil, mise en place de barrières, porte-à-porte sur un secteur limité.", jeu:"Seules les actions listées dans le volet terrain sont jouées en réel. Le reste est simulé."}
+};
+const DEFAULTS = {
+  commune:"Sainte-Croix-du-Lez", insee:"", pop:1240, dept:"Ariège (09)", risk:"inondation", format:"cadre",
+  duree:"180", heureH:"09:00", date:"", objs:[...OKEYS],
+  secteur:"quartier du Moulin", etab:"école primaire", heberg:"salle des fêtes", axe:"RD 119"
+};
+const ACTIONS0=()=>[{a:"Mettre à jour l'annuaire de crise du PCS",pilote:"Secrétariat de mairie",ech:"1 mois"},{a:"Compléter le recensement des personnes vulnérables",pilote:"Élu référent CCAS",ech:"3 mois"}];
+
+const KEY="atelier-pcs-v2";
+let S=null, live=null, geoRisks=null, pendingRegen=false;
+function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r)}catch(e){}return null}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fill=(t,p)=>String(t).replace(/\{(\w+)\}/g,(m,k)=>p[k]!=null&&p[k]!==""?p[k]:m);
+const hplus=m=>"H+"+Math.floor(m/60)+":"+String(m%60).padStart(2,"0");
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const nf=n=>Number(n).toLocaleString("fr-FR");
+function clock(min){const hh=S.p.heureH;if(!hh)return "";const [h,m]=hh.split(":").map(Number);const d=(((h*60+m+min)%1440)+1440)%1440;return String(Math.floor(d/60)).padStart(2,"0")+":"+String(d%60).padStart(2,"0")}
+function fmtDate(d){if(!d)return "Date à fixer";try{return new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}catch(e){return d}}
+
+/* ---------- Données publiques ---------- */
+async function getJSON(url,ms=7000){
+  const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);
+  try{const r=await fetch(url,{signal:c.signal,headers:{Accept:"application/json"}});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}
+  finally{clearTimeout(t)}
+}
+async function probe(){
+  try{await getJSON(API.geo("Paris"),5000);live=true}catch(e){live=false}
+  setPill();renderId();renderRisks();
+}
+function setPill(){
+  const el=$("#pillData");
+  if(live===null)el.innerHTML='<span class="dot wait"></span>Bases publiques : test en cours';
+  else if(live)el.innerHTML='<span class="dot ok"></span>Bases publiques connectées';
+  else el.innerHTML='<span class="dot warn"></span>Bases publiques hors ligne';
+}
+function classify(label){
+  for(const [k,v] of Object.entries(RISKS)) if(v.re&&v.re.test(label)) return {key:k};
+  for(const o of OTHER) if(o.re.test(label)) return {key:"autre",group:o.label};
+  return {key:"autre",group:label};
+}
+function parseDate(s){if(!s)return null;const m=String(s).match(/^(\d{2})\/(\d{2})\/(\d{4})/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);const d=new Date(s);return isNaN(d)?null:d}
+async function loadRisks(insee){
+  geoRisks={status:"loading"};renderRisks();
+  try{
+    const [r,c]=await Promise.allSettled([getJSON(API.risques(insee)),getJSON(API.catnat(insee))]);
+    if(r.status!=="fulfilled")throw r.reason;
+    const d=(r.value.data||[])[0]||{};
+    const raw=(d.risques_detail||d.risques||[]).map(x=>x.libelle_risque_long||x.libelle_risque||x.libelle||"").filter(Boolean);
+    const cat=c.status==="fulfilled"?(c.value.data||[]):[];
+    const prof={};
+    const slot=l=>{const k=classify(l);const id=k.key==="autre"?"autre:"+k.group:k.key;return prof[id]=prof[id]||{key:k.key,group:k.group,labels:[],catnat:0,last:null}};
+    raw.forEach(l=>slot(l).labels.push(l));
+    cat.forEach(a=>{const e=slot(a.libelle_risque_jo||a.libelle_risque||"");e.catnat++;const dt=parseDate(a.date_debut_evt);if(dt&&(!e.last||dt>e.last))e.last=dt});
+    geoRisks={status:"ok",at:new Date(),insee,items:Object.values(prof).sort((a,b)=>(b.key!=="autre")-(a.key!=="autre")||b.catnat-a.catnat)};
+    const first=geoRisks.items.find(x=>x.key!=="autre");
+    if(first)S.p.risk=first.key;
+    save();
+  }catch(e){geoRisks={status:"error"}}
+  renderRisks();
+}
+
+/* ---------- Configuration ---------- */
+function renderId(){
+  const p=S.p;
+  const cells=[["Code INSEE",p.insee||"—"],["Population",p.pop?nf(p.pop):"—"],["Département",p.dept||"—"]];
+  $("#idcard").innerHTML=cells.map(c=>`<div><b title="${esc(c[1])}">${esc(c[1])}</b><span>${c[0]}</span></div>`).join("");
+  $("#manualId").hidden=live!==false;
+  $("#srcAside").textContent=live?"Source : geo.api.gouv.fr":"";
+}
+function renderRisks(){
+  const p=S.p;let banner="";
+  const alertIco=`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">${ICONS.autre}</svg>`;
+  if(live===false) banner=`<div class="banner">${alertIco}<span><b>Saisie manuelle.</b> Cet affichage ne peut pas joindre Géorisques. Une fois l'outil hébergé, les risques de la commune se chargent automatiquement.</span></div>`;
+  else if(geoRisks&&geoRisks.status==="loading") banner=`<p class="note">Interrogation de Géorisques…</p>`;
+  else if(geoRisks&&geoRisks.status==="error") banner=`<div class="banner">${alertIco}<span><b>Géorisques n'a pas répondu.</b> Choisissez le risque manuellement ou réessayez plus tard.</span></div>`;
+  else if(geoRisks&&geoRisks.status==="ok") banner=`<p class="note">Risques recensés par Géorisques, consultés le ${geoRisks.at.toLocaleDateString("fr-FR")} à ${geoRisks.at.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}. <a href="${API.fiche(geoRisks.insee)}" target="_blank" rel="noopener">Voir la fiche Géorisques</a></p>`;
+  else if(live) banner=`<p class="note">Recherchez une commune pour charger ses risques recensés.</p>`;
+  const prof=geoRisks&&geoRisks.status==="ok"?geoRisks.items:null;
+  const keys=Object.keys(RISKS);
+  const ordered=prof?[...new Set(prof.filter(x=>x.key!=="autre").map(x=>x.key).concat(keys))]:keys;
+  let html=ordered.map(k=>{
+    const e=prof&&prof.find(x=>x.key===k);const tags=[];
+    if(e&&e.labels.length)tags.push('<span class="tg src">Recensé Géorisques</span>');
+    if(e&&e.catnat)tags.push(`<span class="tg cat">${e.catnat} arrêté${e.catnat>1?"s":""} CatNat${e.last?" · dernier en "+e.last.getFullYear():""}</span>`);
+    if(prof&&!(e&&e.labels.length))tags.push(k==="coupure"?'<span class="tg no">Risque transverse</span>':'<span class="tg no">Non recensé</span>');
+    if(!prof)tags.push('<span class="tg">Scénario disponible</span>');
+    return `<div class="rk"><input type="radio" name="risk" id="r-${k}" value="${k}" ${p.risk===k?"checked":""}><label for="r-${k}"><span class="ic">${ico(k)}</span><span class="tx"><b>${esc(RISKS[k].label)}</b><span class="tags">${tags.join("")}</span></span></label></div>`;
+  }).join("");
+  if(prof) prof.filter(x=>x.key==="autre").forEach((x,i)=>{
+    html+=`<div class="rk"><input type="radio" name="risk" id="ro-${i}" disabled><label for="ro-${i}"><span class="ic">${ico("autre")}</span><span class="tx"><b>${esc(x.group)}</b><span class="tags"><span class="tg src">Recensé Géorisques</span>${x.catnat?`<span class="tg cat">${x.catnat} CatNat</span>`:""}<span class="tg no">Scénario à venir</span></span></span></label></div>`;
+  });
+  $("#riskBanner").innerHTML=banner;
+  $("#risks").innerHTML=html;
+  $("#riskAside").textContent=prof?prof.length+" risque"+(prof.length>1?"s":"")+" recensé"+(prof.length>1?"s":""):"";
+}
+function renderSegs(){
+  document.querySelectorAll("#segFormat button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.p.format));
+  document.querySelectorAll("#segDuree button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.p.duree));
+  $("#objs").innerHTML=Object.entries(OBJS).map(([k,v])=>`<button type="button" class="chip" data-o="${k}" aria-pressed="${S.p.objs.includes(k)}" title="${esc(v.label)}">${esc(v.short)}</button>`).join("");
+  $("#objCount").textContent=S.p.objs.length+" sur 7";
+}
+function writeForm(){
+  const p=S.p;
+  $("#commune").value=p.commune;$("#pop").value=p.pop||"";$("#dept").value=p.dept||"";
+  $("#heureH").value=p.heureH;$("#date").value=p.date;
+  ["secteur","etab","heberg","axe"].forEach(k=>$("#"+k).value=p[k]);
+  renderSegs();renderId();renderRisks();
+}
+function readForm(){
+  const p=S.p;
+  p.commune=$("#commune").value.trim()||"la commune";
+  if(live===false){p.pop=$("#pop").value;p.dept=$("#dept").value.trim()}
+  const r=document.querySelector('input[name=risk]:checked');if(r)p.risk=r.value;
+  p.heureH=$("#heureH").value;p.date=$("#date").value;
+  ["secteur","etab","heberg","axe"].forEach(k=>p[k]=$("#"+k).value.trim()||DEFAULTS[k]);
+  return p;
+}
+
+let qTimer,suggItems=[],suggIdx=-1;
+$("#commune").addEventListener("input",e=>{
+  if(!live)return;
+  clearTimeout(qTimer);const q=e.target.value.trim();
+  if(q.length<2){closeSugg();return}
+  qTimer=setTimeout(async()=>{try{suggItems=await getJSON(API.geo(q),5000);suggIdx=-1;showSugg()}catch(err){closeSugg()}},220);
+});
+$("#commune").addEventListener("keydown",e=>{
+  if($("#sugg").hidden)return;
+  if(e.key==="ArrowDown"){e.preventDefault();suggIdx=Math.min(suggIdx+1,suggItems.length-1);showSugg()}
+  else if(e.key==="ArrowUp"){e.preventDefault();suggIdx=Math.max(suggIdx-1,0);showSugg()}
+  else if(e.key==="Enter"&&suggIdx>=0){e.preventDefault();pick(suggItems[suggIdx])}
+  else if(e.key==="Escape")closeSugg();
+});
+$("#commune").addEventListener("blur",()=>setTimeout(closeSugg,150));
+function showSugg(){
+  const ul=$("#sugg");
+  if(!suggItems.length){closeSugg();return}
+  ul.innerHTML=suggItems.map((c,i)=>`<li role="option" id="sg-${i}" aria-selected="${i===suggIdx}" data-i="${i}">${esc(c.nom)}<span>${esc(c.departement?c.departement.code:"")} · ${c.population?nf(c.population)+" hab.":"—"}</span></li>`).join("");
+  ul.hidden=false;$("#commune").setAttribute("aria-expanded","true");
+  if(suggIdx>=0)$("#commune").setAttribute("aria-activedescendant","sg-"+suggIdx);
+}
+function closeSugg(){$("#sugg").hidden=true;$("#commune").setAttribute("aria-expanded","false");$("#commune").removeAttribute("aria-activedescendant")}
+$("#sugg").addEventListener("mousedown",e=>{const li=e.target.closest("li");if(li){e.preventDefault();pick(suggItems[+li.dataset.i])}});
+function pick(c){
+  closeSugg();
+  Object.assign(S.p,{commune:c.nom,insee:c.code,pop:c.population||"",dept:c.departement?c.departement.nom+" ("+c.departement.code+")":""});
+  $("#commune").value=c.nom;S.isExample=false;renderId();save();render();
+  loadRisks(c.code).then(()=>{if(geoRisks.status==="ok")toast("Risques de "+c.nom+" chargés depuis Géorisques.")});
+}
+
+/* ---------- Génération ---------- */
+function buildInjects(p){
+  const lib=LIB[p.risk],dur=Number(p.duree),k=dur/180,keep=new Set(p.objs);
+  return lib.injects.filter(i=>i[1]==="FIN"||i[1]==="ALERTE"||keep.has(i[1])).map(i=>({
+    t:i[1]==="FIN"?dur-2:Math.round(i[0]*k/5)*5,obj:i[1],from:fill(i[2],p),to:fill(i[3],p),via:i[4],msg:fill(i[5],p),exp:fill(i[6],p)
+  }));
+}
+function generate(){
+  const p=readForm();
+  const e=geoRisks&&geoRisks.status==="ok"?geoRisks.items.find(x=>x.key===p.risk):null;
+  S.ctx=e&&(e.labels.length||e.catnat)?{catnat:e.catnat,last:e.last?e.last.toISOString():null,labels:e.labels,at:geoRisks.at.toISOString()}:null;
+  S.injects=buildInjects(p);S.cot={};S.edited=false;S.retex={forts:"",axes:"",actions:ACTIONS0()};
+  save();render();
+}
+
+/* ---------- Rendu ---------- */
+const TABS=[["cadrage","Cadrage"],["scenario","Scénario"],["chrono","Chronogramme"],["roles","Rôles"],["obs","Observation"],["retex","RETEX"],["regl","Réglementation"]];
+const info=`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 7.2v4M8 4.8v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const docHead=t=>`<div class="dochead"><span class="exmark">EXERCICE · EXERCICE · EXERCICE</span><span class="meta">${esc(S.p.commune)} · ${esc(t)}</span></div>`;
+const refLink=t=>`<a class="ref" href="${EXREF}" target="_blank" rel="noopener">${t}</a>`;
+
+function vCadrage(){
+  const p=S.p,f=FORMATS[p.format];
+  return docHead("Convention d'exercice")+`<div class="docbody">
+    <h3>Convention d'exercice</h3>
+    <dl class="kv">
+      <dt>Commune</dt><dd>${esc(p.commune)}${p.pop?" · "+nf(p.pop)+" habitants":""}${p.dept?" · "+esc(p.dept):""}</dd>
+      <dt>Risque joué</dt><dd>${esc(RISKS[p.risk].label)}</dd>
+      <dt>Format</dt><dd>${esc(f.label)}</dd>
+      <dt>Date</dt><dd>${esc(cap(fmtDate(p.date)))}</dd>
+      <dt>Horaires</dt><dd>H = ${esc(p.heureH||"à fixer")} · ${Number(p.duree)/60} h de jeu · 30 min de débriefing à chaud</dd>
+      <dt>Directeur d'exercice</dt><dd>À désigner, hors cellule de crise</dd>
+      <dt>Joueurs</dt><dd>Maire (DOS) et cellule de crise communale prévue au PCS</dd>
+    </dl>
+    <div class="sec"><h4>Objectifs évalués</h4><ul>${p.objs.map(o=>`<li>${esc(OBJS[o].label)}</li>`).join("")}</ul></div>
+    <div class="sec"><h4>Principe</h4><p>${esc(f.desc)}</p></div>
+    <div class="sec"><h4>Règles du jeu</h4><ul>
+      <li>Tout message d'exercice commence et finit par « EXERCICE EXERCICE EXERCICE ».</li>
+      <li>${esc(f.jeu)}</li>
+      <li>Le mot-code « PAS DE JEU » signale un événement réel qui interrompt l'exercice.</li>
+      <li>Aucun appel au 18, au 112 ou à la préfecture sans accord du directeur d'exercice.</li>
+      <li>Les observateurs ne s'adressent pas aux joueurs pendant le jeu.</li>
+      <li>La population et la presse sont informées de l'exercice au moins 48 heures avant.</li>
+    </ul></div>
+    <div class="callout">${info}<span>Cet exercice répond à l'obligation d'exercer le plan au moins tous les cinq ans et doit donner lieu à un retour d'expérience ${refLink("CSI D731-9 à D731-13")}. Informez le SIDPC de la préfecture et le SDIS au moins un mois avant.</span></div>
+  </div>`;
+}
+function vScenario(){
+  const p=S.p,L=LIB[p.risk],dur=Number(p.duree);
+  const ph=L.phases.map((x,i)=>`<div class="phase"><span class="t">${hplus(Math.round(dur*i/4))} → ${hplus(Math.round(dur*(i+1)/4))}</span><b>${esc(x[0])}</b><p>${esc(fill(x[1],p))}</p></div>`).join("");
+  let hist="";
+  if(S.ctx){
+    const last=S.ctx.last?new Date(S.ctx.last):null;
+    hist=`<div class="sec"><h4>Ce que la commune a déjà vécu</h4><div class="facts">
+      <div class="fact"><b>${S.ctx.catnat}</b><span>arrêtés CatNat pour ce risque</span></div>
+      <div class="fact"><b>${last?cap(last.toLocaleDateString("fr-FR",{month:"long",year:"numeric"})):"—"}</b><span>dernier événement reconnu</span></div>
+      <div class="fact"><b>${S.ctx.labels.length?esc(S.ctx.labels[0]):"—"}</b><span>libellé Géorisques</span></div>
+    </div><p class="note">Source : Géorisques, consulté le ${new Date(S.ctx.at).toLocaleDateString("fr-FR")}. Rappeler un événement réel rend le scénario crédible pour les joueurs.</p></div>`;
+  }
+  return docHead("Scénario")+`<div class="docbody">
+    <h3>${esc(RISKS[p.risk].label)} sur ${esc(p.commune)}</h3>
+    <div class="sec"><h4>Contexte</h4><p>${esc(fill(L.contexte,p))}</p></div>
+    <div class="sec"><h4>Situation initiale</h4><p>${esc(fill(L.initiale,p))}</p></div>
+    ${hist}
+    <div class="sec"><h4>Déroulement</h4><div class="phases">${ph}</div></div>
+    <div class="sec"><h4>Hypothèses de jeu</h4><ul>${L.hypotheses.map(h=>`<li>${esc(fill(h,p))}</li>`).join("")}</ul></div>
+    <div class="callout warn">${info}<span>Document réservé à l'équipe d'animation. Les joueurs ne reçoivent que la situation initiale.</span></div>
+  </div>`;
+}
+const tagOf=o=>`<span class="tag o-${o}">${esc(o==="FIN"?"FINEX":OBJS[o].short)}</span>`;
+function vChrono(){
+  let body;
+  if(S.view!=="table"){
+    body=`<div class="timeline">${S.injects.map((i,n)=>`<article class="inj o-${i.obj}" data-i="${n}">
+      <div class="top">
+        <span class="time"><input class="tmin" type="number" min="0" step="5" value="${i.t}" aria-label="Minute de l'inject ${n+1}">${hplus(i.t)}${S.p.heureH?`<span class="clk">${clock(i.t)}</span>`:""}</span>
+        ${tagOf(i.obj)}
+        <span class="flow"><span contenteditable="true" data-f="from">${esc(i.from)}</span> → <span contenteditable="true" data-f="to">${esc(i.to)}</span></span>
+        <span class="spacer"><span class="via" contenteditable="true" data-f="via">${esc(i.via)}</span><button class="del" type="button" data-del="${n}" aria-label="Supprimer l'inject ${n+1}">×</button></span>
+      </div>
+      <div class="msg" contenteditable="true" data-f="msg">${esc(i.msg)}</div>
+      <div class="exp"><b>Attendu</b><span contenteditable="true" data-f="exp">${esc(i.exp)}</span></div>
+    </article>`).join("")}</div>`;
+  } else {
+    body=`<div class="tablewrap"><table class="big"><thead><tr><th>Heure</th><th>Objectif</th><th>Émetteur</th><th>Destinataire</th><th>Vecteur</th><th>Message</th><th>Réaction attendue</th><th></th></tr></thead><tbody>${S.injects.map((i,n)=>`<tr data-i="${n}">
+      <td class="tm"><input class="tmin" type="number" min="0" step="5" value="${i.t}" aria-label="Minute de l'inject ${n+1}"><div>${hplus(i.t)}${S.p.heureH?" · "+clock(i.t):""}</div></td>
+      <td>${tagOf(i.obj)}</td>
+      <td><div contenteditable="true" data-f="from">${esc(i.from)}</div></td><td><div contenteditable="true" data-f="to">${esc(i.to)}</div></td>
+      <td><div contenteditable="true" data-f="via">${esc(i.via)}</div></td><td><div contenteditable="true" data-f="msg">${esc(i.msg)}</div></td>
+      <td><div contenteditable="true" data-f="exp">${esc(i.exp)}</div></td>
+      <td><button class="del" type="button" data-del="${n}" aria-label="Supprimer l'inject ${n+1}">×</button></td></tr>`).join("")}</tbody></table></div>`;
+  }
+  return docHead("Chronogramme")+`<div class="docbody"><h3>Chronogramme d'animation</h3><p class="note">Cliquez sur un texte pour le modifier. Le temps se règle en minutes après H et l'ordre se met à jour seul.</p>${body}</div>`;
+}
+function vRoles(){
+  const p=S.p;
+  const R=[
+    ["J","Maire, directeur des opérations (DOS)",["Déclenche le PCS et arme le PCC","Décide des mesures de sauvegarde","Valide toute communication externe","Rend compte à la préfecture"]],
+    ["J","Responsable des actions communales",["Coordonne les cellules du PCC","Conduit les points de situation","Tient la carte de situation","Assure le lien avec le COS"]],
+    ["J","Secrétariat et main courante",["Reçoit et horodate les messages","Tient la main courante","Prépare les points de situation écrits","Gère l'annuaire de crise"]],
+    ["J","Population et accueil (CARE)",["Alerte la population et les personnes vulnérables","Ouvre le lieu d'accueil : "+p.heberg,"Recense les personnes accueillies","Organise le ravitaillement"]],
+    ["J","Logistique et terrain",["Engage les agents et moyens communaux","Met en place barrières et déviations","Reconnaît les secteurs touchés","Suit les besoins en matériel"]],
+    ["J","Communication",["Prépare les messages à la population","Assure la veille des réseaux sociaux","Accueille les médias hors du PCC","Coordonne avec la préfecture"]],
+    ["A","Directeur d'exercice",["Garant du cadre et de la sécurité","Déclenche et arrête le jeu","Ajuste le rythme des injects","Anime le débriefing à chaud"]],
+    ["A","Animateurs",["Jouent préfecture, SDIS, gendarmerie, habitants, presse","Envoient les injects à l'heure prévue","Répondent aux appels sortants","Signalent les écarts au directeur"]],
+    ["A","Observateurs",["Un observateur par cellule si possible","Renseignent la grille d'observation","Notent des faits horodatés","N'interviennent jamais dans le jeu"]]
+  ];
+  return docHead("Fiches rôles")+`<div class="docbody"><h3>Fiches rôles</h3><div class="roles">${R.map(r=>`<div class="role ${r[0]==="A"?"anim":""}"><span class="who">${r[0]==="J"?"Joueur":"Équipe d'animation"}</span><b>${esc(r[1])}</b><ul>${r[2].map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`).join("")}</div></div>`;
+}
+function tally(o){let a=0,p=0,k=0;CRIT[o].forEach((_,j)=>{const v=S.cot[o+"-"+j];if(v==="ok")a++;else if(v==="part")p++;else if(v==="ko")k++});return {a,p,k,n:CRIT[o].length}}
+function vObs(){
+  return docHead("Grille d'observation")+`<div class="docbody"><h3>Grille d'observation</h3>
+    <p class="note">À renseigner par les observateurs pendant le jeu. La synthèse apparaît dans l'onglet RETEX.</p>
+    ${S.p.objs.map(o=>{const t=tally(o);return `<div class="obsg"><div class="gh"><span>${esc(OBJS[o].label)}</span><span class="score">${t.a+t.p+t.k}/${t.n} cotés</span></div>${CRIT[o].map((c,j)=>{const id=o+"-"+j,v=S.cot[id]||"";return `<div class="obsr"><span>${esc(c)}</span><span class="cot" role="group" aria-label="Cotation">${[["ok","Atteint"],["part","Partiel"],["ko","Non atteint"]].map(x=>`<button type="button" data-cot="${id}" data-v="${x[0]}" aria-pressed="${v===x[0]}">${x[1]}</button>`).join("")}</span></div>`}).join("")}</div>`}).join("")}
+  </div>`;
+}
+function vRetex(){
+  const bars=S.p.objs.map(o=>{const t=tally(o),pc=x=>(x/t.n*100)+"%";return `<div class="brow"><span>${esc(OBJS[o].short)}</span><div class="track" role="img" aria-label="${t.a} atteints, ${t.p} partiels, ${t.k} non atteints sur ${t.n}"><i class="a" style="width:${pc(t.a)}"></i><i class="p" style="width:${pc(t.p)}"></i><i class="k" style="width:${pc(t.k)}"></i></div><span class="score">${t.a+t.p+t.k}/${t.n}</span></div>`}).join("");
+  const acts=S.retex.actions.map((x,n)=>`<tr data-a="${n}"><td><div contenteditable="true" data-af="a">${esc(x.a)}</div></td><td><div contenteditable="true" data-af="pilote">${esc(x.pilote)}</div></td><td><div contenteditable="true" data-af="ech">${esc(x.ech)}</div></td><td><button class="del" type="button" data-adel="${n}" aria-label="Supprimer l'action">×</button></td></tr>`).join("");
+  return docHead("Retour d'expérience")+`<div class="docbody"><h3>Retour d'expérience</h3>
+    <div class="sec"><h4>Synthèse des cotations</h4><div class="legend"><span style="--c:var(--ok)">Atteint</span><span style="--c:var(--warn)">Partiel</span><span style="--c:var(--bad)">Non atteint</span></div><div class="bars">${bars}</div></div>
+    <div class="sec"><h4>Débriefing à chaud</h4><ul><li>Qu'est-ce qui a bien fonctionné et doit être conservé ?</li><li>Qu'est-ce qui vous a manqué : information, moyen, procédure ?</li><li>Que changeriez-vous dans le PCS dès demain ?</li></ul></div>
+    <div class="two"><div class="field"><label for="rf">Points forts</label><textarea id="rf" data-r="forts">${esc(S.retex.forts)}</textarea></div><div class="field"><label for="ra">Axes d'amélioration</label><textarea id="ra" data-r="axes">${esc(S.retex.axes)}</textarea></div></div>
+    <div class="sec"><h4>Plan d'actions correctives</h4><div class="tablewrap"><table style="min-width:540px"><thead><tr><th>Action</th><th>Pilote</th><th>Échéance</th><th></th></tr></thead><tbody>${acts}</tbody></table></div><div><button class="btn sm" type="button" id="addAct">+ Ajouter une action</button></div></div>
+    <div class="callout">${info}<span>Le retour d'expérience associe l'ensemble des acteurs et formule des recommandations pour ajuster le plan ${refLink("CSI D731-9 à D731-13")}. Le PCS se révise ensuite, et au moins tous les cinq ans.</span></div>
+  </div>`;
+}
+function vRegl(){
+  return docHead("Cadre réglementaire")+`<div class="docbody"><h3>Cadre réglementaire et doctrine</h3>
+    <p>Chaque lien ouvre le texte sur Légifrance, dans sa version en vigueur. Les synthèses ont été vérifiées le ${VERIF}.</p>
+    <div class="tablewrap"><table style="min-width:640px"><thead><tr><th>Référence</th><th>Ce que cela impose</th><th>Statut</th></tr></thead><tbody>
+    ${REGL.map(r=>`<tr><td><a href="${r.url}" target="_blank" rel="noopener">${esc(r.ref)}</a></td><td>${esc(r.objet)}</td><td><span class="st ${r.statut}">${STAT[r.statut]}</span></td></tr>`).join("")}
+    </tbody></table></div>
+    <div class="callout warn">${info}<span>Un texte en discussion peut modifier les obligations. Vérifiez son avancement avant toute communication officielle à la préfecture.</span></div>
+  </div>`;
+}
+const VIEWS={cadrage:vCadrage,scenario:vScenario,chrono:vChrono,roles:vRoles,obs:vObs,retex:vRetex,regl:vRegl};
+
+function render(){
+  const p=S.p;
+  const k=[["Risque joué",RISKS[p.risk].label,1],["Format",FORMATS[p.format].short],["Durée de jeu",Number(p.duree)/60+" h"],["Injects",S.injects.length],["Objectifs",p.objs.length+" sur 7"]];
+  $("#kpis").innerHTML=k.map(x=>`<div class="card kpi ${x[2]?"hl":""}"><span>${x[0]}</span><b title="${esc(x[1])}">${esc(x[1])}</b></div>`).join("");
+  $("#tabs").innerHTML=TABS.map(t=>`<button class="tab" role="tab" type="button" id="tab-${t[0]}" aria-selected="${S.tab===t[0]}" data-tab="${t[0]}">${t[1]}</button>`).join("");
+  let tools=`<button class="btn sm ghost" type="button" id="copyAll">Copier le dossier</button>`;
+  if(S.tab==="chrono")tools=`<div class="seg" role="group" aria-label="Affichage du chronogramme"><button type="button" data-view="tl" aria-pressed="${S.view!=="table"}">Frise</button><button type="button" data-view="table" aria-pressed="${S.view==="table"}">Tableau</button></div><button class="btn sm" type="button" id="addInj">+ Inject</button><button class="btn sm" type="button" id="copyTsv">Copier pour un tableur</button>`+tools;
+  $("#tools").innerHTML=tools;
+  $("#view").innerHTML=`<article class="card doc">${VIEWS[S.tab]()}</article>`;
+  $("#exnote").hidden=!S.isExample;
+}
+
+/* ---------- Événements ---------- */
+$("#segFormat").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.p.format=b.dataset.v;renderSegs();save()});
+$("#segDuree").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.p.duree=b.dataset.v;renderSegs();save()});
+$("#objs").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(!b)return;const o=b.dataset.o,i=S.p.objs.indexOf(o);if(i>=0){if(S.p.objs.length===1){toast("Gardez au moins un objectif.");return}S.p.objs.splice(i,1)}else S.p.objs.push(o);S.p.objs.sort((a,b)=>OKEYS.indexOf(a)-OKEYS.indexOf(b));renderSegs();save()});
+$("#risks").addEventListener("change",e=>{if(e.target.name==="risk"){S.p.risk=e.target.value;save()}});
+$("#gen").addEventListener("click",()=>{
+  if(S.edited&&!pendingRegen){pendingRegen=true;$("#genLabel").textContent="Confirmer : remplacer le chronogramme modifié";return}
+  pendingRegen=false;$("#genLabel").textContent="Générer le dossier";generate();toast("Dossier généré.");
+});
+$("#tabs").addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(!b)return;S.tab=b.dataset.tab;save();render()});
+$("#tabs").addEventListener("keydown",e=>{if(e.key!=="ArrowRight"&&e.key!=="ArrowLeft")return;const i=TABS.findIndex(t=>t[0]===S.tab);S.tab=TABS[(i+(e.key==="ArrowRight"?1:-1)+TABS.length)%TABS.length][0];save();render();$("#tab-"+S.tab).focus()});
+$("#tools").addEventListener("click",e=>{
+  const v=e.target.closest("[data-view]");if(v){S.view=v.dataset.view==="table"?"table":"tl";save();render();return}
+  if(e.target.id==="addInj"){const last=S.injects.filter(i=>i.obj!=="FIN").pop();S.injects.push({t:last?last.t+5:0,obj:"EVAL",from:"Émetteur",to:"PCC",via:"Téléphone",msg:"Nouveau message",exp:"Réaction attendue"});S.injects.sort((a,b)=>a.t-b.t);S.edited=true;save();render()}
+  if(e.target.id==="copyTsv"){const c=s=>String(s).replace(/[\t\n]/g," ");copy([["Heure","Horaire","Objectif","Émetteur","Destinataire","Vecteur","Message","Réaction attendue"].join("\t")].concat(S.injects.map(i=>[hplus(i.t),clock(i.t),i.obj==="FIN"?"FINEX":OBJS[i.obj].short,i.from,i.to,i.via,i.msg,i.exp].map(c).join("\t"))).join("\n"),"Chronogramme copié. Collez-le dans un tableur.")}
+  if(e.target.id==="copyAll")copy(asText(),"Dossier copié. Collez-le dans un traitement de texte.");
+});
+$("#view").addEventListener("focusout",e=>{
+  const ce=e.target.closest("[contenteditable]");if(!ce)return;
+  const it=ce.closest("[data-i]"),ac=ce.closest("[data-a]");
+  if(it&&ce.dataset.f){S.injects[+it.dataset.i][ce.dataset.f]=ce.textContent.trim();S.edited=true;save()}
+  if(ac&&ce.dataset.af){S.retex.actions[+ac.dataset.a][ce.dataset.af]=ce.textContent.trim();save()}
+});
+$("#view").addEventListener("change",e=>{const t=e.target;if(t.classList.contains("tmin")){const n=+t.closest("[data-i]").dataset.i;S.injects[n].t=Math.max(0,parseInt(t.value||0,10));S.injects.sort((a,b)=>a.t-b.t);S.edited=true;save();render()}});
+$("#view").addEventListener("input",e=>{const t=e.target;if(t.dataset.r){S.retex[t.dataset.r]=t.value;save()}});
+$("#view").addEventListener("click",e=>{
+  const d=e.target.closest("[data-del]");if(d){S.injects.splice(+d.dataset.del,1);S.edited=true;save();render();return}
+  const ad=e.target.closest("[data-adel]");if(ad){S.retex.actions.splice(+ad.dataset.adel,1);save();render();return}
+  const c=e.target.closest("[data-cot]");if(c){const id=c.dataset.cot;S.cot[id]=S.cot[id]===c.dataset.v?"":c.dataset.v;save();render();return}
+  if(e.target.id==="addAct"){S.retex.actions.push({a:"Nouvelle action",pilote:"À désigner",ech:"À fixer"});save();render()}
+});
+["secteur","etab","heberg","axe","heureH","date","pop","dept"].forEach(id=>$("#"+id).addEventListener("change",()=>{readForm();save()}));
+
+function asText(){
+  const p=S.p,L=LIB[p.risk],f=FORMATS[p.format],o=[];
+  o.push("EXERCICE EXERCICE EXERCICE","","EXERCICE PCS · "+p.commune.toUpperCase(),RISKS[p.risk].label+" · "+f.label+" · "+fmtDate(p.date)+" · H = "+(p.heureH||"à fixer")+" · "+Number(p.duree)/60+" h","");
+  o.push("1. CADRAGE","Objectifs :",...p.objs.map(x=>"- "+OBJS[x].label),"Principe : "+f.desc,"");
+  o.push("2. SCÉNARIO","Contexte : "+fill(L.contexte,p),"Situation initiale : "+fill(L.initiale,p));
+  if(S.ctx)o.push("Historique (Géorisques) : "+S.ctx.catnat+" arrêté(s) CatNat pour ce risque.");
+  o.push("Hypothèses :",...L.hypotheses.map(h=>"- "+fill(h,p)),"");
+  o.push("3. CHRONOGRAMME");S.injects.forEach(i=>o.push(hplus(i.t)+(p.heureH?" ("+clock(i.t)+")":"")+" · "+i.from+" → "+i.to+" · "+i.via,"   "+i.msg,"   Attendu : "+i.exp));
+  o.push("","4. GRILLE D'OBSERVATION");p.objs.forEach(x=>{o.push(OBJS[x].label);CRIT[x].forEach((c,j)=>{const v=S.cot[x+"-"+j];o.push("- "+c+" : "+({ok:"atteint",part:"partiel",ko:"non atteint"}[v]||"à coter"))})});
+  o.push("","5. RETEX","Points forts : "+(S.retex.forts||"—"),"Axes d'amélioration : "+(S.retex.axes||"—"),"Actions :",...S.retex.actions.map(a=>"- "+a.a+" · "+a.pilote+" · "+a.ech));
+  o.push("","6. CADRE RÉGLEMENTAIRE (vérifié le "+VERIF+")",...REGL.map(r=>"- "+r.ref+" ["+STAT[r.statut]+"] : "+r.objet+" "+r.url),"","EXERCICE EXERCICE EXERCICE");
+  return o.join("\n");
+}
+function copy(text,msg){try{navigator.clipboard.writeText(text).then(()=>toast(msg),()=>fallback(text,msg))}catch(e){fallback(text,msg)}}
+function fallback(text,msg){const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand("copy")}catch(e){}ta.remove();toast(ok?msg:"Copie refusée par le navigateur. Sélectionnez le texte à la main.")}
+let tt;function toast(m){const el=$("#toast");el.textContent=m;el.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>el.classList.remove("on"),3200)}
+
+/* ---------- Démarrage ---------- */
+S=load();
+if(!(S&&S.p&&LIB[S.p.risk]&&Array.isArray(S.injects))){
+  S={p:{...DEFAULTS,objs:[...DEFAULTS.objs]},tab:"cadrage",view:"tl",isExample:true,cot:{},ctx:null,retex:{forts:"",axes:"",actions:ACTIONS0()}};
+  S.injects=buildInjects(S.p);
+}
+writeForm();render();
+probe().then(()=>{if(live&&S.p.insee)loadRisks(S.p.insee)});
+})();
+</script>
