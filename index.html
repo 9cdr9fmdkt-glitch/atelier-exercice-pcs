@@ -1,4 +1,4 @@
-<title>Atelier Exercice PCS</title>
+<title>Commune Prête</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
 <style>
@@ -239,7 +239,7 @@ td.tm{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap;font-variant
   <div class="in">
     <div class="logo">
       <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="8" fill="var(--primary)"/><path d="M15 6l7 3v5.5c0 4.2-2.9 7.6-7 9.5-4.1-1.9-7-5.3-7-9.5V9z" fill="var(--primary-ink)"/><path d="M11.5 14.5l2.5 2.5 4.5-5" stroke="var(--accent)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div>Atelier Exercice PCS<small>Préparation des exercices de plan communal de sauvegarde</small></div>
+      <div>Commune Prête<small>Préparer, conduire et évaluer vos exercices de crise</small></div>
     </div>
     <div class="status">
       <span class="pill" id="pillData"><span class="dot wait"></span>Bases publiques : test en cours</span>
@@ -981,7 +981,7 @@ $("#view").addEventListener("click",e=>{
 
 function asText(){
   const p=S.p,L=LIB[p.risk],f=FORMATS[p.format],o=[];
-  o.push("EXERCICE EXERCICE EXERCICE","","EXERCICE PCS · "+p.commune.toUpperCase(),RISKS[p.risk].label+" · "+f.label+" · "+fmtDate(p.date)+" · H = "+(p.heureH||"à fixer")+" · "+Number(p.duree)/60+" h","");
+  o.push("EXERCICE EXERCICE EXERCICE","","COMMUNE PRÊTE · EXERCICE DE CRISE · "+p.commune.toUpperCase(),RISKS[p.risk].label+" · "+f.label+" · "+fmtDate(p.date)+" · H = "+(p.heureH||"à fixer")+" · "+Number(p.duree)/60+" h","");
   o.push("1. CADRAGE","Objectifs :",...p.objs.map(x=>"- "+OBJS[x].label),"Principe : "+f.desc,"");
   o.push("2. SCÉNARIO","Contexte : "+fill(L.contexte,p),"Situation initiale : "+fill(L.initiale,p));
   if(S.ctx)o.push("Historique (Géorisques) : "+S.ctx.catnat+" arrêté(s) CatNat pour ce risque.");
