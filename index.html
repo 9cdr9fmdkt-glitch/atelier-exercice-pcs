@@ -344,6 +344,7 @@ const ICONS = {
   terrorisme:'<path d="M8 1.5l5.5 2.3v4.1c0 3.2-2.3 5.6-5.5 6.6-3.2-1-5.5-3.4-5.5-6.6V3.8z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/><path d="M8 5v3.6M8 10.8v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
   cyber:'<rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2M8 9.8v1.6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>',
   canicule:'<circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9L13 13M3 13l1.1-1.1M11.9 4.1L13 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  sanitaire:'<circle cx="8" cy="8" r="3.6" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 1.5v2.9M8 11.6v2.9M1.5 8h2.9M11.6 8h2.9M3.4 3.4l2 2M10.6 10.6l2 2M3.4 12.6l2-2M10.6 5.4l2-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
   autre:'<path d="M8 2l6.5 11.5h-13zM8 6.5v3.2M8 11.6v.1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
 };
 const ico=k=>`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">${ICONS[k]||ICONS.autre}</svg>`;
@@ -358,6 +359,7 @@ const RISKS = {
   terrorisme:{label:"Attentat lors d'un événement communal", re:null, transverse:true},
   cyber:{label:"Cyberattaque contre la mairie", re:null, transverse:true},
   canicule:{label:"Canicule", re:/canicule|vague de chaleur/i, transverse:true},
+  sanitaire:{label:"Épidémie (type Covid-19)", re:/épidém|pandém/i, transverse:true},
   coupure:{label:"Coupure électrique prolongée", re:null, transverse:true}
 };
 const OTHER = [
@@ -398,6 +400,7 @@ const REGL = [
   {ref:"Plan Vigipirate (SGDSN) : guides pour les élus et les collectivités", objet:"Posture de vigilance face à la menace terroriste, bonnes pratiques pour les maires, sécurisation des rassemblements. En cas d'attentat, le préfet dirige les opérations ; la commune agit en appui.", statut:"gui", url:"https://www.sgdsn.gouv.fr/vigipirate/les-guides"},
   {ref:"Règlement général sur la protection des données, art. 33 (CNIL)", objet:"Toute violation de données personnelles présentant un risque se notifie à la CNIL dans les 72 heures après sa découverte. Cas typique : rançongiciel avec vol de données.", statut:"vig", url:"https://www.cnil.fr/fr/violations-de-donnees-personnelles-les-regles-suivre"},
   {ref:"ANSSI : kit d'exercice de crise cyber pour les collectivités", objet:"Scénarios, chronogrammes et fiches pour s'entraîner à une cyberattaque. Complément utile au scénario cyber de l'atelier.", statut:"gui", url:"https://cyber.gouv.fr/securisation/gestion-de-crise/entrainement-crise/kit-exercice-collectivites-territoriales/"},
+  {ref:"Plan gouvernemental de réponse à une pandémie (SGDSN, mars 2024)", objet:"Cadre national de gestion d'une pandémie. Le maire veille aux personnes vulnérables, au respect des mesures sanitaires et à la continuité des services de proximité, en s'appuyant sur les associations et la solidarité de voisinage.", statut:"gui", url:"https://www.sgdsn.gouv.fr/files/files/Circulaires%20et%20instructions/SGDSN-PLAN_GOUVERNEMENTAL_PANDEMIE_V8-NUM%20(1).pdf"},
   {ref:"Code de l'action sociale et des familles, art. L121-6-1", objet:"Le maire tient un registre nominatif des personnes âgées et handicapées vivant à domicile qui en font la demande, mobilisé lors des canicules.", statut:"vig", url:"https://nausica-avocats.fr/maire-et-canicule-quels-pouvoirs-quels-responsabilites/"}
 ];
 const STAT={vig:"En vigueur",pro:"En discussion",gui:"Doctrine"};
@@ -589,6 +592,28 @@ cyber:{
    [125,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","Les attaquants publient un extrait du fichier des inscrits à la cantine.","Information des familles concernées, signalement, coordination avec la CNIL et la gendarmerie."],
    [145,"LIAI","Préfecture","Maire","Téléphone portable","Point de situation attendu : services touchés, données concernées, démarches engagées, besoins.","Point de situation structuré et horodaté."],
    [162,"EVAL","Prestataire informatique","PCC","Réunion","Quelles mesures pour éviter que cela se reproduise ?","Plan d'actions : sauvegardes hors ligne, double authentification, sensibilisation des agents."],
+   [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
+  ]},
+sanitaire:{
+  contexte:"Un nouveau virus respiratoire se propage rapidement en France, sur le modèle de la Covid-19. Le gouvernement active son plan pandémie ; le préfet et l'agence régionale de santé pilotent la réponse dans le département. Les cas se multiplient à {commune}.",
+  initiale:"L'exercice se joue en sauts de temps : J (premiers cas et mesures nationales), J+3 (confinement annoncé), J+10 (crise installée), J+30 (sortie progressive). Chaque inject indique le jour simulé.",
+  hypotheses:["Un tiers des agents municipaux est absent (malades ou garde d'enfants)","L'{etab} ferme sur décision nationale","Les personnes âgées isolées ne peuvent plus faire leurs courses","Un scrutin ou un conseil municipal doit se tenir pendant la crise"],
+  phases:[["J · Montée","Premières mesures, activation du PCS, plan de continuité des services."],["J+3 · Confinement","Personnes isolées, écoles, services essentiels."],["J+10 · Durée","Absentéisme, solidarité, rumeurs, soutien à la campagne sanitaire."],["J+30 · Sortie","Reprise progressive, retour d'expérience et FINEX."]],
+  note:"Dans une crise sanitaire, l'État (préfet, ARS) décide des mesures. La commune garantit la continuité de ses services, protège les personnes vulnérables, relaie les consignes et organise la solidarité locale.",
+  noteRef:["Plan pandémie 2024","https://www.sgdsn.gouv.fr/files/files/Circulaires%20et%20instructions/SGDSN-PLAN_GOUVERNEMENTAL_PANDEMIE_V8-NUM%20(1).pdf"],
+  injects:[
+   [0,"ALERTE","Préfecture","Maire","Courriel","[J] Le plan pandémie est activé. Merci de réunir votre cellule de crise et d'activer votre plan de continuité des services.","Déclenchement du PCS, armement de la cellule, recensement des missions essentielles de la mairie."],
+   [10,"EVAL","Directrice générale des services","PCC","Sur place","[J] Quels services maintenir si la moitié des agents est absente ?","Liste des services essentiels (état civil, eau, cantine, aide sociale), binômes de suppléance, télétravail."],
+   [25,"POP","Préfecture","Maire","Courriel","[J+3] Confinement national annoncé ce soir. Relayez les consignes et les attestations aux habitants.","Diffusion par affichage, site, réseaux sociaux et porte-à-porte pour les personnes sans internet."],
+   [40,"SAUV","CCAS","PCC","Sur place","[J+3] Les 47 inscrits du registre des personnes vulnérables doivent être contactés. Plusieurs vivent seuls.","Campagne d'appels, fiche de suivi, visites pour les personnes injoignables."],
+   [55,"CARE","Association locale","PCC","Téléphone","[J+3] Des bénévoles proposent de faire les courses des personnes isolées. Comment s'organiser ?","Coordination de la solidarité : recensement des besoins, binômes, règles sanitaires."],
+   [70,"EVAL","Direction de l'{etab}","Maire","Téléphone","[J+3] L'école ferme, mais des enfants de soignants doivent être accueillis.","Accueil des enfants de personnels prioritaires, avec l'Éducation nationale."],
+   [85,"COM","Réseaux sociaux","Cellule communication","Capture d'écran","[J+10] Rumeur : un habitant contaminé serait à l'origine du foyer et son nom circule.","Démenti, rappel au respect de la vie privée, signalement si besoin."],
+   [100,"EVAL","Responsable des services techniques","PCC","Téléphone","[J+10] Quatre agents sur six sont absents. La collecte des déchets et le cimetière posent problème.","Priorisation des tâches, mutualisation avec l'intercommunalité, appel à des renforts."],
+   [115,"LIAI","Agence régionale de santé","Maire","Courriel","[J+10] Un centre de vaccination ou de dépistage doit ouvrir dans le secteur. Pouvez-vous fournir une salle et des bénévoles ?","Proposition du lieu d'accueil ({heberg}), logistique, organisation de l'accueil du public."],
+   [130,"CARE","Famille","Accueil mairie","Téléphone","[J+10] Un décès à domicile : la famille ne sait pas comment organiser les obsèques avec les restrictions.","Information sur les règles en vigueur, lien avec les pompes funèbres, soutien du CCAS."],
+   [145,"LIAI","Préfecture","Maire","Téléphone","[J+10] Point de situation : personnes vulnérables suivies, services maintenus, besoins en équipements de protection.","Point de situation structuré et horodaté."],
+   [162,"EVAL","Préfecture","Maire","Courriel","[J+30] Levée progressive des mesures. Préparez la réouverture des écoles et des services.","Plan de reprise, information des habitants, préparation du retour d'expérience."],
    [178,"FIN","Directeur d'exercice","Tous","Message","FIN D'EXERCICE. Rassemblement pour le débriefing à chaud.","Arrêt du jeu, débriefing à chaud."]
   ]},
 canicule:{
