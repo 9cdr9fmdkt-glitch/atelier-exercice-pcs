@@ -113,6 +113,19 @@ const view = t => t.q("#view").textContent;
   ok(!a.errs.length, "aucune erreur JavaScript" + (a.errs.length ? " : " + a.errs[0] : ""));
   a.close();
 
+  console.log("\nAFFICHAGE");
+  const v = open("bourg"); await wait(300);
+  ok([...v.d.querySelectorAll(".tgrp")].map(x => x.textContent).join("/") === "Préparer/Conduire/Évaluer", "onglets regroupés en trois temps");
+  click(v, "#panelBtn"); ok(v.d.body.classList.contains("panel-off") && v.q("#panelBtn").getAttribute("aria-pressed") === "true", "panneau de préparation masqué");
+  click(v, "#panelBtn"); ok(!v.d.body.classList.contains("panel-off"), "panneau de préparation réaffiché");
+  click(v, "#themeBtn"); ok(v.d.documentElement.dataset.theme === "light", "thème clair choisi");
+  click(v, "#themeBtn"); ok(v.d.documentElement.dataset.theme === "dark", "thème sombre choisi");
+  click(v, "#themeBtn"); ok(!v.d.documentElement.dataset.theme && /automatique/.test(v.q("#themeBtn").title), "retour au thème automatique");
+  ok(/"theme":"auto"/.test(v.w.localStorage.getItem("commune-prete-affichage")), "choix d'affichage conservé");
+  ok(!/Scénario disponible/.test(v.q("#risks").textContent), "liste des risques épurée");
+  ok(!v.errs.length, "aucune erreur JavaScript" + (v.errs.length ? " : " + v.errs[0] : ""));
+  v.close();
+
   console.log(`\n${passes} réussis, ${failures} en échec`);
   process.exit(failures ? 1 : 0);
 })().catch(e => { console.error("ERREUR DU TEST :", e); process.exit(1) });

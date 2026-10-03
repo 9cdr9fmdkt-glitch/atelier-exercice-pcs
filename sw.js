@@ -2,8 +2,9 @@
    Page et bibliothèques : réseau d'abord, copie locale si le réseau manque.
    Fonds de carte déjà consultés : copie locale d'abord (400 tuiles au plus).
    Bases publiques (lecture) : réseau d'abord, dernière réponse connue sinon. */
-const CORE = "cp-core-v1", TILES = "cp-tiles", DATA = "cp-data";
+const CORE = "cp-core-v2", TILES = "cp-tiles", DATA = "cp-data";
 const PRECACHE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png",
+  "./fonts/polices.css", "./fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2", "./fonts/source-serif-4-latin-opsz-normal.woff2",
   "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"];
 
 self.addEventListener("install", e => {
