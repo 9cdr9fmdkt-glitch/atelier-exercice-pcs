@@ -115,7 +115,7 @@ textarea{resize:vertical;min-height:88px;line-height:1.5}
 .sugg li{padding:9px 10px;border-radius:5px;cursor:pointer;display:flex;justify-content:space-between;gap:10px}
 .sugg li span{color:var(--muted);font-size:13px;white-space:nowrap}
 .sugg li[aria-selected=true],.sugg li:hover{background:var(--surface-2)}
-.idcard{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r-sm)}
+.idcard{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,.9fr) minmax(0,1.25fr);border:1px solid var(--line);border-radius:var(--r-sm)}
 .idcard div{padding:8px 11px;min-width:0}
 .idcard div+div{border-left:1px solid var(--line)}
 .idcard b{display:block;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -187,6 +187,9 @@ details.more .inner{display:flex;flex-direction:column;gap:12px;padding-bottom:1
 .bar{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;position:sticky;top:calc(var(--bar) + env(safe-area-inset-top,0px));z-index:10;background:var(--bg);margin-inline:calc(-1 * clamp(16px,3vw,40px));padding:10px clamp(16px,3vw,40px) 0}
 .tabs{display:flex;align-items:center;gap:2px;overflow-x:auto;max-width:100%;border-bottom:1px solid var(--line-2);flex:1 1 auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
+.tabs.ovf{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}
+.tabs.ovf.end{-webkit-mask-image:linear-gradient(90deg,transparent,#000 36px);mask-image:linear-gradient(90deg,transparent,#000 36px)}
+.tabs.ovf.mid{-webkit-mask-image:linear-gradient(90deg,transparent,#000 36px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 36px,#000 calc(100% - 36px),transparent)}
 .tgrp{font-size:12.5px;color:var(--faint);padding:2px 4px 0 18px;white-space:nowrap}
 .tgrp:first-child{padding-left:2px}
 .tab{border:0;background:transparent;font-size:14px;color:var(--muted);padding:9px 9px 10px;cursor:pointer;white-space:nowrap;position:relative;border-radius:var(--r-sm) var(--r-sm) 0 0}
@@ -316,7 +319,16 @@ td.tm{font-weight:700;white-space:nowrap}
 .mclist li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:8px 2px;border-bottom:1px solid var(--line);font-size:14.5px}
 .mclist time{font-size:13.5px;font-weight:700;color:var(--muted)}
 body.obsmode .shell{grid-template-columns:minmax(0,780px);justify-content:center}
-body.obsmode .status,body.obsmode .tools-r{display:none}
+body.obsmode .status,body.obsmode #panelBtn{display:none}
+body.obsmode .tools-r{border-left:0;margin-left:auto}
+body.obsmode .doc{overflow:visible}
+body.obsmode .obsr .cot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;max-width:360px}
+body.obsmode .cot button{min-height:42px;font-size:14px}
+body.obsmode .obsv{min-height:42px!important;font-size:15px!important}
+body.obsmode .nowb{min-height:42px}
+.obsfoot{position:sticky;bottom:0;margin:6px -4px 0;padding:12px 4px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,var(--surface) 30%)}
+.obsfoot .btn{width:100%;min-height:48px;font-size:15.5px}
+@media (max-width:620px){body.obsmode .work{padding-inline:10px}body.obsmode .docbody{padding-inline:16px}}
 .checks{list-style:none;padding:0;margin:4px 0}.checks li{padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}.checks input{margin-right:8px}
 .obsr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:12px 16px;border-top:1px solid var(--line);align-items:center;font-size:14.5px}
 @media (max-width:620px){.obsr{grid-template-columns:minmax(0,1fr)}}
@@ -345,7 +357,10 @@ body.obsmode .status,body.obsmode .tools-r{display:none}
 .st.vig{background:var(--ok-soft);color:var(--ok)}
 .st.pro{background:var(--warn-soft);color:var(--warn)}
 .st.gui{background:var(--primary-soft);color:var(--primary)}
-.exnote{font-size:13px;color:var(--muted);margin:0;text-align:center}
+.hello{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--primary);border-radius:var(--r-sm);padding:12px 16px;margin-top:12px;box-shadow:var(--shadow)}
+.hello svg{color:var(--primary);flex:none}
+.hello p{margin:0;flex:1 1 320px;font-size:14.5px}
+.hello b{font-weight:700}
 
 /* Cartographie (Leaflet, styles essentiels intégrés) */
 :root{--tile-filter:none}
@@ -398,7 +413,8 @@ body.obsmode .status,body.obsmode .tools-r{display:none}
 .site span{font-size:12px;color:var(--muted)}
 .c-mairie{--c:var(--primary)}.c-ecole{--c:var(--warn)}.c-sante{--c:var(--bad)}.c-ehpad{--c:var(--violet)}.c-secours{--c:var(--bad)}.c-pharmacie{--c:var(--ok)}.c-salle{--c:var(--teal)}.c-commerce{--c:var(--accent)}.c-sport{--c:var(--teal)}.c-culte{--c:var(--muted)}.c-energie{--c:var(--warn)}.c-eau{--c:var(--primary)}.c-industrie{--c:var(--violet)}.c-camping{--c:var(--ok)}.c-gare{--c:var(--ink)}.c-aero{--c:var(--ink)}.c-place{--c:var(--accent)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-@media (max-width:1180px){.logo small{display:none}}
+@media (max-width:1180px){.logo small{display:none}:root{--panel:330px}.step{padding:18px 18px}details.more{margin-inline:-18px;padding:0 18px}.cta{padding-inline:18px}}
+@media (max-height:820px) and (min-width:621px){:root{--bar:50px}.work{padding-top:6px;gap:10px}.bar{padding-top:4px}.step{padding-block:14px}.stephead h2{font-size:14.5px}.docbody{padding-top:22px;gap:22px}.dochead{padding-block:10px 9px}.sum dt{font-size:12px}.sum dd{font-size:14.5px}.cta{padding-block:10px}.cta .note{display:none}}
 @media (max-width:1440px){.tgrp{font-size:0;padding:0 7px}.tgrp::before{content:"";display:block;width:1px;height:18px;background:var(--line-2)}.tgrp:first-child{display:none}}
 @media (max-width:860px){.status .pill+.pill{display:none}}
 @media (max-width:620px){
@@ -410,7 +426,7 @@ body.obsmode .status,body.obsmode .tools-r{display:none}
   .sum{gap:6px 18px}.sum dd{font-size:14.5px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-@media print{.appbar,.config,.bar,.tools,.toast,.exnote{display:none!important}.shell{display:block}.work{padding:0;max-width:none}.doc{box-shadow:none;border:0}}
+@media print{.appbar,.config,.bar,.tools,.toast,.hello{display:none!important}.shell{display:block}.work{padding:0;max-width:none}.doc{box-shadow:none;border:0}}
 </style>
 
 <header class="appbar">
@@ -541,6 +557,11 @@ body.obsmode .status,body.obsmode .tools-r{display:none}
   </aside>
 
   <main class="work">
+    <div class="hello" id="hello" hidden>
+      <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 7.2v4M8 4.8v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <p><b>Ceci est un exemple, sur une commune fictive.</b> Recherchez votre commune : son dossier sera construit à partir de ses risques, de ses lieux et de ses partenaires réels.</p>
+      <button class="btn primary sm" type="button" id="helloBtn">Rechercher ma commune</button>
+    </div>
     <div class="bar">
       <div class="tabs" role="tablist" id="tabs" aria-label="Pièces du dossier"></div>
     </div>
@@ -549,7 +570,6 @@ body.obsmode .status,body.obsmode .tools-r{display:none}
       <div class="tools" id="tools"></div>
     </div>
     <section id="view"></section>
-    <p class="exnote" id="exnote">Exemple pré-rempli sur une commune fictive. Recherchez votre commune pour démarrer.</p>
   </main>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -2092,13 +2112,14 @@ function reportHTML(){
   const row=(c)=>`<tr>${c.map(x=>`<td>${x}</td>`).join("")}</tr>`;
   const lab={ok:"Atteint",part:"Partiel",ko:"Non atteint"};
   const prev=hCommune().filter(x=>x.id!==S.archId);
-  const css=`body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#1a1a1a;line-height:1.45;margin:2cm}h1{font-size:20pt;margin:0 0 4pt}h1{color:#17202b}h2{font-size:13pt;margin:18pt 0 6pt;border-bottom:1px solid #c6cfd9;padding-bottom:3pt;color:#21456c}table{border-collapse:collapse;width:100%;margin:6pt 0}td,th{border:1px solid #bbb;padding:4pt 6pt;vertical-align:top;text-align:left;font-size:10pt}th{background:#eee}.mark{color:#d4530a;font-weight:bold;letter-spacing:2pt;font-size:9pt}.muted{color:#555}`;
-  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport de fin d'exercice — ${esc(p.commune)}</title><style>${css}</style></head><body>
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport de fin d'exercice — ${esc(p.commune)}</title><style>${printCss("Rapport de fin d'exercice")}h2{font-size:13pt;margin:16pt 0 6pt;border-bottom:1px solid #c6cfd9;padding-bottom:3pt;break-after:avoid;page-break-after:avoid}</style></head><body>
   <p class="mark">EXERCICE · EXERCICE · EXERCICE</p>
+  <p class="note" style="font-size:11pt;margin:14pt 0 2pt">Commune de ${esc(p.commune)}${p.pop?" · "+nf(p.pop)+" habitants":""}${p.dept?" · "+esc(p.dept):""}</p>
   <h1>Rapport de fin d'exercice</h1>
-  <p><b>Commune de ${esc(p.commune)}</b>${p.pop?" · "+nf(p.pop)+" habitants":""}${p.dept?" · "+esc(p.dept):""}<br>
-  ${esc(riskTitle(p))} · ${esc(f.label)} · ${esc(fmtDate(p.date))}${p.heureH?" · H = "+esc(p.heureH):""} · ${durTxt(p)} de jeu</p>
+  <p style="font-size:12pt;color:#21456c">${esc(riskTitle(p))}</p>
+  <table class="kv"><tr><th>Format</th><td>${esc(f.label)}</td></tr><tr><th>Date</th><td>${esc(cap(fmtDate(p.date)))}</td></tr><tr><th>Horaires</th><td>${p.heureH?"H = "+esc(p.heureH)+" · ":""}${durTxt(p)} de jeu</td></tr></table>
   <h2>1. Synthèse</h2>
+  <table class="facts"><tr><td><span class="score">${sc.taux!=null?sc.taux+" %":"—"}</span><br><span class="note">taux d'atteinte des critères cotés</span></td><td><span class="score">${sc.c} / ${sc.n}</span><br><span class="note">critères cotés</span></td><td><span class="score">${av!=null?av+" min":"—"}</span><br><span class="note">délai moyen de réaction</span></td></tr></table>
   <p>Taux d'atteinte : <b>${sc.taux!=null?sc.taux+" %":"aucun critère coté"}</b>${sc.c?` sur ${pl(sc.c,"critère","coté")} (${pl(sc.a,"atteint")}, ${pl(sc.p,"partiel")}, ${sc.k} non atteint${sc.k>1?"s":""}) ; ${sc.n-sc.c} non coté${sc.n-sc.c>1?"s":""} sur ${sc.n}`:""}. Un critère partiel compte pour moitié.${av!=null?" Délai moyen de réaction de la cellule de crise : <b>"+av+" min</b>.":""}${D.length?" "+pl(D.length,"message","joué")+", "+pl(D.filter(o=>o.r!=null).length,"relance")+".":""}</p>
   ${prev.length&&prev[0].taux!=null&&sc.taux!=null?`<p>Exercice précédent (${esc(fmtDate(prev[0].date))}, ${esc(prev[0].titre)}) : ${prev[0].taux} %. Évolution : ${sc.taux-prev[0].taux>=0?"+":""}${sc.taux-prev[0].taux} points.</p>`:""}
   <h2>2. Résultats par objectif</h2>
@@ -2110,7 +2131,7 @@ function reportHTML(){
   ${(()=>{const st=callStats();if(!st||!st.n)return "";const a=S.annu||[],L=S.live.calls||{};return `<h2>Test de l'annuaire de crise</h2><p>${st.ok} membres joints sur ${st.n} (${Math.round(st.ok/st.n*100)} %)${st.half!=null?", la moitié en "+st.half+" min":""}${st.last!=null?", le dernier à H+"+st.last+" min":""}.</p><table><tr><th>Nom</th><th>Fonction</th><th>Résultat</th><th>Heure</th></tr>${a.map((c,i)=>row([esc(c.nom),esc(c.fonction),L[i]?CALL_ST.find(x=>x[0]===L[i].st)[1]:"Non appelé",L[i]?fmtShort(L[i].at):"—"])).join("")}</table>`})()}
   ${D.length?`<h2>6. Délais de réaction mesurés</h2><table><tr><th>Heure</th><th>Émetteur</th><th>Message</th><th>Délai</th></tr>${D.map(o=>row([hplus(o.i.t),esc(o.i.from),esc(o.i.msg),o.d!=null?Math.round(o.d-o.s)+" min":"aucune réaction"+(o.r!=null?" (relancé)":"")])).join("")}</table>`:""}
   <h2>${D.length?7:6}. Grille d'observation détaillée</h2>
-  ${p.objs.map(o=>`<p><b>${esc(OBJS[o].label)}</b></p><table><tr><th>Critère</th><th>Cotation</th><th>Constaté</th></tr>${crit(o).map((c,j)=>row([esc(c),lab[S.cot[o+"-"+j]]||"—",esc((S.obsv||{})[o+"-"+j]||"")])).join("")}</table>`).join("")}
+  ${p.objs.map(o=>`<div class="blk"><h4>${esc(OBJS[o].label)}</h4><table><thead><tr><th>Critère</th><th>Cotation</th><th>Constaté</th></tr></thead>${crit(o).map((c,j)=>row([esc(c),lab[S.cot[o+"-"+j]]||"—",esc((S.obsv||{})[o+"-"+j]||"")])).join("")}</table></div>`).join("")}
   ${S.live&&S.live.log.length?`<h2>Annexe : main courante</h2><table><tr><th>Heure de jeu</th><th>Heure réelle</th><th>Événement</th></tr>${S.live.log.map(x=>row([fmtEl(x.at).slice(0,-3),new Date(x.wall).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),esc(x.txt)])).join("")}</table>`:""}
   <p class="muted" style="margin-top:18pt">Rapport établi avec Commune Prête. Exercice réalisé au titre des articles D731-9 à D731-13 du code de la sécurité intérieure ; transmis pour information à ${esc(a.Pref.replace(/^Préfecture/,"la préfecture"))}.</p>
   </body></html>`;
@@ -2124,7 +2145,48 @@ function printHTML(html){
   setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){toast("Impression bloquée par le navigateur.")}setTimeout(()=>fr.remove(),4000)},300);
 }
 /* ---------- Dossier complet et fiches joueurs ---------- */
-const DOC_CSS=`body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#1a1a1a;line-height:1.45;margin:1.8cm}h1{font-size:20pt;margin:0 0 4pt}h2{font-size:15pt;margin:0 0 8pt}h3{font-size:14pt;margin:10pt 0 6pt}h2,h3{color:#21456c}h4{font-size:11.5pt;color:#17202b;border-bottom:1px solid #dbe1e7;padding-bottom:2pt;margin:14pt 0 5pt}table{border-collapse:collapse;width:100%;margin:6pt 0}td,th{border:1px solid #bbb;padding:4pt 6pt;vertical-align:top;text-align:left;font-size:9.5pt}th{background:#eee}.mark{color:#d4530a;font-weight:bold;letter-spacing:2pt;font-size:9pt}.note{color:#555;font-size:9.5pt}.tag{font-size:8.5pt;font-weight:bold;color:#444;border:1px solid #bbb;border-radius:8pt;padding:0 4pt;margin-right:3pt}.piece{page-break-before:always}dl.kv dt{font-weight:bold;margin-top:4pt}dl.kv dd{margin:0 0 4pt 0}.callout{border-left:3px solid #999;padding:4pt 8pt;margin:8pt 0;background:#f6f6f6}.chk{font-size:9pt;color:#333;white-space:nowrap}ul{margin:4pt 0 4pt 16pt;padding:0}pre{white-space:pre-wrap;font-family:inherit;border:1px solid #ccc;padding:6pt}`;
+const cssq=t=>'"'+String(t).replace(/["\\]/g,"\\$&").replace(/\n/g," ")+'"';
+// Feuille commune aux documents imprimés. Word ignore @page et les marges nommées ; le PDF (navigateur) les applique.
+function printCss(titre){
+  return `@page{size:A4;margin:22mm 17mm 20mm 17mm;@top-left{content:"EXERCICE · EXERCICE · EXERCICE";color:#d4530a;font:bold 7.5pt Calibri,Arial,sans-serif;letter-spacing:1.5pt}@top-right{content:${cssq(S.p.commune+" · "+titre)};color:#536070;font:8pt Calibri,Arial,sans-serif}@bottom-left{content:"Document d'exercice · ne pas diffuser en dehors de l'exercice";color:#8a94a1;font:7.5pt Calibri,Arial,sans-serif}@bottom-right{content:"Page " counter(page) " sur " counter(pages);color:#536070;font:8pt Calibri,Arial,sans-serif}}
+@page:first{@top-left{content:none}@top-right{content:none}}
+@page paysage{size:A4 landscape;margin:16mm 14mm 16mm 14mm}
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}
+body{font-family:Calibri,Carlito,Arial,sans-serif;font-size:10.5pt;color:#17202b;line-height:1.45;margin:0}
+@media screen{body{margin:1.6cm auto;max-width:17.6cm}}
+h1{font-size:24pt;line-height:1.15;margin:0 0 6pt;color:#17202b}
+h2{font-size:15pt;margin:0 0 10pt;color:#21456c}
+h3{font-size:14pt;margin:0 0 10pt;color:#21456c}
+h4{font-size:11pt;color:#17202b;border-bottom:1px solid #c6cfd9;padding-bottom:2pt;margin:14pt 0 6pt;break-after:avoid;page-break-after:avoid}
+p{margin:0 0 6pt}
+ul{margin:2pt 0 6pt 16pt;padding:0}li{margin:0 0 2pt}
+table{border-collapse:collapse;width:100%;margin:4pt 0 8pt}
+thead{display:table-header-group}
+tr{break-inside:avoid;page-break-inside:avoid}
+td,th{border:1px solid #c6cfd9;padding:4pt 6pt;vertical-align:top;text-align:left;font-size:9.5pt}
+th{background:#e4ebf3;color:#21456c;font-weight:bold}
+.mark{color:#d4530a;font-weight:bold;letter-spacing:2pt;font-size:9pt;margin:0 0 4pt}
+.note,.muted{color:#536070;font-size:9pt}
+.tag{font-size:8.5pt;font-weight:bold;color:#21456c;white-space:nowrap}
+.piece{break-before:page;page-break-before:always}
+.paysage{page:paysage}
+table.kv th{width:32%;background:#f2f4f7;color:#536070;font-weight:normal}
+table.facts td{width:33%}table.facts b{font-size:12pt;color:#17202b}
+.callout{border-left:3pt solid #21456c;background:#f2f4f7;padding:5pt 9pt;margin:8pt 0;break-inside:avoid;page-break-inside:avoid}
+.callout.warn{border-left-color:#8f5c0d;background:#f8eedc}
+.blk{break-inside:avoid;page-break-inside:avoid}
+table.obs td.c{width:52%}table.obs td.v{height:30pt}table.obs td.k{width:22%;white-space:nowrap;font-size:9pt}
+table.roles td{width:50%}table.roles .who{font-size:8.5pt;color:#d4530a;font-weight:bold}table.roles b{font-size:11pt}
+pre{white-space:pre-wrap;font-family:Cambria,Georgia,serif;font-size:10pt;border:1px solid #c6cfd9;padding:7pt 9pt;margin:4pt 0 10pt;break-inside:avoid;page-break-inside:avoid}
+.cover{min-height:245mm;display:flex;flex-direction:column}
+.cover .band{height:9pt;background:repeating-linear-gradient(-45deg,#d4530a 0 7pt,#fff 7pt 14pt);margin:0 0 14pt}
+.cover .com{font-size:13pt;color:#536070;margin:46pt 0 6pt}
+.cover h1{font-size:30pt;margin:0 0 10pt}
+.cover .risk{font-size:15pt;color:#21456c;margin:0 0 26pt}
+.cover table.kv{width:70%}
+.cover .end{margin-top:auto;border-top:1px solid #c6cfd9;padding-top:8pt;color:#536070;font-size:9pt}
+.score{font-size:26pt;font-weight:bold;color:#21456c;line-height:1.1}`;
+}
 function cleanView(html){
   const d=document.createElement("div");d.innerHTML=html;
   d.querySelectorAll(".dochead,button,.lbtns,details,.mapwrap,.catchips,.obsv-wrap input,.tools,script").forEach(x=>{if(x.classList&&x.classList.contains("cot")){return}x.remove()});
@@ -2135,19 +2197,32 @@ function cleanView(html){
   d.querySelectorAll("input,select,textarea").forEach(x=>{const v=x.value||x.getAttribute("value")||"";x.outerHTML=v?`<span>${esc(v)}</span>`:""});
   d.querySelectorAll("[contenteditable]").forEach(x=>x.removeAttribute("contenteditable"));
   d.querySelectorAll("svg").forEach(x=>x.remove());
+  const T=(rows,cls)=>`<table${cls?` class="${cls}"`:""}>${rows}</table>`;
+  d.querySelectorAll("dl.kv").forEach(x=>{const dt=[...x.querySelectorAll("dt")];x.outerHTML=T(dt.map(t=>`<tr><th>${t.innerHTML}</th><td>${t.nextElementSibling?t.nextElementSibling.innerHTML:""}</td></tr>`).join(""),"kv")});
+  d.querySelectorAll(".facts").forEach(x=>{x.outerHTML=T(`<tr>${[...x.querySelectorAll(".fact")].map(f=>`<td><b>${f.querySelector("b").innerHTML}</b><br><span class="note">${(f.querySelector("span")||{}).innerHTML||""}</span></td>`).join("")}</tr>`,"facts")});
+  d.querySelectorAll(".phases").forEach(x=>{x.outerHTML=T(`<thead><tr><th>Période</th><th>Phase</th><th>Ce qui se joue</th></tr></thead>`+[...x.querySelectorAll(".phase")].map(f=>`<tr><td style="white-space:nowrap">${f.querySelector(".t").innerHTML}</td><td><b>${f.querySelector("b").innerHTML}</b></td><td>${f.querySelector("p").innerHTML}</td></tr>`).join(""))});
+  d.querySelectorAll(".sites").forEach(x=>{x.outerHTML=`<ul>${[...x.querySelectorAll(".site")].map(f=>`<li><b>${f.querySelector("b").innerHTML}</b> <span class="note">· ${f.querySelector("span").innerHTML}</span></li>`).join("")}</ul>`});
+  d.querySelectorAll(".roles").forEach(x=>{const r=[...x.querySelectorAll(".role")].map(f=>{const w=f.querySelector(".who");if(w)w.insertAdjacentHTML("afterend","<br>");return `<td>${f.innerHTML}</td>`});let h="";for(let i=0;i<r.length;i+=2)h+=`<tr>${r[i]}${r[i+1]||"<td></td>"}</tr>`;x.outerHTML=T(h,"roles")});
+  d.querySelectorAll(".obsg").forEach(x=>{const g=x.querySelector(".gh span");x.outerHTML=`<div class="blk">`+T(`<thead><tr><th colspan="3">${g?g.innerHTML:""}</th></tr><tr><th>Critère</th><th>Constaté (heure, délai, remarque)</th><th>Cotation</th></tr></thead>`+[...x.querySelectorAll(".obsr")].map(r=>{const c=r.firstElementChild,ch=r.querySelector(".chk");const lab=c.childNodes[0]?c.childNodes[0].textContent:"";const v=(c.querySelector(".obsv-wrap")||{}).textContent||"";return `<tr><td class="c">${esc(lab)}</td><td class="v">${esc(v.trim())}</td><td class="k">${ch?ch.innerHTML.replace(/ ☐/g,"<br>☐"):""}</td></tr>`}).join(""),"obs")+`</div>`});
+  d.querySelectorAll(".tpl").forEach(x=>{x.classList.add("blk")});
   return d.innerHTML;
 }
 function dossierHTML(){
   const p=S.p,keepView=S.view;S.view="table";
-  const parts=[["Convention d'exercice",vCadrage],["Scénario (réservé à l'animation)",vScenario],["Chronogramme (réservé à l'animation)",vChrono],["Fiches rôles",vRoles],["Modèles de messages",vModeles],["Grille d'observation",vObs],["Cadre réglementaire",vRegl]];
-  let body="";try{body=parts.map(([t,f],i)=>`<div class="${i?"piece":""}">${cleanView(f())}</div>`).join("")}finally{S.view=keepView}
-  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Dossier d'exercice — ${esc(p.commune)}</title><style>${DOC_CSS}</style></head><body>
-  <p class="mark">EXERCICE · EXERCICE · EXERCICE</p><h1>Dossier d'exercice de crise</h1>
-  <p><b>Commune de ${esc(p.commune)}</b> · ${esc(riskTitle(p))} · ${esc(FORMATS[p.format].label)} · ${esc(fmtDate(p.date))}${p.heureH?" · H = "+esc(p.heureH):""}</p>
-  <p class="note">Sommaire : convention · scénario · chronogramme · fiches rôles · modèles · grille d'observation · cadre réglementaire. Le scénario et le chronogramme ne sont pas remis aux joueurs.</p>
+  const parts=[["Convention d'exercice",vCadrage,"Tous les participants"],["Scénario",vScenario,"Équipe d'animation seulement"],["Chronogramme",vChrono,"Équipe d'animation seulement"],["Fiches rôles",vRoles,"Chaque participant, sa fiche"],["Modèles de messages",vModeles,"Cellule de crise, selon les objectifs"],["Grille d'observation",vObs,"Observateurs"],["Cadre réglementaire",vRegl,"Maire, secrétariat"]];
+  let body="";try{body=parts.map(([t,f],i)=>`<div class="piece${f===vChrono?" paysage":""}">${cleanView(f())}</div>`).join("")}finally{S.view=keepView}
+  const kv=[["Commune",esc(p.commune)+(p.pop?" · "+nf(p.pop)+" habitants":"")+(p.dept?" · "+esc(p.dept):"")],["Format",esc(FORMATS[p.format].label)],["Date",esc(cap(fmtDate(p.date)))],["Heure H",esc(p.heureH||"À fixer")+" · "+durTxt(p)+" de jeu"],["Directeur d'exercice","À désigner, hors cellule de crise"]];
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Dossier d'exercice — ${esc(p.commune)}</title><style>${printCss("Dossier d'exercice")}</style></head><body>
+  <div class="cover"><div class="band"></div><p class="mark">EXERCICE · EXERCICE · EXERCICE</p>
+  <p class="com">Commune de ${esc(p.commune)}</p><h1>Dossier d'exercice de crise</h1><p class="risk">${esc(riskTitle(p))}</p>
+  <table class="kv">${kv.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join("")}</table>
+  <h4>Contenu du dossier</h4>
+  <table><thead><tr><th>Pièce</th><th>Destinataires</th></tr></thead>${parts.map(x=>`<tr><td>${esc(x[0])}</td><td>${esc(x[2])}</td></tr>`).join("")}</table>
+  <p class="note">Le scénario et le chronogramme ne sont jamais remis aux joueurs : ils ne reçoivent que la situation initiale.</p>
+  <div class="end">Document d'exercice établi le ${new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})} avec Commune Prête. Exercice du plan communal de sauvegarde au titre des articles D731-9 à D731-13 du code de la sécurité intérieure.</div></div>
   ${body}</body></html>`;
 }
-const CARD_CSS=`body{font-family:Arial,sans-serif;margin:1.2cm;color:#111}.card{border:2px solid #222;border-radius:10px;padding:14px 16px;height:12.3cm;box-sizing:border-box;margin-bottom:.8cm;page-break-inside:avoid;display:flex;flex-direction:column;gap:8px;position:relative}.card:nth-of-type(2n){page-break-after:always}.ex{font-weight:bold;letter-spacing:3px;color:#c2410c;font-size:11px}.meta{display:flex;justify-content:space-between;font-size:12px;color:#444;border-bottom:1px solid #ccc;padding-bottom:6px}.k{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#666}.mail{border:1px solid #bbb;border-radius:6px;padding:8px 10px;font-size:13px}.mail div{margin:2px 0}.body{font-size:16px;line-height:1.45}.sms{align-self:flex-start;background:#e9e9ef;border-radius:16px;padding:10px 14px;max-width:85%;font-size:16px}.post{border:1px solid #bbb;border-radius:10px;padding:10px 12px}.post .who{font-weight:bold;font-size:13px}.post .stats{font-size:12px;color:#666;margin-top:6px}.bull{border:2px solid #444;padding:10px 12px}.bull .t{font-weight:bold;text-transform:uppercase;font-size:13px;margin-bottom:6px}.script{border-left:4px solid #888;padding:6px 12px;font-style:italic}.foot{margin-top:auto;font-size:10px;color:#777;border-top:1px solid #ddd;padding-top:5px}`;
+const CARD_CSS=`@page{size:A4;margin:12mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}body{font-family:Calibri,Carlito,Arial,sans-serif;margin:0;color:#17202b}@media screen{body{margin:1cm auto;max-width:19cm}}.card{border:1.5pt solid #17202b;border-radius:8pt;padding:0 16pt 12pt;height:13.2cm;margin-bottom:.8cm;page-break-inside:avoid;break-inside:avoid;display:flex;flex-direction:column;gap:9pt;overflow:hidden}.card:nth-of-type(2n){page-break-after:always;break-after:page}.band{height:7pt;margin:0 -16pt;background:repeating-linear-gradient(-45deg,#d4530a 0 6pt,#fff 6pt 12pt)}.ex{font-weight:bold;letter-spacing:2pt;color:#d4530a;font-size:8.5pt;margin-top:2pt}.meta{display:flex;justify-content:space-between;gap:12pt;font-size:10pt;color:#536070;border-bottom:1px solid #c6cfd9;padding-bottom:6pt}.meta b{color:#17202b;font-size:12pt}.k{font-size:9pt;color:#536070}.mail{border:1px solid #c6cfd9;border-radius:5pt;padding:7pt 10pt;font-size:10.5pt}.mail div{margin:2pt 0}.body{font-family:Cambria,Georgia,serif;font-size:15pt;line-height:1.45}.sms{align-self:flex-start;background:#e4ebf3;border-radius:14pt;padding:10pt 14pt;max-width:88%;font-size:15pt;line-height:1.4}.post{border:1px solid #c6cfd9;border-radius:8pt;padding:10pt 12pt}.post .who{font-weight:bold;font-size:10.5pt}.post .stats{font-size:9.5pt;color:#536070;margin-top:6pt}.bull{border:1.5pt solid #21456c;padding:10pt 12pt}.bull .t{font-weight:bold;font-size:10.5pt;color:#21456c;margin-bottom:6pt}.script{border-left:3pt solid #21456c;padding:4pt 12pt}.foot{margin-top:auto;font-size:8pt;color:#8a94a1;border-top:1px solid #dbe1e7;padding-top:5pt}`;
 function cardHTML(i,n){
   const via=String(i.via||""),clk=S.p.heureH?clock(i.t):"",msg=esc(i.msg).replace(/^\[Nouvel événement\] /,"<b>Nouvel événement — </b>");
   let core;
@@ -2156,7 +2231,7 @@ function cardHTML(i,n){
   else if(/capture/i.test(via))core=`<div class="k">Capture d'écran d'une publication</div><div class="post"><div class="who">Compte local fictif · @infos_locales</div><div class="body">${msg}</div><div class="stats">312 partages · 87 commentaires</div></div>`;
   else if(/bulletin/i.test(via))core=`<div class="bull"><div class="t">Bulletin — ${esc(i.from)}</div><div class="body">${msg}</div></div>`;
   else core=`<div class="k">${esc(via)} · à jouer par l'animateur</div><div class="script body">« ${msg} »</div>`;
-  return `<div class="card"><div class="ex">EXERCICE · EXERCICE · EXERCICE</div><div class="meta"><span>Message ${n+1} · ${hplus(i.t)}${clk?" · "+clk:""}</span><span>${esc(i.from)} → ${esc(i.to)}</span></div>${core}<div class="foot">Document d'exercice — ${esc(S.p.commune)} — ne pas diffuser en dehors de l'exercice.</div></div>`;
+  return `<div class="card"><div class="band"></div><div class="ex">EXERCICE · EXERCICE · EXERCICE</div><div class="meta"><span><b>Message ${n+1}</b> · ${hplus(i.t)}${clk?" · "+clk:""}</span><span>${esc(i.from)} → ${esc(i.to)}</span></div>${core}<div class="foot">Document d'exercice — ${esc(S.p.commune)} — ne pas diffuser en dehors de l'exercice.</div></div>`;
 }
 function cardsHTML(){return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Fiches joueurs — ${esc(S.p.commune)}</title><style>${CARD_CSS}</style></head><body>${S.injects.filter(i=>i.obj!=="FIN").map(cardHTML).join("")}</body></html>`}
 document.addEventListener("click",e=>{
@@ -2246,12 +2321,21 @@ function render(){
   let tools=`<button class="btn sm ghost" type="button" id="dosDoc" title="Télécharger le dossier complet au format Word">Word</button><button class="btn sm ghost" type="button" id="dosPdf" title="Imprimer ou enregistrer le dossier en PDF">PDF</button><button class="btn sm ghost" type="button" id="copyAll" title="Copier tout le dossier en texte">Copier</button>`;
   if(S.tab==="chrono")tools=`<div class="seg" role="group" aria-label="Affichage du chronogramme"><button type="button" data-view="tl" aria-pressed="${S.view!=="table"}">Frise</button><button type="button" data-view="table" aria-pressed="${S.view==="table"}">Tableau</button></div><button class="btn sm" type="button" id="addInj">Ajouter un message</button><button class="btn sm ghost" type="button" id="copyTsv" title="Copier le chronogramme pour un tableur">Tableur</button><button class="btn sm ghost" type="button" id="cardsPrint" title="Imprimer une fiche par message pour les animateurs">Fiches joueurs</button><span class="sep" aria-hidden="true"></span>`+tools;
   $("#tools").innerHTML=tools;
+  tabsFit(true);
   if(map){map.remove();map=null}
   $("#view").innerHTML=`<article class="card doc">${VIEWS[S.tab]()}</article>`;
   if(S.tab==="carte")drawMap();
-  $("#exnote").hidden=!S.isExample;
+  $("#hello").hidden=!S.isExample;
 }
 
+function tabsFit(scroll){
+  const t=$("#tabs");if(!t)return;const o=t.scrollWidth>t.clientWidth+2;t.classList.toggle("ovf",o);
+  if(o&&scroll){const a=$("#tab-"+S.tab);if(a){const l=a.offsetLeft-t.offsetLeft,r=l+a.offsetWidth;if(l<t.scrollLeft+24)t.scrollLeft=Math.max(0,l-24);else if(r>t.scrollLeft+t.clientWidth-24)t.scrollLeft=r-t.clientWidth+40}}
+  const atEnd=t.scrollLeft+t.clientWidth>=t.scrollWidth-2,atStart=t.scrollLeft<=2;t.classList.toggle("end",o&&atEnd&&!atStart);t.classList.toggle("mid",o&&!atEnd&&!atStart);
+}
+addEventListener("resize",()=>tabsFit(false));
+$("#tabs").addEventListener("scroll",()=>tabsFit(false),{passive:true});
+$("#helloBtn").addEventListener("click",()=>{if(AFF.panelOff){AFF.panelOff=false;saveAff();applyAff()}const c=$("#commune");c.scrollIntoView({block:"center",behavior:"smooth"});c.focus();c.select()});
 /* ---------- Événements ---------- */
 $("#segFormat").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.p.format=b.dataset.v;renderSegs();save()});
 $("#segDuree").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.p.duree=b.dataset.v;renderSegs();save()});
@@ -2333,10 +2417,10 @@ function initObs(){
   const cr=o=>d.k&&o==="EVAL"?CRIT.EVAL.concat(["Le PCC hiérarchise les événements simultanés et réaffecte ses moyens"]):CRIT[o];
   const stamp=()=>d.s?fmtShort((Date.now()-d.s)/60000):wallNow();
   const draw=()=>{sh.innerHTML=`<main class="work"><article class="card doc"><div class="docbody">
-    <h3>Observation · ${esc(d.c)}</h3><p class="note">${esc(d.t)}. Notez l'heure ou le délai constaté, cotez, puis envoyez votre code au directeur d'exercice. Vos saisies restent sur ce téléphone.</p>
+    <h3>Grille d'observation</h3><p class="note"><b>${esc(d.c)}</b>, ${esc(d.t.charAt(0).toLowerCase()+d.t.slice(1))}. Notez l'heure ou le délai constaté, cotez, puis envoyez votre code au directeur d'exercice. Vos saisies restent sur ce téléphone.</p>
     <div class="field"><label for="oname">Votre nom</label><input type="text" id="oname" value="${esc(O.n||"")}"></div>
     ${(d.o||[]).filter(o=>OBJS[o]).map(o=>`<div class="obsg"><div class="gh"><span>${esc(OBJS[o].label)}</span></div>${cr(o).map((c,j)=>{const id=o+"-"+j,v=O.cot[id]||"";return `<div class="obsr"><span>${esc(c)}<span class="obsv-wrap"><input class="obsv" type="text" data-oid="${id}" value="${esc(O.obsv[id]||"")}" placeholder="Constaté" aria-label="Constaté"><button class="btn sm nowb" type="button" data-onow="${id}">Maintenant</button></span></span><span class="cot" role="group" aria-label="Cotation">${[["ok","Atteint"],["part","Partiel"],["ko","Non atteint"]].map(x=>`<button type="button" data-ocot="${id}" data-v="${x[0]}" aria-pressed="${v===x[0]}">${x[1]}</button>`).join("")}</span></div>`}).join("")}</div>`).join("")}
-    <div style="margin-top:14px"><button class="btn primary" type="button" id="ocopy">Copier mon code pour le directeur</button></div>
+    <div class="obsfoot"><button class="btn primary" type="button" id="ocopy">Copier mon code pour le directeur</button></div>
   </div></article></main>`};
   draw();
   sh.addEventListener("input",e=>{const t=e.target;if(t.id==="oname"){O.n=t.value;sv()}if(t.dataset.oid){O.obsv[t.dataset.oid]=t.value;sv()}});

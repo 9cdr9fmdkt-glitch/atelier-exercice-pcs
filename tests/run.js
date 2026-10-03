@@ -123,6 +123,8 @@ const view = t => t.q("#view").textContent;
   click(v, "#themeBtn"); ok(!v.d.documentElement.dataset.theme && /automatique/.test(v.q("#themeBtn").title), "retour au thème automatique");
   ok(/"theme":"auto"/.test(v.w.localStorage.getItem("commune-prete-affichage")), "choix d'affichage conservé");
   ok(!/Scénario disponible/.test(v.q("#risks").textContent), "liste des risques épurée");
+  ok(!v.q("#hello").hidden, "bandeau d'accueil sur le dossier d'exemple");
+  await pickCommune(v, "bourg"); ok(v.q("#hello").hidden, "bandeau d'accueil masqué une fois la commune choisie");
   ok(!v.errs.length, "aucune erreur JavaScript" + (v.errs.length ? " : " + v.errs[0] : ""));
   v.close();
 
