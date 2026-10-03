@@ -43,6 +43,10 @@ function gen(t) { click(t, "#gen"); if (t.q("#genLabel").textContent.includes("C
 const view = t => t.q("#view").textContent;
 
 (async () => {
+  { const A = fs.readFileSync(path.join(__dirname, "..", "aide.html"), "utf8");
+    console.log("\nMODE D'EMPLOI");
+    ok(/<h1>Mode d’emploi<\/h1>/.test(A) && (A.match(/<section id=/g) || []).length >= 20, "page d'aide complète");
+    ok(!/Scénario à venir » \./.test(A) && /retrait-gonflement/.test(A), "aide à jour sur les scénarios disponibles"); }
   for (const name of ["paris", "hameau", "bourg"]) {
     console.log("\n" + name.toUpperCase());
     const t = open(name); await wait(300); await pickCommune(t, name);
@@ -123,6 +127,7 @@ const view = t => t.q("#view").textContent;
   click(v, "#themeBtn"); ok(!v.d.documentElement.dataset.theme && /automatique/.test(v.q("#themeBtn").title), "retour au thème automatique");
   ok(/"theme":"auto"/.test(v.w.localStorage.getItem("commune-prete-affichage")), "choix d'affichage conservé");
   ok(!/Scénario disponible/.test(v.q("#risks").textContent), "liste des risques épurée");
+  ok(/aide\.html$/.test(v.q("#helpLink").href), "bouton Aide vers le mode d'emploi");
   ok(!v.q("#hello").hidden, "bandeau d'accueil sur le dossier d'exemple");
   click(v, "#dosDoc"); await wait(50);
   const ex = await new Promise(r => { const f = new v.w.FileReader(); f.onload = () => r(f.result); f.readAsText(v.blobs.pop()) });

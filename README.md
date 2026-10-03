@@ -7,6 +7,7 @@ En ligne : https://9cdr9fmdkt-glitch.github.io/atelier-exercice-pcs/
 ## Organisation
 
 - `index.html` : l'outil complet, en un seul fichier (HTML, CSS, JavaScript). Seule dépendance : Leaflet 1.9.4 chargé depuis cdnjs.
+- `aide.html` : le mode d'emploi, ouvert par le bouton « Aide » de l'outil, disponible hors ligne. À tenir à jour à chaque évolution.
 - `fonts/` : polices hébergées avec l'outil (Atkinson Hyperlegible Next pour l'interface, Source Serif 4 pour le contenu du dossier ; licence SIL OFL 1.1). Aucun appel à Google Fonts sur la version en ligne ; la copie artifact les charge depuis Google Fonts.
 - `favicon.svg` : la marque (fronton de mairie et bandeau d'exercice) ; `icon-*.png` et `apple-touch-icon.png` en sont tirés.
 - `sw.js`, `manifest.webmanifest`, `icon-*.png` : fonctionnement hors ligne et installation sur l'appareil (version en ligne uniquement).
