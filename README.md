@@ -8,6 +8,7 @@ En ligne : https://9cdr9fmdkt-glitch.github.io/atelier-exercice-pcs/
 
 - `index.html` : l'outil complet, en un seul fichier (HTML, CSS, JavaScript). Seule dépendance : Leaflet 1.9.4 chargé depuis cdnjs.
 - `fonts/` : polices hébergées avec l'outil (Atkinson Hyperlegible Next pour l'interface, Source Serif 4 pour le contenu du dossier ; licence SIL OFL 1.1). Aucun appel à Google Fonts sur la version en ligne ; la copie artifact les charge depuis Google Fonts.
+- `favicon.svg` : la marque (fronton de mairie et bandeau d'exercice) ; `icon-*.png` et `apple-touch-icon.png` en sont tirés.
 - `sw.js`, `manifest.webmanifest`, `icon-*.png` : fonctionnement hors ligne et installation sur l'appareil (version en ligne uniquement).
 - Données publiques interrogées depuis le navigateur : geo.api.gouv.fr (communes, contours, intercommunalité, région), Géorisques (risques, arrêtés CatNat, installations classées, rapport de risques au point), annuaire de l'Éducation nationale (effectifs), OpenStreetMap via l'API Overpass (lieux), tuiles OpenStreetMap (fond de carte).
 - Aucune donnée de la commune n'est envoyée sur un serveur : l'état est conservé dans le navigateur (clé `atelier-pcs-v2` pour le dossier, `commune-prete-historique` pour l'historique, `commune-prete-obs-*` pour les observateurs, `commune-prete-affichage` pour le thème et le panneau).
@@ -19,3 +20,7 @@ L'outil est aussi publié comme artifact Claude. Le contenu publié est la parti
 ```sh
 sed -n '/<!-- debut-contenu -->/,/<!-- fin-contenu -->/p' index.html | sed '1d;$d' > artifact.html
 ```
+
+## Accessibilité
+
+Contrôle automatique axe-core (WCAG 2.2 A et AA) sur les dix onglets et le mode observateur, en thème clair et sombre : aucune erreur au 3 octobre 2026. Lien d'évitement, onglets reliés au panneau, champs modifiables nommés, contrastes d'au moins 4,5:1. Un audit RGAA complet (manuel, avec lecteur d'écran) reste à faire avant toute commercialisation.

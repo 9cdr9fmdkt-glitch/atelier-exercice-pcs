@@ -7,8 +7,9 @@
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#191e26" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="fonts/polices.css" data-polices>
 <!-- debut-contenu -->
 <title>Commune Prête</title>
@@ -22,9 +23,9 @@
    Une seule couleur de signal, l'orange d'exercice, réservée au marquage et à ce qui demande une action. */
 :root{
   --bg:#e8ecf0; --surface:#ffffff; --surface-2:#f2f4f7; --sunk:#e1e6ec;
-  --ink:#17202b; --muted:#536070; --faint:#8a94a1; --line:#dbe1e7; --line-2:#c6cfd9;
+  --ink:#17202b; --muted:#536070; --faint:#646f7d; --line:#dbe1e7; --line-2:#c6cfd9;
   --primary:#21456c; --primary-ink:#ffffff; --primary-soft:#e4ebf3;
-  --accent:#d4530a; --accent-soft:#fbece2;
+  --accent:#b84605; --accent-soft:#fbece2;
   --ok:#22744a; --ok-soft:#e1f1e8; --warn:#8f5c0d; --warn-soft:#f8eedc; --bad:#ac281c; --bad-soft:#f9e4e1;
   --violet:#6a4fc4; --teal:#0d7474;
   --shadow:0 1px 0 rgba(23,32,43,.04),0 1px 2px rgba(23,32,43,.06);
@@ -37,7 +38,7 @@
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#11151b; --surface:#191e26; --surface-2:#20262f; --sunk:#0d1116;
-  --ink:#e2e7ed; --muted:#9aa5b2; --faint:#6c7784; --line:#29313c; --line-2:#36404c;
+  --ink:#e2e7ed; --muted:#9aa5b2; --faint:#8793a1; --line:#29313c; --line-2:#36404c;
   --primary:#a9c4e5; --primary-ink:#11151b; --primary-soft:#1d2a3a;
   --accent:#ee8648; --accent-soft:#36231a;
   --ok:#66c393; --ok-soft:#15271d; --warn:#dfac58; --warn-soft:#2c2313; --bad:#ee7c70; --bad-soft:#331a18;
@@ -45,7 +46,7 @@
   --shadow:0 1px 0 rgba(0,0,0,.25); --shadow-lg:0 20px 44px -20px rgba(0,0,0,.7); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#11151b; --surface:#191e26; --surface-2:#20262f; --sunk:#0d1116;
-  --ink:#e2e7ed; --muted:#9aa5b2; --faint:#6c7784; --line:#29313c; --line-2:#36404c;
+  --ink:#e2e7ed; --muted:#9aa5b2; --faint:#8793a1; --line:#29313c; --line-2:#36404c;
   --primary:#a9c4e5; --primary-ink:#11151b; --primary-soft:#1d2a3a;
   --accent:#ee8648; --accent-soft:#36231a;
   --ok:#66c393; --ok-soft:#15271d; --warn:#dfac58; --warn-soft:#2c2313; --bad:#ee7c70; --bad-soft:#331a18;
@@ -59,6 +60,9 @@ img{max-width:100%}
 button{font-family:inherit;color:inherit}
 a{color:var(--primary);text-underline-offset:2px}
 ::selection{background:var(--primary-soft)}
+.skip{position:absolute;left:12px;top:-60px;z-index:60;background:var(--primary);color:var(--primary-ink);padding:10px 14px;border-radius:var(--r-sm);font-weight:700;text-decoration:none}
+.skip:focus{top:10px}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 :focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 *{scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
 
@@ -67,6 +71,7 @@ a{color:var(--primary);text-underline-offset:2px}
 .appbar .in{height:var(--bar);padding-inline:20px;display:flex;align-items:center;gap:14px}
 .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:-.005em;white-space:nowrap}
 .logo svg{flex:none}
+.logo h1{margin:0;font:inherit;letter-spacing:inherit}
 .logo small{font-weight:400;font-size:13.5px;color:var(--muted);margin-left:10px;padding-left:12px;border-left:1px solid var(--line)}
 .status{margin-left:auto;display:flex;align-items:center;gap:16px}
 .pill{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);white-space:nowrap}
@@ -190,7 +195,7 @@ details.more .inner{display:flex;flex-direction:column;gap:12px;padding-bottom:1
 .tabs.ovf{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}
 .tabs.ovf.end{-webkit-mask-image:linear-gradient(90deg,transparent,#000 36px);mask-image:linear-gradient(90deg,transparent,#000 36px)}
 .tabs.ovf.mid{-webkit-mask-image:linear-gradient(90deg,transparent,#000 36px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 36px,#000 calc(100% - 36px),transparent)}
-.tgrp{font-size:12.5px;color:var(--faint);padding:2px 4px 0 18px;white-space:nowrap}
+.tgrp{font-size:12.5px;color:var(--muted);padding:2px 4px 0 18px;white-space:nowrap}
 .tgrp:first-child{padding-left:2px}
 .tab{border:0;background:transparent;font-size:14px;color:var(--muted);padding:9px 9px 10px;cursor:pointer;white-space:nowrap;position:relative;border-radius:var(--r-sm) var(--r-sm) 0 0}
 .tab:hover{color:var(--ink);background:color-mix(in srgb,var(--surface) 55%,transparent)}
@@ -217,6 +222,7 @@ details.more .inner{display:flex;flex-direction:column;gap:12px;padding-bottom:1
 .dochead .meta{font-size:13px;color:var(--muted);margin-top:3px}
 .docbody{padding:30px clamp(18px,4vw,48px) 40px;display:flex;flex-direction:column;gap:28px}
 .docbody h3{font-family:var(--f-doc);font-size:clamp(24px,2.6vw,30px);line-height:1.2;font-weight:600;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.docbody h2.obst{font-family:var(--f-doc);font-size:clamp(24px,2.6vw,30px);line-height:1.2;font-weight:600;margin:0}
 .docbody h4{font-size:15px;font-weight:700;color:var(--ink);margin:0;display:flex;align-items:center;gap:12px}
 .docbody h4::after{content:"";flex:1;height:1px;background:var(--line)}
 .docbody p{margin:0;max-width:72ch}
@@ -305,6 +311,8 @@ td.tm{font-weight:700;white-space:nowrap}
 .lhead .btn{background:transparent;color:var(--surface);border-color:color-mix(in srgb,var(--surface) 35%,transparent)}
 .lhead .btn:hover{background:color-mix(in srgb,var(--surface) 12%,transparent)}
 .lhead .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .lhead .btn.primary{color:#11151b}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .lhead .btn.primary{color:#11151b}}
 .lbtns{display:flex;flex-wrap:wrap;gap:8px}
 .lcard{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin:10px 0;display:flex;flex-direction:column;gap:7px;background:var(--surface)}
 .lcard.due{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
@@ -319,7 +327,7 @@ td.tm{font-weight:700;white-space:nowrap}
 .mclist li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:8px 2px;border-bottom:1px solid var(--line);font-size:14.5px}
 .mclist time{font-size:13.5px;font-weight:700;color:var(--muted)}
 body.obsmode .shell{grid-template-columns:minmax(0,780px);justify-content:center}
-body.obsmode .status,body.obsmode #panelBtn{display:none}
+body.obsmode .status,body.obsmode #panelBtn,body.obsmode .skip{display:none}
 body.obsmode .tools-r{border-left:0;margin-left:auto}
 body.obsmode .doc{overflow:visible}
 body.obsmode .obsr .cot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;max-width:360px}
@@ -429,11 +437,16 @@ body.obsmode .nowb{min-height:42px}
 @media print{.appbar,.config,.bar,.tools,.toast,.hello{display:none!important}.shell{display:block}.work{padding:0;max-width:none}.doc{box-shadow:none;border:0}}
 </style>
 
+<a class="skip" href="#view">Aller au dossier</a>
 <header class="appbar">
   <div class="in">
     <div class="logo">
-      <svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="7" fill="var(--primary)"/><path d="M15 6l7 3v5.5c0 4.2-2.9 7.6-7 9.5-4.1-1.9-7-5.3-7-9.5V9z" fill="var(--primary-ink)"/><path d="M11.5 14.5l2.5 2.5 4.5-5" stroke="var(--accent)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>Commune Prête<small>Préparer, conduire et évaluer vos exercices de crise</small></span>
+      <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><defs><clipPath id="cpT"><rect width="64" height="64" rx="14"/></clipPath></defs><g clip-path="url(#cpT)"><rect width="64" height="64" fill="#21456c"/><path d="M32 9.5 L52 22.5 H12 Z" fill="#ffffff"/><circle cx="32" cy="17.6" r="2.6" fill="#21456c"/>
+    <rect x="14" y="25" width="36" height="3.5" fill="#ffffff"/>
+    <rect x="17" y="30.5" width="5" height="13.5" fill="#ffffff"/><rect x="29.5" y="30.5" width="5" height="13.5" fill="#ffffff"/><rect x="42" y="30.5" width="5" height="13.5" fill="#ffffff"/>
+    <rect x="0" y="48" width="64" height="16" fill="#ffffff"/>
+    <path d="M-6 64 L10 48 H18 L2 64 Z M10 64 L26 48 H34 L18 64 Z M26 64 L42 48 H50 L34 64 Z M42 64 L58 48 H66 L50 64 Z M58 64 L74 48 H82 L66 64 Z" fill="#e0590c"/></g></svg>
+      <h1 class="brand">Commune Prête<small>Préparer, conduire et évaluer vos exercices de crise</small></h1>
     </div>
     <div class="status">
       <span class="pill" id="pillData"><span class="dot wait"></span>Bases publiques : test en cours</span>
@@ -569,7 +582,7 @@ body.obsmode .nowb{min-height:42px}
       <dl class="sum" id="kpis"></dl>
       <div class="tools" id="tools"></div>
     </div>
-    <section id="view"></section>
+    <section id="view" role="tabpanel" tabindex="-1"></section>
   </main>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -1871,19 +1884,19 @@ function vChrono(){
       <div class="top">
         <span class="time"><input class="tmin" type="number" min="0" step="5" value="${i.t}" aria-label="Minute de l'inject ${n+1}">${hplus(i.t)}${S.p.heureH?`<span class="clk">${clock(i.t)}</span>`:""}</span>
         ${tagOf(i.obj)}${i.sec?`<span class="tag o-SEC">Cascade · ${esc(RISKS[i.sec].label)}</span>`:""}
-        <span class="flow"><span contenteditable="true" data-f="from">${esc(i.from)}</span> → <span contenteditable="true" data-f="to">${esc(i.to)}</span></span>
-        <span class="spacer"><span class="via" contenteditable="true" data-f="via">${esc(i.via)}</span><button class="del" type="button" data-del="${n}" aria-label="Supprimer l'inject ${n+1}">×</button></span>
+        <span class="flow"><span contenteditable="true" role="textbox" aria-label="Émetteur" data-f="from">${esc(i.from)}</span> → <span contenteditable="true" role="textbox" aria-label="Destinataire" data-f="to">${esc(i.to)}</span></span>
+        <span class="spacer"><span class="via" contenteditable="true" role="textbox" aria-label="Vecteur" data-f="via">${esc(i.via)}</span><button class="del" type="button" data-del="${n}" aria-label="Supprimer l'inject ${n+1}">×</button></span>
       </div>
-      <div class="msg" contenteditable="true" data-f="msg">${esc(i.msg)}</div>
-      <div class="exp"><b>Attendu</b><span contenteditable="true" data-f="exp">${esc(i.exp)}</span></div>
+      <div class="msg" contenteditable="true" role="textbox" aria-label="Message" data-f="msg">${esc(i.msg)}</div>
+      <div class="exp"><b>Attendu</b><span contenteditable="true" role="textbox" aria-label="Réaction attendue" data-f="exp">${esc(i.exp)}</span></div>
     </article>`).join("")}</div>`;
   } else {
-    body=`<div class="tablewrap"><table class="big"><thead><tr><th>Heure</th><th>Objectif</th><th>Émetteur</th><th>Destinataire</th><th>Vecteur</th><th>Message</th><th>Réaction attendue</th><th></th></tr></thead><tbody>${S.injects.map((i,n)=>`<tr data-i="${n}">
+    body=`<div class="tablewrap"><table class="big"><thead><tr><th>Heure</th><th>Objectif</th><th>Émetteur</th><th>Destinataire</th><th>Vecteur</th><th>Message</th><th>Réaction attendue</th><th><span class="sr">Supprimer</span></th></tr></thead><tbody>${S.injects.map((i,n)=>`<tr data-i="${n}">
       <td class="tm"><input class="tmin" type="number" min="0" step="5" value="${i.t}" aria-label="Minute de l'inject ${n+1}"><div>${hplus(i.t)}${S.p.heureH?" · "+clock(i.t):""}</div></td>
       <td>${tagOf(i.obj)}${i.sec?`<span class="tag o-SEC">Cascade · ${esc(RISKS[i.sec].label)}</span>`:""}</td>
-      <td><div contenteditable="true" data-f="from">${esc(i.from)}</div></td><td><div contenteditable="true" data-f="to">${esc(i.to)}</div></td>
-      <td><div contenteditable="true" data-f="via">${esc(i.via)}</div></td><td><div contenteditable="true" data-f="msg">${esc(i.msg)}</div></td>
-      <td><div contenteditable="true" data-f="exp">${esc(i.exp)}</div></td>
+      <td><div contenteditable="true" role="textbox" aria-label="Émetteur" data-f="from">${esc(i.from)}</div></td><td><div contenteditable="true" role="textbox" aria-label="Destinataire" data-f="to">${esc(i.to)}</div></td>
+      <td><div contenteditable="true" role="textbox" aria-label="Vecteur" data-f="via">${esc(i.via)}</div></td><td><div contenteditable="true" role="textbox" aria-label="Message" data-f="msg">${esc(i.msg)}</div></td>
+      <td><div contenteditable="true" role="textbox" aria-label="Réaction attendue" data-f="exp">${esc(i.exp)}</div></td>
       <td><button class="del" type="button" data-del="${n}" aria-label="Supprimer l'inject ${n+1}">×</button></td></tr>`).join("")}</tbody></table></div>`;
   }
   return docHead("Chronogramme")+`<div class="docbody"><h3>Chronogramme d'animation</h3><p class="note">Cliquez sur un texte pour le modifier. Le temps se règle en minutes après H et l'ordre se met à jour seul.</p>${body}</div>`;
@@ -2114,6 +2127,7 @@ function reportHTML(){
   const prev=hCommune().filter(x=>x.id!==S.archId);
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport de fin d'exercice — ${esc(p.commune)}</title><style>${printCss("Rapport de fin d'exercice")}h2{font-size:13pt;margin:16pt 0 6pt;border-bottom:1px solid #c6cfd9;padding-bottom:3pt;break-after:avoid;page-break-after:avoid}</style></head><body>
   <p class="mark">EXERCICE · EXERCICE · EXERCICE</p>
+  ${S.isExample?`<div class="callout warn"><b>Exemple sur une commune fictive.</b> Recherchez votre commune dans Commune Prête pour obtenir son propre rapport.</div>`:""}
   <p class="note" style="font-size:11pt;margin:14pt 0 2pt">Commune de ${esc(p.commune)}${p.pop?" · "+nf(p.pop)+" habitants":""}${p.dept?" · "+esc(p.dept):""}</p>
   <h1>Rapport de fin d'exercice</h1>
   <p style="font-size:12pt;color:#21456c">${esc(riskTitle(p))}</p>
@@ -2145,10 +2159,11 @@ function printHTML(html){
   setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){toast("Impression bloquée par le navigateur.")}setTimeout(()=>fr.remove(),4000)},300);
 }
 /* ---------- Dossier complet et fiches joueurs ---------- */
+const MARK_PRINT=`<svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true"><defs><clipPath id="cpP"><rect width="64" height="64" rx="14"/></clipPath></defs><g clip-path="url(#cpP)"><rect width="64" height="64" fill="#21456c"/><path d="M32 9.5 L52 22.5 H12 Z" fill="#ffffff"/><circle cx="32" cy="17.6" r="2.6" fill="#21456c"/>\n    <rect x="14" y="25" width="36" height="3.5" fill="#ffffff"/>\n    <rect x="17" y="30.5" width="5" height="13.5" fill="#ffffff"/><rect x="29.5" y="30.5" width="5" height="13.5" fill="#ffffff"/><rect x="42" y="30.5" width="5" height="13.5" fill="#ffffff"/>\n    <rect x="0" y="48" width="64" height="16" fill="#ffffff"/>\n    <path d="M-6 64 L10 48 H18 L2 64 Z M10 64 L26 48 H34 L18 64 Z M26 64 L42 48 H50 L34 64 Z M42 64 L58 48 H66 L50 64 Z M58 64 L74 48 H82 L66 64 Z" fill="#e0590c"/></g></svg>`;
 const cssq=t=>'"'+String(t).replace(/["\\]/g,"\\$&").replace(/\n/g," ")+'"';
 // Feuille commune aux documents imprimés. Word ignore @page et les marges nommées ; le PDF (navigateur) les applique.
 function printCss(titre){
-  return `@page{size:A4;margin:22mm 17mm 20mm 17mm;@top-left{content:"EXERCICE · EXERCICE · EXERCICE";color:#d4530a;font:bold 7.5pt Calibri,Arial,sans-serif;letter-spacing:1.5pt}@top-right{content:${cssq(S.p.commune+" · "+titre)};color:#536070;font:8pt Calibri,Arial,sans-serif}@bottom-left{content:"Document d'exercice · ne pas diffuser en dehors de l'exercice";color:#8a94a1;font:7.5pt Calibri,Arial,sans-serif}@bottom-right{content:"Page " counter(page) " sur " counter(pages);color:#536070;font:8pt Calibri,Arial,sans-serif}}
+  return `@page{size:A4;margin:22mm 17mm 20mm 17mm;@top-left{content:"EXERCICE · EXERCICE · EXERCICE";color:#d4530a;font:bold 7.5pt Calibri,Arial,sans-serif;letter-spacing:1.5pt}@top-right{content:${cssq((S.isExample?"EXEMPLE FICTIF · ":"")+S.p.commune+" · "+titre)};color:#536070;font:8pt Calibri,Arial,sans-serif}@bottom-left{content:"Document d'exercice · ne pas diffuser en dehors de l'exercice";color:#8a94a1;font:7.5pt Calibri,Arial,sans-serif}@bottom-right{content:"Page " counter(page) " sur " counter(pages);color:#536070;font:8pt Calibri,Arial,sans-serif}}
 @page:first{@top-left{content:none}@top-right{content:none}}
 @page paysage{size:A4 landscape;margin:16mm 14mm 16mm 14mm}
 *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}
@@ -2179,6 +2194,7 @@ table.obs td.c{width:52%}table.obs td.v{height:30pt}table.obs td.k{width:22%;whi
 table.roles td{width:50%}table.roles .who{font-size:8.5pt;color:#d4530a;font-weight:bold}table.roles b{font-size:11pt}
 pre{white-space:pre-wrap;font-family:Cambria,Georgia,serif;font-size:10pt;border:1px solid #c6cfd9;padding:7pt 9pt;margin:4pt 0 10pt;break-inside:avoid;page-break-inside:avoid}
 .cover{min-height:245mm;display:flex;flex-direction:column}
+.brandline{display:flex;align-items:center;gap:7pt;font-weight:bold;font-size:11pt;color:#21456c;margin:0 0 12pt}.brandline svg{width:22pt;height:22pt}
 .cover .band{height:9pt;background:repeating-linear-gradient(-45deg,#d4530a 0 7pt,#fff 7pt 14pt);margin:0 0 14pt}
 .cover .com{font-size:13pt;color:#536070;margin:46pt 0 6pt}
 .cover h1{font-size:30pt;margin:0 0 10pt}
@@ -2189,6 +2205,7 @@ pre{white-space:pre-wrap;font-family:Cambria,Georgia,serif;font-size:10pt;border
 }
 function cleanView(html){
   const d=document.createElement("div");d.innerHTML=html;
+  d.querySelectorAll(".sr").forEach(x=>x.remove());
   d.querySelectorAll(".dochead,button,.lbtns,details,.mapwrap,.catchips,.obsv-wrap input,.tools,script").forEach(x=>{if(x.classList&&x.classList.contains("cot")){return}x.remove()});
   d.querySelectorAll(".cot").forEach(x=>{x.outerHTML='<span class="chk">☐ Atteint ☐ Partiel ☐ Non atteint</span>'});
   d.querySelectorAll("input.tmin").forEach(x=>x.remove());
@@ -2213,7 +2230,8 @@ function dossierHTML(){
   let body="";try{body=parts.map(([t,f],i)=>`<div class="piece${f===vChrono?" paysage":""}">${cleanView(f())}</div>`).join("")}finally{S.view=keepView}
   const kv=[["Commune",esc(p.commune)+(p.pop?" · "+nf(p.pop)+" habitants":"")+(p.dept?" · "+esc(p.dept):"")],["Format",esc(FORMATS[p.format].label)],["Date",esc(cap(fmtDate(p.date)))],["Heure H",esc(p.heureH||"À fixer")+" · "+durTxt(p)+" de jeu"],["Directeur d'exercice","À désigner, hors cellule de crise"]];
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Dossier d'exercice — ${esc(p.commune)}</title><style>${printCss("Dossier d'exercice")}</style></head><body>
-  <div class="cover"><div class="band"></div><p class="mark">EXERCICE · EXERCICE · EXERCICE</p>
+  <div class="cover"><div class="band"></div><p class="brandline">${MARK_PRINT}<span>Commune Prête</span></p><p class="mark">EXERCICE · EXERCICE · EXERCICE</p>
+  ${S.isExample?`<div class="callout warn"><b>Exemple sur une commune fictive.</b> Ce dossier illustre l'outil : aucune donnée réelle. Recherchez votre commune dans Commune Prête pour obtenir son propre dossier.</div>`:""}
   <p class="com">Commune de ${esc(p.commune)}</p><h1>Dossier d'exercice de crise</h1><p class="risk">${esc(riskTitle(p))}</p>
   <table class="kv">${kv.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join("")}</table>
   <h4>Contenu du dossier</h4>
@@ -2231,7 +2249,7 @@ function cardHTML(i,n){
   else if(/capture/i.test(via))core=`<div class="k">Capture d'écran d'une publication</div><div class="post"><div class="who">Compte local fictif · @infos_locales</div><div class="body">${msg}</div><div class="stats">312 partages · 87 commentaires</div></div>`;
   else if(/bulletin/i.test(via))core=`<div class="bull"><div class="t">Bulletin — ${esc(i.from)}</div><div class="body">${msg}</div></div>`;
   else core=`<div class="k">${esc(via)} · à jouer par l'animateur</div><div class="script body">« ${msg} »</div>`;
-  return `<div class="card"><div class="band"></div><div class="ex">EXERCICE · EXERCICE · EXERCICE</div><div class="meta"><span><b>Message ${n+1}</b> · ${hplus(i.t)}${clk?" · "+clk:""}</span><span>${esc(i.from)} → ${esc(i.to)}</span></div>${core}<div class="foot">Document d'exercice — ${esc(S.p.commune)} — ne pas diffuser en dehors de l'exercice.</div></div>`;
+  return `<div class="card"><div class="band"></div><div class="ex">EXERCICE · EXERCICE · EXERCICE</div><div class="meta"><span><b>Message ${n+1}</b> · ${hplus(i.t)}${clk?" · "+clk:""}</span><span>${esc(i.from)} → ${esc(i.to)}</span></div>${core}<div class="foot">${S.isExample?"Exemple fictif — ":""}Document d'exercice — ${esc(S.p.commune)} — ne pas diffuser en dehors de l'exercice.</div></div>`;
 }
 function cardsHTML(){return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Fiches joueurs — ${esc(S.p.commune)}</title><style>${CARD_CSS}</style></head><body>${S.injects.filter(i=>i.obj!=="FIN").map(cardHTML).join("")}</body></html>`}
 document.addEventListener("click",e=>{
@@ -2264,7 +2282,7 @@ function vHist(){
 }
 function vRetex(){
   const bars=S.p.objs.map(o=>{const t=tally(o),pc=x=>(x/t.n*100)+"%";return `<div class="brow"><span>${esc(OBJS[o].short)}</span><div class="track" role="img" aria-label="${t.a} atteints, ${t.p} partiels, ${t.k} non atteints sur ${t.n}"><i class="a" style="width:${pc(t.a)}"></i><i class="p" style="width:${pc(t.p)}"></i><i class="k" style="width:${pc(t.k)}"></i></div><span class="score">${t.a+t.p+t.k}/${t.n}</span></div>`}).join("");
-  const acts=S.retex.actions.map((x,n)=>`<tr data-a="${n}"><td><div contenteditable="true" data-af="a">${esc(x.a)}</div></td><td><div contenteditable="true" data-af="pilote">${esc(x.pilote)}</div></td><td><div contenteditable="true" data-af="ech">${esc(x.ech)}</div></td><td><button class="del" type="button" data-adel="${n}" aria-label="Supprimer l'action">×</button></td></tr>`).join("");
+  const acts=S.retex.actions.map((x,n)=>`<tr data-a="${n}"><td><div contenteditable="true" role="textbox" aria-label="Action" data-af="a">${esc(x.a)}</div></td><td><div contenteditable="true" role="textbox" aria-label="Pilote" data-af="pilote">${esc(x.pilote)}</div></td><td><div contenteditable="true" role="textbox" aria-label="Échéance" data-af="ech">${esc(x.ech)}</div></td><td><button class="del" type="button" data-adel="${n}" aria-label="Supprimer l'action">×</button></td></tr>`).join("");
   return docHead("Retour d'expérience")+`<div class="docbody"><h3>Retour d'expérience</h3>
     <div class="lbtns" style="margin:4px 0 10px"><button class="btn sm" type="button" id="repDoc">Rapport Word</button><button class="btn sm" type="button" id="repPdf">Rapport PDF</button><button class="btn sm ${pendingArch?"primary":""}" type="button" id="archBtn">${pendingArch?"Confirmer l'archivage":S.archId?"Mettre à jour l'archive":"Clôturer et archiver l'exercice"}</button></div>
     <div class="sec"><h4>Synthèse des cotations</h4><div class="legend"><span style="--c:var(--ok)">Atteint</span><span style="--c:var(--warn)">Partiel</span><span style="--c:var(--bad)">Non atteint</span></div><div class="bars">${bars}</div></div>
@@ -2273,7 +2291,7 @@ function vRetex(){
     ${(()=>{const D=delays();if(!D.length)return "";const done=D.filter(o=>o.d!=null),avg=done.length?Math.round(done.reduce((a,o)=>a+(o.d-o.s),0)/done.length):null;
       return `<div class="sec"><h4>Délais de réaction mesurés</h4><p class="note">${(()=>{const pl=(n,w)=>n+" "+w+(n>1?"s":""),nr=D.filter(o=>o.r!=null).length;return pl(D.length,"message")+" envoyé"+(D.length>1?"s":"")+", "+pl(done.length,"réaction")+" constatée"+(done.length>1?"s":"")+(avg!=null?", délai moyen "+avg+" min":"")+", "+pl(nr,"relance")+"."})()}</p><div class="tablewrap"><table style="min-width:540px"><thead><tr><th>Message</th><th>Objectif</th><th>Envoyé</th><th>Réaction</th><th>Délai</th></tr></thead><tbody>${D.map(o=>`<tr><td>${esc(o.i.from)} : ${esc(o.i.msg.slice(0,70))}${o.i.msg.length>70?"…":""}</td><td>${esc(OBJS[o.i.obj]?OBJS[o.i.obj].short:o.i.obj)}</td><td>${fmtShort(o.s)}</td><td>${o.d!=null?fmtShort(o.d):"—"}</td><td>${o.d!=null?Math.round(o.d-o.s)+" min":"aucune"}${o.r!=null?" · relancé":""}</td></tr>`).join("")}</tbody></table></div></div>`})()}
     <div class="two"><div class="field"><label for="rf">Points forts</label><textarea id="rf" data-r="forts">${esc(S.retex.forts)}</textarea></div><div class="field"><label for="ra">Axes d'amélioration</label><textarea id="ra" data-r="axes">${esc(S.retex.axes)}</textarea></div></div>
-    <div class="sec"><h4>Plan d'actions correctives</h4><div class="tablewrap"><table style="min-width:540px"><thead><tr><th>Action</th><th>Pilote</th><th>Échéance</th><th></th></tr></thead><tbody>${acts}</tbody></table></div><div><button class="btn sm" type="button" id="addAct">+ Ajouter une action</button></div></div>
+    <div class="sec"><h4>Plan d'actions correctives</h4><div class="tablewrap"><table style="min-width:540px"><thead><tr><th>Action</th><th>Pilote</th><th>Échéance</th><th><span class="sr">Supprimer</span></th></tr></thead><tbody>${acts}</tbody></table></div><div><button class="btn sm" type="button" id="addAct">+ Ajouter une action</button></div></div>
     <div class="callout">${info}<span>Le retour d'expérience associe l'ensemble des acteurs et formule des recommandations pour ajuster le plan ${refLink("CSI D731-9 à D731-13")}. Le PCS se révise ensuite, et au moins tous les cinq ans.</span></div>
     ${vHist()}
   </div>`;
@@ -2317,11 +2335,11 @@ function render(){
   const p=S.p;
   const k=[["Risque joué",RISKS[p.risk].label+(comboOf(p).length?" +"+comboOf(p).length:""),1],["Format",FORMATS[p.format].short],["Durée de jeu",durTxt(p)],["Messages",S.injects.length],["Objectifs",p.objs.length+" sur 7"]];
   $("#kpis").innerHTML=k.map(x=>`<div${x[2]?' class="hl"':""}><dt>${x[0]}</dt><dd title="${esc(x[1])}">${esc(x[1])}</dd></div>`).join("");
-  $("#tabs").innerHTML=TABS.map(t=>(t[2]?`<span class="tgrp" role="presentation">${t[2]}</span>`:"")+`<button class="tab" role="tab" type="button" id="tab-${t[0]}" aria-selected="${S.tab===t[0]}" tabindex="${S.tab===t[0]?0:-1}" data-tab="${t[0]}">${t[1]}</button>`).join("");
+  $("#tabs").innerHTML=TABS.map(t=>(t[2]?`<span class="tgrp" role="presentation">${t[2]}</span>`:"")+`<button class="tab" role="tab" type="button" id="tab-${t[0]}" aria-selected="${S.tab===t[0]}" aria-controls="view" tabindex="${S.tab===t[0]?0:-1}" data-tab="${t[0]}">${t[1]}</button>`).join("");
   let tools=`<button class="btn sm ghost" type="button" id="dosDoc" title="Télécharger le dossier complet au format Word">Word</button><button class="btn sm ghost" type="button" id="dosPdf" title="Imprimer ou enregistrer le dossier en PDF">PDF</button><button class="btn sm ghost" type="button" id="copyAll" title="Copier tout le dossier en texte">Copier</button>`;
   if(S.tab==="chrono")tools=`<div class="seg" role="group" aria-label="Affichage du chronogramme"><button type="button" data-view="tl" aria-pressed="${S.view!=="table"}">Frise</button><button type="button" data-view="table" aria-pressed="${S.view==="table"}">Tableau</button></div><button class="btn sm" type="button" id="addInj">Ajouter un message</button><button class="btn sm ghost" type="button" id="copyTsv" title="Copier le chronogramme pour un tableur">Tableur</button><button class="btn sm ghost" type="button" id="cardsPrint" title="Imprimer une fiche par message pour les animateurs">Fiches joueurs</button><span class="sep" aria-hidden="true"></span>`+tools;
   $("#tools").innerHTML=tools;
-  tabsFit(true);
+  tabsFit(true);$("#view").setAttribute("aria-labelledby","tab-"+S.tab);
   if(map){map.remove();map=null}
   $("#view").innerHTML=`<article class="card doc">${VIEWS[S.tab]()}</article>`;
   if(S.tab==="carte")drawMap();
@@ -2417,7 +2435,7 @@ function initObs(){
   const cr=o=>d.k&&o==="EVAL"?CRIT.EVAL.concat(["Le PCC hiérarchise les événements simultanés et réaffecte ses moyens"]):CRIT[o];
   const stamp=()=>d.s?fmtShort((Date.now()-d.s)/60000):wallNow();
   const draw=()=>{sh.innerHTML=`<main class="work"><article class="card doc"><div class="docbody">
-    <h3>Grille d'observation</h3><p class="note"><b>${esc(d.c)}</b>, ${esc(d.t.charAt(0).toLowerCase()+d.t.slice(1))}. Notez l'heure ou le délai constaté, cotez, puis envoyez votre code au directeur d'exercice. Vos saisies restent sur ce téléphone.</p>
+    <h2 class="obst">Grille d'observation</h2><p class="note"><b>${esc(d.c)}</b>, ${esc(d.t.charAt(0).toLowerCase()+d.t.slice(1))}. Notez l'heure ou le délai constaté, cotez, puis envoyez votre code au directeur d'exercice. Vos saisies restent sur ce téléphone.</p>
     <div class="field"><label for="oname">Votre nom</label><input type="text" id="oname" value="${esc(O.n||"")}"></div>
     ${(d.o||[]).filter(o=>OBJS[o]).map(o=>`<div class="obsg"><div class="gh"><span>${esc(OBJS[o].label)}</span></div>${cr(o).map((c,j)=>{const id=o+"-"+j,v=O.cot[id]||"";return `<div class="obsr"><span>${esc(c)}<span class="obsv-wrap"><input class="obsv" type="text" data-oid="${id}" value="${esc(O.obsv[id]||"")}" placeholder="Constaté" aria-label="Constaté"><button class="btn sm nowb" type="button" data-onow="${id}">Maintenant</button></span></span><span class="cot" role="group" aria-label="Cotation">${[["ok","Atteint"],["part","Partiel"],["ko","Non atteint"]].map(x=>`<button type="button" data-ocot="${id}" data-v="${x[0]}" aria-pressed="${v===x[0]}">${x[1]}</button>`).join("")}</span></div>`}).join("")}</div>`).join("")}
     <div class="obsfoot"><button class="btn primary" type="button" id="ocopy">Copier mon code pour le directeur</button></div>
