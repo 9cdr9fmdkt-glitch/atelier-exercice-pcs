@@ -1,0 +1,7 @@
+{
+  "name": "commune-prete",
+  "private": true,
+  "description": "Tests automatiques de l'outil Commune Prête",
+  "scripts": { "test": "node tests/run.js" },
+  "devDependencies": { "jsdom": "^24.1.0" }
+}
