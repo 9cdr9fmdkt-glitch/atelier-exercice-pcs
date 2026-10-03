@@ -384,7 +384,7 @@ body.obsmode .status{display:none}
       <section class="step" aria-labelledby="h3">
         <div class="stephead"><span class="num">3</span><h2 id="h3">Format et horaires</h2></div>
         <div class="seg" id="segFormat" role="group" aria-label="Format">
-          <button type="button" data-v="table">Sur table</button><button type="button" data-v="cadre">Cadre</button><button type="button" data-v="terrain">Avec terrain</button>
+          <button type="button" data-v="table">Sur table</button><button type="button" data-v="cadre">Cadre</button><button type="button" data-v="terrain">Avec terrain</button><button type="button" data-v="alerte" title="Exercice d'alerte de 30 minutes">Alerte</button>
         </div>
         <div class="row2">
           <div class="field"><span class="lab" id="ldur">Durée de jeu</span>
@@ -424,6 +424,15 @@ body.obsmode .status{display:none}
             <div class="field"><label for="icpe">Site industriel (installations classées)</label><input type="text" id="icpe" list="dl-icpe" placeholder="Aucun : site fictif"></div>
             <div class="field"><label for="fdo">Forces de l'ordre compétentes</label><select id="fdo"><option value="auto">Selon la taille de la commune</option><option value="gendarmerie">Gendarmerie nationale</option><option value="police">Police nationale</option></select></div>
             <div id="datalists" hidden></div>
+          </div>
+        </details>
+        <details class="more" id="annuBox">
+          <summary>Annuaire de crise <span class="aside" id="annuCount"></span></summary>
+          <div class="inner">
+            <p class="note">Dans Excel, sélectionnez les colonnes Nom, Fonction et Téléphone, copiez, puis collez ici. Un fichier CSV convient aussi. Les noms restent dans ce navigateur.</p>
+            <textarea id="annuPaste" rows="4" style="width:100%" placeholder="Nom	Fonction	Téléphone"></textarea>
+            <div class="lbtns" style="margin-top:8px"><button class="btn sm" type="button" id="annuImport">Importer</button><label class="btn sm ghost" for="annuFile">Fichier CSV</label><input type="file" id="annuFile" accept=".csv,text/csv,text/plain" hidden><button class="btn sm ghost" type="button" id="annuClear">Vider</button></div>
+            <ul class="checks" id="annuList"></ul>
           </div>
         </details>
         <details class="more" id="ficheBox">
@@ -981,6 +990,7 @@ masse:{
 const FORMATS = {
   table:{label:"Exercice sur table", short:"Sur table", desc:"Les membres de la cellule de crise sont réunis autour d'une table. Les injects sont remis par l'animateur, oralement ou sur fiche. Aucun moyen n'est déplacé.", jeu:"Le jeu se déroule entièrement en salle. Les actions sont décrites, pas exécutées."},
   cadre:{label:"Exercice cadre", short:"Cadre", desc:"Le PCC est armé dans ses locaux réels. Les injects arrivent par les vecteurs prévus (téléphone, courriel, radio) depuis une cellule d'animation installée dans une autre pièce.", jeu:"Les appels sortants vers des partenaires réels sont simulés et aboutissent à la cellule d'animation."},
+  alerte:{label:"Exercice d'alerte (30 min)", short:"Alerte", desc:"Test de la chaîne d'alerte : à partir d'un message de la préfecture, la commune joint chaque membre de sa cellule de crise inscrit à l'annuaire. On mesure qui est joint, et en combien de temps.", jeu:"Seuls les appels sont réels. Personne ne se déplace, sauf consigne contraire du directeur d'exercice."},
   terrain:{label:"Exercice avec volet terrain", short:"Avec terrain", desc:"Le PCC est armé et certaines actions sont exécutées réellement : ouverture du lieu d'accueil, mise en place de barrières, porte-à-porte sur un secteur limité.", jeu:"Seules les actions listées dans le volet terrain sont jouées en réel. Le reste est simulé."}
 };
 const DEFAULTS = {
@@ -1512,6 +1522,27 @@ function renderSegs(){
   $("#objs").innerHTML=Object.entries(OBJS).map(([k,v])=>`<button type="button" class="chip" data-o="${k}" aria-pressed="${S.p.objs.includes(k)}" title="${esc(v.label)}">${esc(v.short)}</button>`).join("");
   $("#objCount").textContent=S.p.objs.length+" sur 7";
 }
+function parseAnnu(txt){
+  const lines=String(txt||"").replace(/\r/g,"").split("\n").map(l=>l.trim()).filter(Boolean);if(!lines.length)return [];
+  const sep=lines.some(l=>l.includes("\t"))?"\t":lines.some(l=>l.includes(";"))?";":",";
+  const rows=lines.map(l=>l.split(sep).map(c=>c.trim().replace(/^"|"$/g,"")));
+  let iN=0,iF=1,iT=2,start=0;
+  const h=rows[0].map(c=>c.toLowerCase());
+  if(h.some(c=>/^(nom|name|pr[ée]nom|fonction|r[ôo]le|t[ée]l)/.test(c))){start=1;
+    const f=re=>h.findIndex(c=>re.test(c));const a=f(/^(nom|name|pr[ée]nom)/),b=f(/fonction|r[ôo]le|qualit/),c=f(/t[ée]l|portable|mobile|num/);
+    if(a>=0)iN=a;if(b>=0)iF=b;if(c>=0)iT=c}
+  else{const ph=rows[0].findIndex(c=>/^\+?[\d .()-]{8,}$/.test(c));if(ph>=0){iT=ph;const o=[0,1,2].filter(x=>x!==ph);iN=o[0];iF=o[1]}}
+  return rows.slice(start).map(r=>({nom:r[iN]||"",fonction:r[iF]||"",tel:r[iT]||""})).filter(x=>x.nom).slice(0,200);
+}
+const ROLE_KEYS=[[/directeur des opérations|DOS/,/^maire\b|\bmaire$|^le maire/i],[/actions communales/,/adjoint|responsable des actions|\brac\b/i],[/Secrétariat/,/secr[ée]tai|\bdgs\b|directeur g[ée]n[ée]ral|directrice g[ée]n[ée]rale|main courante/i],[/Population et accueil/,/ccas|social|accueil|population|care/i],[/Logistique/,/technique|voirie|logistique|\bst\b|agent/i],[/^Communication/,/communication|presse/i]];
+function holders(title){const k=ROLE_KEYS.find(x=>x[0].test(title));if(!k)return [];return (S.annu||[]).filter(c=>k[1].test(c.fonction)).slice(0,3)}
+function renderAnnu(){
+  const a=S.annu||[];$("#annuCount").textContent=a.length?a.length+" contact"+(a.length>1?"s":""):"";
+  $("#annuList").innerHTML=a.slice(0,8).map(c=>`<li>${esc(c.nom)} <span class="note">· ${esc(c.fonction||"fonction ?")} · ${esc(c.tel||"pas de numéro")}</span></li>`).join("")+(a.length>8?`<li class="note">et ${a.length-8} autres</li>`:"");
+}
+$("#annuImport").addEventListener("click",()=>{const a=parseAnnu($("#annuPaste").value);if(!a.length){toast("Aucun contact reconnu. Collez au moins un nom.");return}S.annu=a;$("#annuPaste").value="";renderAnnu();save();if(S.tab==="roles"||S.tab==="conduite")render();toast(a.length+" contacts importés.")});
+$("#annuFile").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(!f)return;f.text().then(t=>{$("#annuPaste").value=t;$("#annuImport").click()});e.target.value=""});
+$("#annuClear").addEventListener("click",()=>{S.annu=[];renderAnnu();save();if(S.tab==="roles"||S.tab==="conduite")render();toast("Annuaire vidé.")});
 function renderFiche(){
   const f=S.p.fiche||{},num=([k,l])=>`<div class="field"><label for="fi-${k}">${esc(l)}</label><input type="number" min="0" inputmode="numeric" id="fi-${k}" data-fi="${k}" value="${esc(f[k]??"")}"></div>`;
   const sel=(k,l)=>`<div class="field"><label for="fi-${k}">${esc(l)}</label><select id="fi-${k}" data-fi="${k}"><option value="">Non renseigné</option><option value="oui"${f[k]==="oui"?" selected":""}>Oui</option><option value="non"${f[k]==="non"?" selected":""}>Non</option></select></div>`;
@@ -1531,7 +1562,7 @@ function renderPart(){
 }
 $("#partFields").addEventListener("change",e=>{const k=e.target.dataset.part;if(!k)return;S.p.part=S.p.part||{};S.p.part[k]=e.target.value.trim();save()});
 function writeForm(){
-  const p=S.p;renderPart();renderFiche();
+  const p=S.p;renderPart();renderFiche();renderAnnu();
   $("#commune").value=p.commune;$("#pop").value=p.pop||"";$("#dept").value=p.dept||"";
   $("#heureH").value=p.heureH;$("#date").value=p.date;
   PLACE_KEYS.forEach(k=>$("#"+k).value=p[k]||"");$("#fdo").value=p.fdo||"auto";renderDatalists();
@@ -1576,12 +1607,19 @@ function pick(c){
   Object.assign(S.p,{commune:c.nom,insee:c.code,pop:c.population||"",dept:c.departement?c.departement.nom+" ("+c.departement.code+")":"",region:c.region?c.region.nom:"",epci:c.epci?c.epci.nom:"",part:{},fiche:{},lat:c.centre?c.centre.coordinates[1]:null,lon:c.centre?c.centre.coordinates[0]:null});
   PLACE_KEYS.forEach(k=>S.p[k]=DEFAULTS[k]);S.p.focus=null;S.p.fdo="auto";S.places=null;S.quartiers=null;S.roads=null;S.rail=false;contourGeo=null;writeForm();
   $("#commune").value=c.nom;S.isExample=false;renderId();save();render();
-  renderPart();renderFiche();loadRisks(c.code).then(()=>{if(geoRisks.status==="ok")toast("Risques de "+c.nom+" chargés depuis Géorisques.")});
+  S.annu=[];renderAnnu();renderPart();renderFiche();loadRisks(c.code).then(()=>{if(geoRisks.status==="ok")toast("Risques de "+c.nom+" chargés depuis Géorisques.")});
   loadPlaces();
 }
 
 /* ---------- Génération ---------- */
+const isAlerte=p=>p.format==="alerte";
+const durMin=p=>isAlerte(p)?30:Number(p.duree);
+const durTxt=p=>isAlerte(p)?"30 min":Number(p.duree)/60+" h";
 function buildInjects(p){
+  if(isAlerte(p)){const dg=fill(DANGER[p.risk]||RISKS[p.risk].label,p),a=actors(p);return [
+    {t:0,obj:"ALERTE",from:a.Pref_sidpc,to:"Maire",via:"SMS + appel",msg:`Exercice d'alerte. ${dg} à ${p.commune}. Alertez votre cellule de crise et indiquez-nous dans 30 minutes combien de membres sont joints.`,exp:"Alerte du maire, appel de chaque membre de l'annuaire de crise, suivi des appels, compte rendu chiffré à la préfecture."},
+    {t:25,obj:"LIAI",from:a.Pref,to:"Maire",via:"Téléphone",msg:"Combien de membres de votre cellule de crise avez-vous joints ? Lesquels restent injoignables ?",exp:"Compte rendu chiffré : membres joints, messages laissés, injoignables, délai."},
+    {t:30,obj:"FIN",from:"Directeur d'exercice",to:"Tous",via:"Message",msg:"FIN D'EXERCICE. Rassemblement pour le débriefing.",exp:"Arrêt du jeu, débriefing à chaud."}]}
   const lib=LIB[p.risk],dur=Number(p.duree),k=dur/180,keep=new Set(p.objs);
   const out=lib.injects.filter(i=>i[1]==="FIN"||i[1]==="ALERTE"||keep.has(i[1])).map(i=>({
     t:i[1]==="FIN"?dur-2:Math.round(i[0]*k/5)*5,obj:i[1],from:fill(i[2],p),to:fill(i[3],p),via:i[4],msg:fill(i[5],p),exp:fill(i[6],p)
@@ -1634,7 +1672,7 @@ function vCadrage(){
       <dt>Risque joué</dt><dd>${esc(RISKS[p.risk].label)}${comboOf(p).length?" · en cascade : "+esc(comboOf(p).map(c=>RISKS[c].label.toLowerCase()).join(", ")):""}</dd>
       <dt>Format</dt><dd>${esc(f.label)}</dd>
       <dt>Date</dt><dd>${esc(cap(fmtDate(p.date)))}</dd>
-      <dt>Horaires</dt><dd>H = ${esc(p.heureH||"à fixer")} · ${Number(p.duree)/60} h de jeu · 30 min de débriefing à chaud</dd>
+      <dt>Horaires</dt><dd>H = ${esc(p.heureH||"à fixer")} · ${durTxt(p)} de jeu · 30 min de débriefing à chaud</dd>
       <dt>Directeur d'exercice</dt><dd>À désigner, hors cellule de crise</dd>
       <dt>Joueurs</dt><dd>Maire (DOS) et cellule de crise communale prévue au PCS</dd>
     </dl>
@@ -1681,6 +1719,8 @@ function checks(p){
       if(all.includes("cyber")&&j!==1)w.push(`Le scénario cyber commence « un lundi matin » ; l'exercice est un ${JOURS[j]}. Adaptez le contexte ou la date.`);
     }
   }
+  if(isAlerte(p)&&!(S.annu||[]).length)w.push("Exercice d'alerte : importez l'annuaire de crise pour suivre les appels.");
+  {const nt=(S.annu||[]).filter(c=>!c.tel).length;if(nt)w.push(`${nt} contact${nt>1?"s":""} de l'annuaire sans numéro de téléphone.`)}
   if(ficheFill(p)<3)w.push("La fiche « Moyens de la commune » est peu renseignée : les messages restent génériques. Complétez-la pour un exercice fidèle à vos moyens réels.");
   {const cap=fn(p,"cap"),k=scale(p);if(cap!=null&&EVAC_RISKS.includes(p.risk)&&k.evac>cap)w.push(`Le lieu d'accueil (${nf(cap)} places) ne suffit pas pour les ${nf(k.evac)} évacués du scénario : un message de saturation est ajouté au chronogramme.`)}
   if(!isSchool(p)&&["inondation","tmd","industriel","seisme","canicule","sanitaire","bombe","masse"].some(k=>all.includes(k)))w.push(`L'établissement sensible retenu (${p.etab}) n'est pas une école, alors que le scénario parle d'élèves et de parents. Choisissez une école, ou adaptez les messages concernés.`);
@@ -1689,7 +1729,7 @@ function checks(p){
   return w;
 }
 function vScenario(){
-  const p=S.p,L=LIB[p.risk],dur=Number(p.duree);
+  const p=S.p,L=LIB[p.risk],dur=durMin(p);
   const ph=L.phases.map((x,i)=>`<div class="phase"><span class="t">${hplus(Math.round(dur*i/4))} → ${hplus(Math.round(dur*(i+1)/4))}</span><b>${esc(x[0])}</b><p>${esc(fill(x[1],p))}</p></div>`).join("");
   let hist="";
   if(S.ctx){
@@ -1774,6 +1814,7 @@ function vLive(){
     <div class="lhead"><div class="lclock" id="lclock">${fmtEl(elMs())}<small id="lreal">${S.p.heureH?"Heure simulée "+clock(Math.floor(em))+" · ":""}heure réelle ${wallNow()}</small></div>
       <div class="lbtns">${l.run?`<button class="btn" type="button" id="lpause">Pause</button>`:`<button class="btn primary" type="button" id="lstart">${started?"Reprendre":"Démarrer l'exercice"}</button>`}
       ${started?`<button class="btn ghost" type="button" id="lreset">${pendingReset?"Confirmer la remise à zéro":"Remettre à zéro"}</button>`:""}</div></div>
+    ${callsBlock()}
     <div class="sec"><h4>À envoyer</h4>${due.length?due.map(o=>card(o,"due")).join(""):`<p class="note">${pending.length?"Aucun message dans les cinq prochaines minutes.":"Tous les messages ont été envoyés."}</p>`}</div>
     ${watch.length?`<div class="sec"><h4>Réactions attendues</h4>${watch.map(o=>card(o,"watch")).join("")}</div>`:""}
     ${next.length?`<div class="sec"><h4>À venir</h4><ul>${next.map(o=>`<li>${hplus(o.i.t)} · ${esc(o.i.from)} → ${esc(o.i.to)} : ${esc(o.i.msg.slice(0,110))}${o.i.msg.length>110?"…":""}</li>`).join("")}</ul></div>`:""}
@@ -1782,6 +1823,17 @@ function vLive(){
       ${l.log.length?`<ul class="mclist">${l.log.slice().reverse().map(x=>`<li><time>${fmtEl(x.at).slice(0,-3)}</time><span>${esc(x.txt)}</span></li>`).join("")}</ul>`:`<p class="note">Les envois, les réactions et vos notes s'inscrivent ici, horodatés.</p>`}
     </div>
   </div>`;
+}
+const CALL_ST=[["ok","Joint"],["msg","Message laissé"],["ko","Injoignable"]];
+function callStats(){const l=S.live,a=S.annu||[];if(!l||!l.calls)return null;const v=Object.values(l.calls);const ok=v.filter(x=>x.st==="ok").sort((x,y)=>x.at-y.at);
+  return {n:a.length,ok:ok.length,msg:v.filter(x=>x.st==="msg").length,ko:v.filter(x=>x.st==="ko").length,half:ok.length>=Math.ceil(a.length/2)&&a.length?Math.round(ok[Math.ceil(a.length/2)-1].at):null,last:ok.length?Math.round(ok[ok.length-1].at):null}}
+function callsBlock(){
+  const a=S.annu||[],l=LV();
+  if(!a.length)return isAlerte(S.p)?`<div class="callout warn">${info}<span>Exercice d'alerte : importez d'abord l'annuaire de crise (colonne de gauche) pour suivre les appels.</span></div>`:"";
+  l.calls=l.calls||{};const st=callStats();
+  return `<div class="sec"><h4>${isAlerte(S.p)?"Test de l'annuaire":"Convocation de la cellule de crise"}</h4>
+    <p class="note">${st.ok} joint${st.ok>1?"s":""} sur ${st.n}${st.msg?" · "+st.msg+" message"+(st.msg>1?"s":"")+" laissé"+(st.msg>1?"s":""):""}${st.ko?" · "+st.ko+" injoignable"+(st.ko>1?"s":""):""}${st.half!=null?" · la moitié jointe en "+st.half+" min":""}. Cliquez au fil des appels ; l'heure est notée.</p>
+    <ul class="checks">${a.map((c,i)=>{const r=l.calls[i];return `<li style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between"><span>${esc(c.nom)} <span class="note">· ${esc(c.fonction)}${c.tel?" · "+esc(c.tel):""}</span></span><span class="cot" role="group" aria-label="Résultat de l'appel">${CALL_ST.map(([v,t])=>`<button type="button" data-call="${i}" data-v="${v}" aria-pressed="${r&&r.st===v}">${t}${r&&r.st===v?" · "+fmtShort(r.at):""}</button>`).join("")}</span></li>`}).join("")}</ul></div>`;
 }
 function mcText(){return LV().log.map(x=>fmtEl(x.at).slice(0,-3)+" ("+new Date(x.wall).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})+") — "+x.txt).join("\n")}
 let lastMin=-1;
@@ -1799,6 +1851,8 @@ document.addEventListener("click",e=>{
   if(id==="lreset"){if(!pendingReset){pendingReset=true;render();return}pendingReset=false;S.live=null;save();render();toast("Horloge et main courante remises à zéro.");return}
   if(id==="lmcadd"){const i=$("#lmc");const v=i.value.trim();if(v){mcAdd(v);render();setTimeout(()=>{const n=$("#lmc");if(n)n.focus()},0)}return}
   if(id==="lmccopy"){copy(mcText()||"Main courante vide.","Main courante copiée.");return}
+  const cb=t.closest&&t.closest("[data-call]");if(cb){const L=LV(),i=+cb.dataset.call,v=cb.dataset.v,c=(S.annu||[])[i];L.calls=L.calls||{};
+    if(L.calls[i]&&L.calls[i].st===v){delete L.calls[i]}else{if(!L.run&&!L.acc){L.start=Date.now();L.run=true;mcAdd("Début de l'exercice (STARTEX)","sys")}L.calls[i]={st:v,at:elMin()};mcAdd(`Appel ${c?c.nom:""} : ${CALL_ST.find(x=>x[0]===v)[1].toLowerCase()}`,"inj")}save();render();return}
   const sb=t.closest&&t.closest("[data-lsent]");if(sb){const L=LV(),n=+sb.dataset.lsent,i=S.injects[n];L.sent[n]=elMin();mcAdd(`Envoyé : ${i.from} → ${i.to} (${hplus(i.t)}) — ${i.msg.slice(0,90)}${i.msg.length>90?"…":""}`,"inj");if(i.obj==="FIN"){L.acc=elMs();L.run=false;mcAdd("Fin de l'exercice (ENDEX)","sys")}save();render();return}
   const db=t.closest&&t.closest("[data-ldone]");if(db){const L=LV(),n=+db.dataset.ldone,i=S.injects[n];L.done[n]=elMin();mcAdd(`Réaction constatée (${Math.round(L.done[n]-L.sent[n])} min après l'envoi) : ${i.exp.slice(0,90)}${i.exp.length>90?"…":""}`,"inj");save();render();return}
   const rb=t.closest&&t.closest("[data-lrel]");if(rb){const L=LV(),n=+rb.dataset.lrel;L.rel[n]=elMin();mcAdd("Relance envoyée : "+relanceMsg(S.injects[n]),"inj");save();render();return}
@@ -1821,7 +1875,7 @@ function vRoles(){
     ["A","Animateurs",["Jouent préfecture, SDIS, gendarmerie, habitants, presse","Envoient les injects à l'heure prévue","Répondent aux appels sortants","Signalent les écarts au directeur"]],
     ["A","Observateurs",["Un observateur par cellule si possible","Renseignent la grille d'observation","Notent des faits horodatés","N'interviennent jamais dans le jeu"]]
   ];
-  return docHead("Fiches rôles")+`<div class="docbody"><h3>Fiches rôles</h3><div class="roles">${R.map(r=>`<div class="role ${r[0]==="A"?"anim":""}"><span class="who">${r[0]==="J"?"Joueur":"Équipe d'animation"}</span><b>${esc(r[1])}</b><ul>${r[2].map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`).join("")}</div></div>`;
+  return docHead("Fiches rôles")+`<div class="docbody"><h3>Fiches rôles</h3><div class="roles">${R.map(r=>`<div class="role ${r[0]==="A"?"anim":""}"><span class="who">${r[0]==="J"?"Joueur":"Équipe d'animation"}</span><b>${esc(r[1])}</b>${(()=>{const h=r[0]==="J"?holders(r[1]):[];return h.length?`<p class="note" style="margin:4px 0 0">${h.map(c=>esc(c.nom)+(c.tel?" · "+esc(c.tel):"")).join("<br>")}</p>`:""})()}<ul>${r[2].map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`).join("")}</div></div>`;
 }
 function tally(o){let a=0,p=0,k=0;crit(o).forEach((_,j)=>{const v=S.cot[o+"-"+j];if(v==="ok")a++;else if(v==="part")p++;else if(v==="ko")k++});return {a,p,k,n:crit(o).length}}
 const CONSIGNES={
@@ -1959,7 +2013,7 @@ function reportHTML(){
   <p class="mark">EXERCICE · EXERCICE · EXERCICE</p>
   <h1>Rapport de fin d'exercice</h1>
   <p><b>Commune de ${esc(p.commune)}</b>${p.pop?" · "+nf(p.pop)+" habitants":""}${p.dept?" · "+esc(p.dept):""}<br>
-  ${esc(riskTitle(p))} · ${esc(f.label)} · ${esc(fmtDate(p.date))}${p.heureH?" · H = "+esc(p.heureH):""} · ${Number(p.duree)/60} h de jeu</p>
+  ${esc(riskTitle(p))} · ${esc(f.label)} · ${esc(fmtDate(p.date))}${p.heureH?" · H = "+esc(p.heureH):""} · ${durTxt(p)} de jeu</p>
   <h2>1. Synthèse</h2>
   <p>Taux d'atteinte : <b>${sc.taux!=null?sc.taux+" %":"aucun critère coté"}</b>${sc.c?` sur ${pl(sc.c,"critère","coté")} (${pl(sc.a,"atteint")}, ${pl(sc.p,"partiel")}, ${sc.k} non atteint${sc.k>1?"s":""}) ; ${sc.n-sc.c} non coté${sc.n-sc.c>1?"s":""} sur ${sc.n}`:""}. Un critère partiel compte pour moitié.${av!=null?" Délai moyen de réaction de la cellule de crise : <b>"+av+" min</b>.":""}${D.length?" "+pl(D.length,"message","joué")+", "+pl(D.filter(o=>o.r!=null).length,"relance")+".":""}</p>
   ${prev.length&&prev[0].taux!=null&&sc.taux!=null?`<p>Exercice précédent (${esc(fmtDate(prev[0].date))}, ${esc(prev[0].titre)}) : ${prev[0].taux} %. Évolution : ${sc.taux-prev[0].taux>=0?"+":""}${sc.taux-prev[0].taux} points.</p>`:""}
@@ -1969,6 +2023,7 @@ function reportHTML(){
   <h2>4. Axes d'amélioration</h2><p>${esc(S.retex.axes||"—").replace(/\n/g,"<br>")}</p>
   <h2>5. Plan d'actions correctives</h2>
   <table><tr><th>Action</th><th>Pilote</th><th>Échéance</th></tr>${S.retex.actions.map(x=>row([esc(x.a),esc(x.pilote),esc(x.ech)])).join("")}</table>
+  ${(()=>{const st=callStats();if(!st||!st.n)return "";const a=S.annu||[],L=S.live.calls||{};return `<h2>Test de l'annuaire de crise</h2><p>${st.ok} membres joints sur ${st.n} (${Math.round(st.ok/st.n*100)} %)${st.half!=null?", la moitié en "+st.half+" min":""}${st.last!=null?", le dernier à H+"+st.last+" min":""}.</p><table><tr><th>Nom</th><th>Fonction</th><th>Résultat</th><th>Heure</th></tr>${a.map((c,i)=>row([esc(c.nom),esc(c.fonction),L[i]?CALL_ST.find(x=>x[0]===L[i].st)[1]:"Non appelé",L[i]?fmtShort(L[i].at):"—"])).join("")}</table>`})()}
   ${D.length?`<h2>6. Délais de réaction mesurés</h2><table><tr><th>Heure</th><th>Émetteur</th><th>Message</th><th>Délai</th></tr>${D.map(o=>row([hplus(o.i.t),esc(o.i.from),esc(o.i.msg),o.d!=null?Math.round(o.d-o.s)+" min":"aucune réaction"+(o.r!=null?" (relancé)":"")])).join("")}</table>`:""}
   <h2>${D.length?7:6}. Grille d'observation détaillée</h2>
   ${p.objs.map(o=>`<p><b>${esc(OBJS[o].label)}</b></p><table><tr><th>Critère</th><th>Cotation</th><th>Constaté</th></tr>${crit(o).map((c,j)=>row([esc(c),lab[S.cot[o+"-"+j]]||"—",esc((S.obsv||{})[o+"-"+j]||"")])).join("")}</table>`).join("")}
@@ -2055,6 +2110,7 @@ function vRetex(){
     <div class="lbtns" style="margin:4px 0 10px"><button class="btn sm" type="button" id="repDoc">Rapport Word</button><button class="btn sm" type="button" id="repPdf">Rapport PDF</button><button class="btn sm ${pendingArch?"primary":""}" type="button" id="archBtn">${pendingArch?"Confirmer l'archivage":S.archId?"Mettre à jour l'archive":"Clôturer et archiver l'exercice"}</button></div>
     <div class="sec"><h4>Synthèse des cotations</h4><div class="legend"><span style="--c:var(--ok)">Atteint</span><span style="--c:var(--warn)">Partiel</span><span style="--c:var(--bad)">Non atteint</span></div><div class="bars">${bars}</div></div>
     <div class="sec"><h4>Débriefing à chaud</h4><ul><li>Qu'est-ce qui a bien fonctionné et doit être conservé ?</li><li>Qu'est-ce qui vous a manqué : information, moyen, procédure ?</li><li>Que changeriez-vous dans le PCS dès demain ?</li></ul></div>
+    ${(()=>{const st=callStats();if(!st||!st.n)return "";return `<div class="sec"><h4>${isAlerte(S.p)?"Test de l'annuaire":"Convocation de la cellule de crise"}</h4><div class="facts"><div class="fact"><b>${st.ok} sur ${st.n}</b><span>membres joints (${Math.round(st.ok/st.n*100)} %)</span></div><div class="fact"><b>${st.half!=null?st.half+" min":"—"}</b><span>pour joindre la moitié de la cellule</span></div><div class="fact"><b>${st.msg+st.ko}</b><span>non joints directement (messages laissés ou injoignables)</span></div></div></div>`})()}
     ${(()=>{const D=delays();if(!D.length)return "";const done=D.filter(o=>o.d!=null),avg=done.length?Math.round(done.reduce((a,o)=>a+(o.d-o.s),0)/done.length):null;
       return `<div class="sec"><h4>Délais de réaction mesurés</h4><p class="note">${(()=>{const pl=(n,w)=>n+" "+w+(n>1?"s":""),nr=D.filter(o=>o.r!=null).length;return pl(D.length,"message")+" envoyé"+(D.length>1?"s":"")+", "+pl(done.length,"réaction")+" constatée"+(done.length>1?"s":"")+(avg!=null?", délai moyen "+avg+" min":"")+", "+pl(nr,"relance")+"."})()}</p><div class="tablewrap"><table style="min-width:540px"><thead><tr><th>Message</th><th>Objectif</th><th>Envoyé</th><th>Réaction</th><th>Délai</th></tr></thead><tbody>${D.map(o=>`<tr><td>${esc(o.i.from)} : ${esc(o.i.msg.slice(0,70))}${o.i.msg.length>70?"…":""}</td><td>${esc(OBJS[o.i.obj]?OBJS[o.i.obj].short:o.i.obj)}</td><td>${fmtShort(o.s)}</td><td>${o.d!=null?fmtShort(o.d):"—"}</td><td>${o.d!=null?Math.round(o.d-o.s)+" min":"aucune"}${o.r!=null?" · relancé":""}</td></tr>`).join("")}</tbody></table></div></div>`})()}
     <div class="two"><div class="field"><label for="rf">Points forts</label><textarea id="rf" data-r="forts">${esc(S.retex.forts)}</textarea></div><div class="field"><label for="ra">Axes d'amélioration</label><textarea id="ra" data-r="axes">${esc(S.retex.axes)}</textarea></div></div>
@@ -2100,7 +2156,7 @@ const VIEWS={cadrage:vCadrage,carte:vCarte,scenario:vScenario,chrono:vChrono,con
 
 function render(){
   const p=S.p;
-  const k=[["Risque joué",RISKS[p.risk].label+(comboOf(p).length?" +"+comboOf(p).length:""),1],["Format",FORMATS[p.format].short],["Durée de jeu",Number(p.duree)/60+" h"],["Injects",S.injects.length],["Objectifs",p.objs.length+" sur 7"]];
+  const k=[["Risque joué",RISKS[p.risk].label+(comboOf(p).length?" +"+comboOf(p).length:""),1],["Format",FORMATS[p.format].short],["Durée de jeu",durTxt(p)],["Injects",S.injects.length],["Objectifs",p.objs.length+" sur 7"]];
   $("#kpis").innerHTML=k.map(x=>`<div class="card kpi ${x[2]?"hl":""}"><span>${x[0]}</span><b title="${esc(x[1])}">${esc(x[1])}</b></div>`).join("");
   $("#tabs").innerHTML=TABS.map(t=>`<button class="tab" role="tab" type="button" id="tab-${t[0]}" aria-selected="${S.tab===t[0]}" data-tab="${t[0]}">${t[1]}</button>`).join("");
   let tools=`<button class="btn sm ghost" type="button" id="dosDoc">Word</button><button class="btn sm ghost" type="button" id="dosPdf">PDF</button><button class="btn sm ghost" type="button" id="copyAll">Copier le dossier</button>`;
@@ -2162,7 +2218,7 @@ $("#secteur").addEventListener("change",()=>{
 
 function asText(){
   const p=S.p,L=LIB[p.risk],f=FORMATS[p.format],o=[];
-  o.push("EXERCICE EXERCICE EXERCICE","","COMMUNE PRÊTE · EXERCICE DE CRISE · "+p.commune.toUpperCase(),riskTitle(p)+" · "+f.label+" · "+fmtDate(p.date)+" · H = "+(p.heureH||"à fixer")+" · "+Number(p.duree)/60+" h","");
+  o.push("EXERCICE EXERCICE EXERCICE","","COMMUNE PRÊTE · EXERCICE DE CRISE · "+p.commune.toUpperCase(),riskTitle(p)+" · "+f.label+" · "+fmtDate(p.date)+" · H = "+(p.heureH||"à fixer")+" · "+durTxt(p),"");
   o.push("1. CADRAGE","Objectifs :",...p.objs.map(x=>"- "+OBJS[x].label),"Principe : "+f.desc,"");
   o.push("2. SCÉNARIO","Contexte : "+fill(L.contexte,p),"Situation initiale : "+fill(L.initiale,p));
   if(S.ctx)o.push("Historique (Géorisques) : "+S.ctx.catnat+" arrêté(s) CatNat pour ce risque.");

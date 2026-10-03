@@ -94,6 +94,25 @@ const view = t => t.q("#view").textContent;
   ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : ""));
   t.close();
 
+  console.log("\nANNUAIRE ET EXERCICE D'ALERTE");
+  const a = open("hameau"); await wait(300); await pickCommune(a, "hameau");
+  a.q("#annuPaste").value = "Nom\tFonction\tTéléphone\nJean Martin\tMaire\t06 11 22 33 44\nSophie Durand\tPremière adjointe\t06 22 33 44 55\nLuc Bernard\tSecrétaire de mairie\t05 61 00 00 00\nAnne Petit\tAgent technique\t";
+  click(a, "#annuImport");
+  ok(/4 contacts/.test(a.q("#annuCount").textContent), "annuaire importé depuis un copier-coller Excel");
+  click(a, '#segFormat [data-v="alerte"]'); gen(a);
+  ok(/30 min/.test(a.q("#kpis").textContent) && a.q("#kpis").textContent.includes("3"), "exercice d'alerte de 30 minutes, 3 messages");
+  click(a, '[data-tab="roles"]'); ok(/Jean Martin/.test(view(a)) && /Luc Bernard/.test(view(a)), "titulaires des rôles tirés de l'annuaire");
+  click(a, '[data-tab="scenario"]'); ok(/sans numéro de téléphone/.test(view(a)), "contact sans numéro signalé");
+  click(a, '[data-tab="conduite"]'); ok(/Test de l'annuaire/.test(view(a)), "liste d'appels dans la conduite");
+  click(a, '[data-call="0"][data-v="ok"]'); click(a, '[data-call="1"][data-v="ok"]'); click(a, '[data-call="2"][data-v="msg"]'); click(a, '[data-call="3"][data-v="ko"]');
+  ok(/2 joints sur 4/.test(view(a)), "appels comptés");
+  click(a, '[data-tab="retex"]'); ok(/2 sur 4/.test(view(a)) && /50 %/.test(view(a)), "résultat du test d'annuaire dans le RETEX");
+  click(a, "#repDoc"); await wait(50);
+  const rep = await new Promise(r => { const f = new a.w.FileReader(); f.onload = () => r(f.result); f.readAsText(a.blobs.pop()) });
+  ok(/Test de l'annuaire de crise/.test(rep) && /Anne Petit/.test(rep), "test d'annuaire dans le rapport");
+  ok(!a.errs.length, "aucune erreur JavaScript" + (a.errs.length ? " : " + a.errs[0] : ""));
+  a.close();
+
   console.log(`\n${passes} réussis, ${failures} en échec`);
   process.exit(failures ? 1 : 0);
 })().catch(e => { console.error("ERREUR DU TEST :", e); process.exit(1) });
