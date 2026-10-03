@@ -1120,6 +1120,7 @@ const DEFAULTS = {
   secteur:"quartier du Moulin", etab:"école primaire", heberg:"salle des fêtes", axe:"RD 119",
   erp:"supermarché", hopital:"centre hospitalier de secteur", gare:"gare", aero:"aérodrome", evt:"place de la mairie", barrage:"barrage situé en amont", centrale:"centrale nucléaire voisine", fiche:{}, region:"", epci:"", part:{}, riviere:"cours d'eau principal", massif:"massif boisé", icpe:"", fdo:"auto", focus:null, lat:null, lon:null, combo:[]
 };
+const GENERIC={secteur:"secteur exposé",axe:"route principale",evt:"place principale"};
 const PLACE_KEYS=["secteur","evt","etab","heberg","erp","hopital","gare","aero","axe","riviere","massif","icpe","barrage","centrale"];
 const ACTIONS0=()=>[{a:"Mettre à jour l'annuaire de crise du PCS",pilote:"Secrétariat de mairie",ech:"1 mois"},{a:"Compléter le recensement des personnes vulnérables",pilote:"Élu référent CCAS",ech:"3 mois"}];
 
@@ -1296,6 +1297,7 @@ function vars(p){
   let sec=String(p.secteur||DEFAULTS.secteur).trim();
   if(p.commune)sec=sec.replace(new RegExp("^"+p.commune.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\s+","i"),"");
   if(sec===DEFAULTS.secteur&&pop<500)sec="hameau du Moulin";
+  if(sec===GENERIC.secteur&&pop<500)sec="hameau exposé";
   const qk=(S&&S.quartiers||[]).find(x=>x.name===sec);
   const sf=art(sec,qk&&/^(hamlet|isolated_dwelling|village|locality)$/.test(qk.kind)?"hameau":"secteur");if(sf){v.secteur=sec;v.le_secteur=sf.le;v.Le_secteur=sf.Le;v.du_secteur=sf.du;v.au_secteur=sf.au}
   const ef=evtForms(p.evt||DEFAULTS.evt);if(ef){v.le_evt=ef.le;v.du_evt=ef.du;v.sur_evt=ef.sur;v.Le_evt=ef.Le}
@@ -1342,9 +1344,11 @@ function classify(label){
 }
 function parseDate(s){if(!s)return null;const m=String(s).match(/^(\d{2})\/(\d{2})\/(\d{4})/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);const d=new Date(s);return isNaN(d)?null:d}
 async function loadRisks(insee){
-  geoRisks={status:"loading"};renderRisks();
+  const seq=++risksSeq,stale=()=>seq!==risksSeq||S.p.insee!==insee;
+  geoRisks={status:"loading",insee};renderRisks();
   try{
     const [r,c]=await Promise.allSettled([getJSON(API.risques(insee)),getJSON(API.catnat(insee))]);
+    if(stale())return;
     if(r.status!=="fulfilled")throw r.reason;
     const d=(r.value.data||[])[0]||{};
     const raw=(d.risques_detail||d.risques||[]).map(x=>x.libelle_risque_long||x.libelle_risque||x.libelle||"").filter(Boolean);
@@ -1357,7 +1361,7 @@ async function loadRisks(insee){
     const first=geoRisks.items.find(x=>x.key!=="autre");
     if(first)S.p.risk=first.key;
     save();
-  }catch(e){geoRisks={status:"error"}}
+  }catch(e){if(stale())return;geoRisks={status:"error",insee}}
   renderRisks();
 }
 
@@ -1386,6 +1390,10 @@ const CAT_KEYS=Object.keys(CATS);
 const ROLE_CAT={icpe:"industrie",evt:"place",etab:"ecole",heberg:"salle",erp:"commerce",hopital:"sante",gare:"gare",aero:"aero"};
 const ROLE_LABEL={icpe:"site industriel du scénario",evt:"lieu de rassemblement",etab:"établissement sensible",heberg:"lieu d'accueil",erp:"lieu très fréquenté",hopital:"établissement de santé de référence",gare:"gare",aero:"aérodrome"};
 let map=null, contourGeo=null, hiddenCats=new Set();
+// Chaque chargement porte un numéro : une réponse arrivée après un changement de commune (ou de zone) est ignorée.
+let placesSeq=0, risksSeq=0, overpassCtl=null;
+const GEO_KEYS=["places","quartiers","roads","rivers","forests","dams","nucs","icpe","ecoles","roadPts"];
+function clearGeo(){GEO_KEYS.forEach(k=>S[k]=null);S.icpeLoaded=false;S.floodChecked=false;S.rail=false;S.geo=null;contourGeo=null;if(overpassCtl){overpassCtl.abort();overpassCtl=null}placesSeq++}
 function overpassQuery(p){
   const big=isBig(p),f=zoneCenter(p);
   const A='area["ref:INSEE"="'+p.insee+'"]["boundary"="administrative"]->.c;';
@@ -1408,10 +1416,11 @@ function overpassQuery(p){
     (big?'way'+Z+'["highway"~"^(trunk|primary|secondary)$"]["name"];out center tags 120;':'')+
     'way'+Z+'["railway"="rail"];out tags 1;';
 }
-async function postOverpass(q){
+async function postOverpass(q,outer){
   let last;
   for(const url of API.overpass){
-    const c=new AbortController();const t=setTimeout(()=>c.abort(),30000);
+    if(outer&&outer.aborted)throw new Error("annulé");
+    const c=new AbortController();const t=setTimeout(()=>c.abort(),30000);if(outer)outer.addEventListener("abort",()=>c.abort(),{once:true});
     try{const r=await fetch(url,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"},signal:c.signal});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}
     catch(e){last=e}finally{clearTimeout(t)}
   }
@@ -1420,9 +1429,12 @@ async function postOverpass(q){
 const dist=(a,b,c,d)=>{const R=6371,r=Math.PI/180,x=(c-a)*r,y=(d-b)*r,h=Math.sin(x/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(y/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
 async function loadPlaces(opt={}){
   const p=S.p;if(!p.insee)return;
-  S.geo={status:"loading"};renderMapState();
+  if(overpassCtl)overpassCtl.abort();overpassCtl=new AbortController();
+  const seq=++placesSeq,insee=p.insee,ctl=overpassCtl,stale=()=>seq!==placesSeq||S.p.insee!==insee;
+  S.geo={status:"loading",insee};renderMapState();
   try{
-    const [j,ct]=await Promise.allSettled([postOverpass(overpassQuery(p)),getJSON(API.contour(p.insee),8000)]);
+    const [j,ct]=await Promise.allSettled([postOverpass(overpassQuery(p),ctl.signal),getJSON(API.contour(p.insee),8000)]);
+    if(stale())return;
     if(ct.status==="fulfilled"){contourGeo=ct.value;const c=ct.value&&ct.value.properties&&ct.value.properties.centre;if(c&&p.lat==null){p.lon=c.coordinates[0];p.lat=c.coordinates[1]}}
     if(j.status!=="fulfilled")throw j.reason;
     const seen=new Set(),places=[],roads={},quart=[],rivers={},forests=[],roadPts={},dams=[],nucs=[];let rail=false;
@@ -1446,22 +1458,24 @@ async function loadPlaces(opt={}){
     quart.sort((a,b)=>(a.d??0)-(b.d??0));S.quartiers=quart;
     S.rivers=Object.values(rivers).sort((a,b)=>b.n-a.n);S.forests=forests.sort((a,b)=>(a.d??0)-(b.d??0));S.roadPts=roadPts;S.dams=dams.sort((a,b)=>(a.d??0)-(b.d??0));S.nucs=nucs.sort((a,b)=>(a.d??0)-(b.d??0));S.icpe=null;S.icpeLoaded=false;S.floodChecked=false;
     S.places=places;S.roads=Object.entries(roads).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);S.rail=rail||places.some(x=>x.cat==="gare");
-    S.geo={status:"ok",at:new Date().toISOString(),insee:p.insee};
+    S.geo={status:"ok",at:new Date().toISOString(),insee,v:2};
     autoAssign(opt);save();
     toast(places.length+" lieux "+(big?"de la zone d'exercice":"de "+p.commune)+" chargés depuis OpenStreetMap.");
-  }catch(e){S.geo={status:"error"}}
+  }catch(e){if(stale())return;S.geo={status:"error",insee};const n=$("#lieuxNote");if(n)n.textContent="OpenStreetMap n'a pas répondu : les lieux ci-dessous sont génériques. Saisissez vos lieux réels, ou réessayez depuis l'onglet Carte."}
   renderDatalists();renderRisks();if(S.tab==="carte"||S.tab==="scenario")render();else renderMapState();
-  if(S.geo.status==="ok")loadTerrain();
+  if(S.geo.status==="ok")loadTerrain(seq);
 }
 /* ---------- Terrain : installations classées et zones inondables (Géorisques) ---------- */
-async function loadTerrain(){
-  await Promise.allSettled([loadICPE(),checkFlood(),loadEcoles()]);
+async function loadTerrain(seq){
+  const insee=S.p.insee,ok=()=>seq===placesSeq&&S.p.insee===insee;
+  await Promise.allSettled([loadICPE(ok),checkFlood(ok),loadEcoles(ok)]);
+  if(!ok())return;
   save();renderDatalists();if(S.tab==="carte"||S.tab==="scenario")render();
 }
-async function loadICPE(){
+async function loadICPE(ok=()=>true){
   const p=S.p,zc=zoneCenter(p),big=isBig(p);
   try{
-    const j=await getJSON(API.icpe(p.insee),9000);
+    const j=await getJSON(API.icpe(p.insee),9000);if(!ok())return;
     const num=x=>{x=parseFloat(x);return isFinite(x)?x:null};
     const L=(j.data||[]).map(x=>{
       let name=String(x.raisonSociale||x.nomEts||x.nom||"").trim();if(name&&name===name.toUpperCase())name=titleCase(name);
@@ -1476,12 +1490,12 @@ async function loadICPE(){
     S.icpe=L.slice(0,40);S.icpeLoaded=true;
     if(!p.icpeUser){p.icpe=L[0]&&L[0].rank>=1?L[0].name:"";const el=$("#icpe");if(el)el.value=p.icpe}
     L.filter(x=>x.lat!=null).slice(0,15).forEach(x=>{if(!(S.places||[]).some(y=>y.name===x.name))S.places.push({id:"icpe"+x.name,cat:"industrie",name:x.name,named:true,lat:x.lat,lon:x.lon,d:x.d,seveso:x.seveso})});
-  }catch(e){S.icpeLoaded=false}
+  }catch(e){if(ok())S.icpeLoaded=false}
 }
-async function loadEcoles(){
+async function loadEcoles(ok=()=>true){
   const p=S.p,zc=zoneCenter(p);
   try{
-    const j=await getJSON(API.ecoles(p.insee),9000);
+    const j=await getJSON(API.ecoles(p.insee),9000);if(!ok())return;
     const num=x=>{x=parseFloat(x);return isFinite(x)?x:null};
     const L=(j.results||j.records||[]).map(r=>r.fields||r).filter(r=>!/ferm/i.test(String(r.etat||""))).map(r=>{
       const name=String(r.nom_etablissement||r.appellation_officielle||"").trim().replace(/^Ecole/,"École").replace(/^College/,"Collège").replace(/^Lycee/,"Lycée");
@@ -1492,12 +1506,12 @@ async function loadEcoles(){
     if(!p.etabUser&&!isSchool(p)&&L.length){const b=L.slice().sort((a,b)=>(a.d??0)-(b.d??0))[0];p.etab=b.name;const el=$("#etab");if(el)el.value=p.etab}
   }catch(e){}
 }
-async function checkFlood(){
+async function checkFlood(ok=()=>true){
   const p=S.p,cand=(S.quartiers||[]).slice(0,8);
   ["heberg","etab"].forEach(k=>{const x=(S.places||[]).find(y=>y.name===p[k]);if(x&&!cand.includes(x))cand.push(x)});
   if(!cand.length)return;
   const r=await Promise.allSettled(cand.map(async c=>{const j=await getJSON(API.rapport(c.lon,c.lat),8000);const n=j&&j.risquesNaturels&&j.risquesNaturels.inondation;c.inond=!!(n&&statutOK(n.libelleStatutAdresse));}));
-  if(!r.some(x=>x.status==="fulfilled"))return;
+  if(!ok()||!r.some(x=>x.status==="fulfilled"))return;
   S.floodChecked=true;
   const fq=(S.quartiers||[]).find(q=>q.inond);
   if(fq&&p.secteurAuto!==false){p.secteur=fq.name;const el=$("#secteur");if(el)el.value=fq.name}
@@ -1562,8 +1576,9 @@ function renderMapState(){
   if(!window.L)m="La carte ne peut pas s'afficher dans cet aperçu. Elle fonctionne sur la version en ligne de l'outil.";
   else if(!S.p.insee)m="Recherchez une commune pour afficher sa carte et ses lieux.";
   else if(g.status==="loading")m="Chargement des lieux depuis OpenStreetMap…";
-  else if(g.status==="error")m="OpenStreetMap n'a pas répondu. Réessayez dans quelques minutes.";
+  else if(g.status==="error")m="OpenStreetMap n'a pas répondu (le service limite le nombre de demandes).";
   el.textContent=m;el.hidden=!m;
+  if(g.status==="error"&&window.L&&S.p.insee)el.insertAdjacentHTML("beforeend",'<div style="margin-top:12px"><button class="btn sm primary" type="button" id="placesRetry">Réessayer</button></div>');
 }
 function drawMap(){
   if(map){map.remove();map=null}
@@ -1594,6 +1609,7 @@ function drawMap(){
   renderMapState();
 }
 document.addEventListener("click",e=>{
+  if(e.target.id==="placesRetry"){loadPlaces();return}
   const fz=e.target.closest("[data-focus]");
   if(fz){const [la,lo]=fz.dataset.focus.split(",").map(Number);S.p.focus={lat:la,lon:lo};save();if(map)map.closePopup();toast("Zone d'exercice déplacée. Chargement des lieux…");loadPlaces();return}
   const b=e.target.closest("[data-assign]");if(!b)return;
@@ -1725,9 +1741,9 @@ $("#sugg").addEventListener("mousedown",e=>{const li=e.target.closest("li");if(l
 function pick(c){
   closeSugg();
   Object.assign(S.p,{commune:c.nom,insee:c.code,pop:c.population||"",dept:c.departement?c.departement.nom+" ("+c.departement.code+")":"",region:c.region?c.region.nom:"",epci:c.epci?c.epci.nom:"",part:{},fiche:{},lat:c.centre?c.centre.coordinates[1]:null,lon:c.centre?c.centre.coordinates[0]:null});
-  PLACE_KEYS.forEach(k=>S.p[k]=DEFAULTS[k]);S.p.focus=null;S.p.fdo="auto";S.places=null;S.quartiers=null;S.roads=null;S.rail=false;contourGeo=null;writeForm();
+  PLACE_KEYS.forEach(k=>S.p[k]=GENERIC[k]||DEFAULTS[k]);S.p.focus=null;S.p.fdo="auto";S.p.icpeUser=false;S.p.etabUser=false;S.p.secteurAuto=true;clearGeo();geoRisks=null;S.ctx=null;writeForm();
   $("#commune").value=c.nom;S.isExample=false;renderId();save();render();
-  S.annu=[];renderAnnu();renderPart();renderFiche();loadRisks(c.code).then(()=>{if(geoRisks.status==="ok")toast("Risques de "+c.nom+" chargés depuis Géorisques.")});
+  S.annu=[];renderAnnu();renderPart();renderFiche();loadRisks(c.code).then(()=>{if(geoRisks&&geoRisks.status==="ok"&&geoRisks.insee===c.code)toast("Risques de "+c.nom+" chargés depuis Géorisques.")});
   loadPlaces();
 }
 
@@ -1812,6 +1828,7 @@ function vCadrage(){
 const JOURS=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"],MOIS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 function checks(p){
   const w=[],R=RISKS[p.risk],all=[p.risk].concat(comboOf(p)),prof=geoRisks&&geoRisks.status==="ok"?geoRisks.items:null,osm=S.geo&&S.geo.status==="ok";
+  if(p.insee&&S.geo&&S.geo.status==="error")w.push(`Lieux non chargés : OpenStreetMap n'a pas répondu. Le scénario utilise des lieux génériques (${p.secteur}, ${p.heberg}, ${p.axe}). Réessayez depuis l'onglet Carte, ou saisissez vos lieux réels dans « Lieux utilisés dans le scénario ».`);
   if(prof&&!R.transverse&&!R.site&&!R.rail&&!prof.some(x=>x.key===p.risk))w.push(`Le risque « ${R.label} » n'est pas recensé par Géorisques à ${p.commune}. Le scénario reste jouable, mais annoncez-le aux joueurs comme fictif.`);
   if(all.includes("feu")&&osm&&!(S.forests||[]).length)w.push("Aucun massif boisé nommé n'apparaît sur la carte de la zone : vérifiez que le feu de forêt est vraisemblable, ou saisissez le massif à la main.");
   if(all.includes("inondation")&&S.floodChecked){
@@ -2479,6 +2496,7 @@ if(!(S&&S.p&&LIB[S.p.risk]&&Array.isArray(S.injects))){
   S.injects=buildInjects(S.p);
 }
 S.p={...DEFAULTS,...S.p};
+if(S.p.insee&&(!S.geo||S.geo.insee!==S.p.insee||S.geo.status!=="ok"||S.geo.v!==2)){GEO_KEYS.forEach(k=>S[k]=null);S.geo=null;S.floodChecked=false;S.icpeLoaded=false}
 writeForm();render();
 probe().then(()=>{if(live&&S.p.insee){loadRisks(S.p.insee);if(!S.places)loadPlaces();else fetchContour()}});
 }

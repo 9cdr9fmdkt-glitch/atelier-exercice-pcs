@@ -38,6 +38,50 @@ async function pickCommune(t, name) {
   t.q("#commune").value = FIX[name].commune.nom.slice(0, 3); t.q("#commune").dispatchEvent(new t.w.Event("input"));
   await wait(350); t.q("#sugg li").dispatchEvent(new t.w.MouseEvent("mousedown", { bubbles: true })); await wait(700);
 }
+
+// Navigateur simulé où plusieurs communes coexistent : chaque réponse dépend du code INSEE demandé.
+// opts.slow[code] = délai en ms de la réponse OpenStreetMap ; opts.fail[code] = OpenStreetMap ne répond pas pour cette commune.
+function openMulti(opts = {}, storage) {
+  const errs = [], blobs = [], byCode = {};
+  Object.values(FIX).forEach(F => byCode[F.commune.code] = F);
+  const vc = new VirtualConsole();
+  vc.on("jsdomError", e => { const m = String(e.message || e); if (!/Not implemented/.test(m)) errs.push(m) });
+  const R = o => Promise.resolve({ ok: true, json: () => Promise.resolve(o) });
+  const later = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));
+  const dom = new JSDOM("<!doctype html><html><body>" + SRC + "</body></html>", {
+    runScripts: "dangerously", pretendToBeVisual: true, url: "https://exemple.test/", virtualConsole: vc,
+    beforeParse(w) {
+      if (storage) for (const [k, v] of Object.entries(storage)) w.localStorage.setItem(k, v);
+      w.fetch = (u, o) => { u = String(u); const body = o && o.body ? decodeURIComponent(String(o.body)) : "";
+        const code = (u.match(/code_insee=(\w+)|code_commune%3D%22(\w+)|communes\/(\w+)\?/) || []).slice(1).find(Boolean) || (body.match(/ref:INSEE"="(\w+)"/) || [])[1];
+        const F = byCode[code];
+        if (u.includes("communes?nom")) { const q = decodeURIComponent(u.split("nom=")[1].split("&")[0]).toLowerCase(); return R(Object.values(FIX).filter(f => f.commune.nom.toLowerCase().startsWith(q)).map(f => f.commune)) }
+        if (u.includes("geometry=contour")) return R({ type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] } });
+        if (u.includes("overpass")) { if (opts.fail && opts.fail[code]) return Promise.reject(new Error("HTTP 429")); return later((opts.slow && opts.slow[code]) || 0, { ok: true, json: () => Promise.resolve({ elements: F.osm }) }) }
+        if (u.includes("gaspar/risques")) return later((opts.slowRisk && opts.slowRisk[code]) || 0, { ok: true, json: () => Promise.resolve({ data: [{ risques_detail: (F.risques || ["Inondation"]).map(l => ({ libelle_risque_long: l })) }] }) });
+        if (u.includes("gaspar/catnat")) return R({ data: [] });
+        if (u.includes("installations_classees")) return R({ data: F.icpe });
+        if (u.includes("data.education")) return R({ results: F.ecoles });
+        if (u.includes("resultats_rapport_risque")) { const [lon, lat] = u.split("latlon=")[1].split(",").map(Number); const G = Object.values(FIX).sort((a, b) => Math.hypot(a.commune.centre.coordinates[1] - lat, a.commune.centre.coordinates[0] - lon) - Math.hypot(b.commune.centre.coordinates[1] - lat, b.commune.centre.coordinates[0] - lon))[0];
+          return R({ risquesNaturels: { inondation: { present: true, libelleStatutAdresse: G.flood(lat) ? "Risque Existant" : "Risque non Connu" } } }) }
+        return Promise.reject(new Error("hors ligne")) };
+      w.URL.createObjectURL = b => { blobs.push(b); return "blob:test" }; w.URL.revokeObjectURL = () => {};
+    } });
+  const w = dom.window; w.HTMLAnchorElement.prototype.click = function () {};
+  return { w, d: w.document, q: s => w.document.querySelector(s), errs, blobs, close: () => w.close() };
+}
+async function chooseCommune(t, name, ms = 700) {
+  t.q("#commune").value = FIX[name].commune.nom.slice(0, 4); t.q("#commune").dispatchEvent(new t.w.Event("input"));
+  await wait(320); const li = [...t.d.querySelectorAll("#sugg li")].find(l => l.textContent.startsWith(FIX[name].commune.nom));
+  li.dispatchEvent(new t.w.MouseEvent("mousedown", { bubbles: true })); await wait(ms);
+}
+// Tout ce que l'utilisateur peut lire de la commune : lieux saisis, carte, scénario, chronogramme.
+function everything(t) {
+  const out = [...t.d.querySelectorAll("#lieuxBox input, #lieuxBox select")].map(i => i.value).join(" | ");
+  const tabs = ["carte", "scenario", "chrono"].map(k => { click(t, `[data-tab="${k}"]`); return t.q("#view").textContent }).join(" ");
+  return out + " " + tabs + " " + t.q("#datalists").innerHTML;
+}
+const MIREPOIX = /Hers-Vif|Arterris|Le Pont|Remparts|Paul Dumons|Maréchal Leclerc|Montbel|\bD 119/;
 const click = (t, s) => { const e = t.q(s); if (!e) throw new Error("élément absent : " + s); e.dispatchEvent(new t.w.MouseEvent("click", { bubbles: true })) };
 function gen(t) { click(t, "#gen"); if (t.q("#genLabel").textContent.includes("Confirmer")) click(t, "#gen") }
 const view = t => t.q("#view").textContent;
@@ -116,6 +160,43 @@ const view = t => t.q("#view").textContent;
   ok(/Test de l'annuaire de crise/.test(rep) && /Anne Petit/.test(rep), "test d'annuaire dans le rapport");
   ok(!a.errs.length, "aucune erreur JavaScript" + (a.errs.length ? " : " + a.errs[0] : ""));
   a.close();
+
+
+  console.log("\nCHANGEMENT DE COMMUNE");
+  { // 1. Commune B choisie après A, OpenStreetMap ne répond pas pour B : rien de A ne doit subsister.
+    const t = openMulti({ fail: { "09253": true } }); await wait(300);
+    await chooseCommune(t, "bourg"); click(t, "#gen"); click(t, '[data-tab="carte"]');
+    ok(MIREPOIX.test(everything(t)), "première commune chargée (Mirepoix)");
+    await chooseCommune(t, "hameau"); click(t, "#gen"); if (t.q("#genLabel").textContent.includes("Confirmer")) click(t, "#gen");
+    const all = everything(t), m = all.match(MIREPOIX);
+    ok(!m, "aucun lieu de la commune précédente après changement de commune" + (m ? " : « " + m[0] + " »" : ""));
+    ok(/OpenStreetMap n'a pas répondu/.test(t.q("#lieuxNote").textContent), "échec de chargement signalé à l'utilisateur");
+    click(t, '[data-tab="scenario"]'); ok(/lieux génériques|Lieux non chargés/.test(t.q("#view").textContent), "lieux génériques signalés dans les points de cohérence");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : ""));
+    t.close();
+  }
+  { // 2. Réponse tardive : A répond après que B a été choisie. Les données de A ne doivent pas écraser B.
+    const t = openMulti({ slow: { "09194": 1500 }, slowRisk: { "09194": 1500 } }); await wait(300);
+    await chooseCommune(t, "bourg", 100);
+    await chooseCommune(t, "hameau", 2200);
+    click(t, "#gen"); if (t.q("#genLabel").textContent.includes("Confirmer")) click(t, "#gen");
+    const all = everything(t), m = all.match(MIREPOIX);
+    ok(t.q("#commune").value === "Rouze" && !m, "réponse tardive de la commune précédente ignorée" + (m ? " : « " + m[0] + " »" : ""));
+    ok(/Usson|Aude/.test(all), "lieux de la commune choisie présents");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : ""));
+    t.close();
+  }
+  { // 3. Dossier enregistré dans le navigateur avec les lieux d'une autre commune : ils sont écartés au démarrage.
+    const t0 = openMulti(); await wait(300); await chooseCommune(t0, "bourg"); const st = JSON.parse(t0.w.localStorage.getItem("atelier-pcs-v2")); t0.close();
+    st.p.insee = "09253"; st.p.commune = "Rouze";
+    const t = openMulti({ fail: { "09253": true } }, { "atelier-pcs-v2": JSON.stringify(st) }); await wait(900);
+    ok(!/Hers-Vif|Arterris|Le Pont|Remparts/.test(t.q("#datalists").innerHTML), "lieux enregistrés pour une autre commune écartés au démarrage");
+    const st2 = JSON.parse(JSON.stringify(st)); st2.geo = { status: "ok", insee: "09253" };
+    const u = openMulti({ fail: { "09253": true } }, { "atelier-pcs-v2": JSON.stringify(st2) }); await wait(900);
+    ok(!/Hers-Vif|Arterris|Le Pont|Remparts/.test(u.q("#datalists").innerHTML), "lieux enregistrés par l'ancienne version rechargés"); u.close();
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : ""));
+    t.close();
+  }
 
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);
