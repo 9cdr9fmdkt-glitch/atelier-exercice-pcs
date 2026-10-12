@@ -248,6 +248,16 @@ const view = t => t.q("#view").textContent;
   { const t = openMulti({ fail: { "09194": true } }); await wait(300); await chooseCommune(t, "bourg", 11000);
     ok(/nouvel essai automatique/.test(t.q("#lieuxNote").textContent), "nouvel essai automatique annoncé après un échec"); t.close(); }
 
+  console.log("\nESPACE PCS");
+  { const t = open("bourg"); await wait(300);
+    ok(t.q('#espaceSeg [data-esp="exercices"]').getAttribute("aria-pressed") === "true", "espace Exercices par défaut");
+    click(t, '#espaceSeg [data-esp="pcs"]');
+    ok(t.d.body.classList.contains("esp-pcs") && !t.q("#pcsPanel").hidden && t.q("#config").hidden, "espace PCS affiché, panneau des exercices masqué");
+    ok(/Recherchez votre commune/.test(t.q("#pcsView").textContent), "invitation à choisir la commune");
+    ok(/"espace":"pcs"/.test(t.w.localStorage.getItem("commune-prete-affichage")), "choix d'espace conservé");
+    click(t, '#espaceSeg [data-esp="exercices"]'); ok(!t.q("#config").hidden && t.q("#pcsPanel").hidden, "retour à l'espace Exercices");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);
   ok([...v.d.querySelectorAll(".tgrp")].map(x => x.textContent).join("/") === "Préparer/Conduire/Évaluer", "onglets regroupés en trois temps");

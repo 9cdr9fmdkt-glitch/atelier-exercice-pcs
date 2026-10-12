@@ -83,6 +83,12 @@ a{color:var(--primary);text-underline-offset:2px}
 .iconbtn:hover{background:var(--surface-2);color:var(--ink)}
 .iconbtn[aria-pressed=true]{color:var(--ink);background:var(--surface-2)}
 .appbar .tools-r{display:flex;gap:2px;padding-left:10px;border-left:1px solid var(--line)}
+.espace{margin-right:8px;min-width:150px}
+.espace button{min-height:32px;padding:5px 10px;font-weight:600}
+.config[hidden],.bar[hidden],.head[hidden],#view[hidden],#pcsView[hidden]{display:none}
+body.esp-pcs .hello{display:none}
+body.obsmode #espaceSeg{display:none}
+@media (max-width:620px){.espace{min-width:0;margin-right:4px}.espace button{padding:5px 7px;font-size:13px}}
 .iconbtn.help{width:auto;padding:0 10px;gap:6px;display:inline-flex;align-items:center;text-decoration:none;font-size:14px;font-weight:600}
 @media (max-width:620px){.iconbtn.help span{display:none}.iconbtn.help{width:36px;padding:0;justify-content:center}}
 
@@ -458,6 +464,7 @@ body.obsmode .nowb{min-height:42px}
       <span class="pill"><span class="dot ok"></span>Réglementation vérifiée le 2 oct. 2026</span>
     </div>
     <div class="tools-r">
+      <div class="seg espace" id="espaceSeg" role="group" aria-label="Espace"><button type="button" data-esp="exercices">Exercices</button><button type="button" data-esp="pcs">PCS</button></div>
       <a class="iconbtn help" id="helpLink" href="aide.html" title="Mode d'emploi" aria-label="Mode d'emploi"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6.9 7a2.2 2.2 0 0 1 4.3.6c0 1.5-2.2 1.8-2.2 3.1M9 13.2v.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Aide</span></a>
       <button class="iconbtn" type="button" id="themeBtn" title="Thème : automatique" aria-label="Changer le thème (automatique)"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 2.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
       <button class="iconbtn" type="button" id="panelBtn" title="Masquer la préparation" aria-label="Masquer le panneau de préparation" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="2" y="3" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7 3v12" stroke="currentColor" stroke-width="1.6"/></svg></button>
@@ -576,6 +583,12 @@ body.obsmode .nowb{min-height:42px}
     </div>
   </aside>
 
+  <aside class="config" id="pcsPanel" hidden aria-label="Rubriques du PCS">
+    <div class="card">
+      <div class="scroll"><div class="step"><div class="stephead"><h2>Rubriques du PCS</h2></div><div id="pcsRubs"></div></div></div>
+    </div>
+  </aside>
+
   <main class="work">
     <div class="hello" id="hello" hidden>
       <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 7.2v4M8 4.8v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -590,6 +603,7 @@ body.obsmode .nowb{min-height:42px}
       <div class="tools" id="tools"></div>
     </div>
     <section id="view" role="tabpanel" tabindex="-1"></section>
+    <section id="pcsView" hidden></section>
   </main>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -2576,6 +2590,28 @@ function initObs(){
     const c=t.closest("[data-ocot]");if(c){const id=c.dataset.ocot;O.cot[id]=O.cot[id]===c.dataset.v?"":c.dataset.v;sv();c.parentNode.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",O.cot[id]===b.dataset.v));return}
     if(t.id==="ocopy")copy("COMMUNE-PRETE-OBS:"+b64e({n:O.n||"",cot:O.cot,obsv:O.obsv}),"Code copié. Envoyez-le au directeur d'exercice.");});
 }
+/* ---------- Espace PCS ---------- */
+const PCSUI={tab:"rediger",rub:0};
+const PCS_TABS=[["rediger","Rédiger"],["verifier","Vérifier"],["documents","Documents"]];
+function renderPCS(){
+  const v=$("#pcsView");if(!v||!S)return;
+  if(!S.p.insee||S.isExample){
+    v.innerHTML=`<article class="card doc"><div class="docbody"><h3>Plan communal de sauvegarde</h3><p>Recherchez votre commune dans l'espace Exercices pour construire son plan communal de sauvegarde.</p><div><button class="btn primary" type="button" id="pcsGoEx">Rechercher ma commune</button></div></div></article>`;
+    return;
+  }
+  v.innerHTML=`<article class="card doc">${docHead("Plan communal de sauvegarde")}
+    <div class="bar" style="position:static;margin:0;padding:10px clamp(18px,4vw,48px) 0"><div class="tabs" role="tablist" id="pcsTabs" aria-label="Étapes du PCS">${PCS_TABS.map(t=>`<button class="tab" role="tab" type="button" id="ptab-${t[0]}" aria-selected="${PCSUI.tab===t[0]}" aria-controls="pcsBody" tabindex="${PCSUI.tab===t[0]?0:-1}" data-ptab="${t[0]}">${t[1]}</button>`).join("")}</div></div>
+    <div class="docbody" id="pcsBody" role="tabpanel" aria-labelledby="ptab-${PCSUI.tab}" tabindex="-1"></div></article>`;
+}
+$("#pcsView").addEventListener("click",e=>{
+  if(e.target.closest("#pcsGoEx")){setEspace("exercices");const c=$("#commune");if(c)c.focus();return}
+  const b=e.target.closest("[data-ptab]");if(b){PCSUI.tab=b.dataset.ptab;renderPCS()}
+});
+$("#pcsView").addEventListener("keydown",e=>{
+  if(!e.target.closest("#pcsTabs")||(e.key!=="ArrowRight"&&e.key!=="ArrowLeft"))return;
+  const i=PCS_TABS.findIndex(t=>t[0]===PCSUI.tab);
+  PCSUI.tab=PCS_TABS[(i+(e.key==="ArrowRight"?1:-1)+PCS_TABS.length)%PCS_TABS.length][0];renderPCS();$("#ptab-"+PCSUI.tab).focus();
+});
 /* ---------- Affichage : thème et panneau ---------- */
 const AKEY="commune-prete-affichage";
 let AFF;try{AFF=JSON.parse(localStorage.getItem(AKEY))||{}}catch(e){AFF={}}
@@ -2586,9 +2622,20 @@ function applyAff(){
   if(b){b.title="Thème : "+lab;b.setAttribute("aria-label","Changer le thème ("+lab+")")}
   document.body.classList.toggle("panel-off",!!AFF.panelOff);
   const pb=$("#panelBtn");if(pb){pb.setAttribute("aria-pressed",!!AFF.panelOff);pb.title=AFF.panelOff?"Afficher la préparation":"Masquer la préparation";pb.setAttribute("aria-label",pb.title)}
+  setEspace(AFF.espace||"exercices",true);
   if(map)setTimeout(()=>map.invalidateSize(),60);
 }
 function saveAff(){try{localStorage.setItem(AKEY,JSON.stringify(AFF))}catch(e){}}
+function setEspace(e,noSave){
+  const pcs=e==="pcs";AFF.espace=pcs?"pcs":"exercices";if(!noSave)saveAff();
+  document.body.classList.toggle("esp-pcs",pcs);
+  ["#config",".bar",".head","#view"].forEach(s=>{const el=$(s);if(el)el.hidden=pcs});
+  $("#pcsPanel").hidden=!pcs;$("#pcsView").hidden=!pcs;
+  document.querySelectorAll("#espaceSeg [data-esp]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.esp===AFF.espace));
+  if(S){if(pcs)renderPCS();else render()}
+  if(map)setTimeout(()=>map.invalidateSize(),60);
+}
+document.querySelector("#espaceSeg").addEventListener("click",e=>{const b=e.target.closest("[data-esp]");if(b)setEspace(b.dataset.esp)});
 $("#themeBtn").addEventListener("click",()=>{const i=THEMES.findIndex(x=>x[0]===(AFF.theme||"auto"));AFF.theme=THEMES[(i+1)%3][0];saveAff();applyAff();toast("Thème "+THEMES.find(x=>x[0]===AFF.theme)[1]+".")});
 $("#panelBtn").addEventListener("click",()=>{AFF.panelOff=!AFF.panelOff;saveAff();applyAff()});
 applyAff();
@@ -2607,7 +2654,7 @@ if(!(S&&S.p&&LIB[S.p.risk]&&Array.isArray(S.injects))){
 }
 S.p={...DEFAULTS,...S.p};
 if(S.p.insee&&(!S.geo||S.geo.insee!==S.p.insee||S.geo.status!=="ok"||S.geo.v!==2)){GEO_KEYS.forEach(k=>S[k]=null);S.geo=null;S.floodChecked=false;S.icpeLoaded=false}
-writeForm();render();
+writeForm();render();if(AFF.espace==="pcs")renderPCS();
 probe().then(()=>{if(live&&S.p.insee){loadRisks(S.p.insee);if(!S.places)loadPlaces();else fetchContour()}});
 }
 async function fetchContour(){try{contourGeo=await getJSON(API.contour(S.p.insee),8000);if(S.tab==="carte")drawMap()}catch(e){}}
