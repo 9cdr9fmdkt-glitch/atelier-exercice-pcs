@@ -426,6 +426,13 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
   ok(!v.errs.length, "aucune erreur JavaScript" + (v.errs.length ? " : " + v.errs[0] : ""));
   v.close();
 
+  console.log("\nRÉGLEMENTATION ET MODE D'EMPLOI");
+  { const t = open("bourg"); await wait(300); click(t, '[data-tab="regl"]');
+    ok(/2025-126/.test(view(t)) && /D731-14/.test(view(t)), "réglementation : décret de 2025 et correspondant incendie et secours");
+    t.close(); }
+  { const A = fs.readFileSync(path.join(__dirname, "..", "aide.html"), "utf8");
+    ok(/id="rediger-et-verifier-le-pcs"/.test(A) && (A.match(/href="#rediger-et-verifier-le-pcs"/g) || []).length === 2, "aide : partie PCS et entrée aux deux sommaires"); }
+
   console.log(`\n${passes} réussis, ${failures} en échec`);
   process.exit(failures ? 1 : 0);
 })().catch(e => { console.error("ERREUR DU TEST :", e); process.exit(1) });

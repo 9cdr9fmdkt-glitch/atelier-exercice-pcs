@@ -1,6 +1,6 @@
 # Commune Prête
 
-Outil web pour préparer, conduire et évaluer les exercices de crise des communes (plan communal de sauvegarde).
+Outil web pour préparer, conduire et évaluer les exercices de crise des communes (plan communal de sauvegarde), et pour rédiger puis vérifier le plan lui-même dans l'espace PCS (dix rubriques, grille de vérification, documents Word et PDF dont une version publique).
 
 En ligne : https://9cdr9fmdkt-glitch.github.io/atelier-exercice-pcs/
 
@@ -12,7 +12,7 @@ En ligne : https://9cdr9fmdkt-glitch.github.io/atelier-exercice-pcs/
 - `favicon.svg` : la marque (fronton de mairie et bandeau d'exercice) ; `icon-*.png` et `apple-touch-icon.png` en sont tirés.
 - `sw.js`, `manifest.webmanifest`, `icon-*.png` : fonctionnement hors ligne et installation sur l'appareil (version en ligne uniquement).
 - Données publiques interrogées depuis le navigateur : geo.api.gouv.fr (communes, contours, intercommunalité, région), Géorisques (risques, arrêtés CatNat, installations classées, rapport de risques au point), annuaire de l'Éducation nationale (effectifs), OpenStreetMap via l'API Overpass (lieux), tuiles OpenStreetMap (fond de carte).
-- Aucune donnée de la commune n'est envoyée sur un serveur : l'état est conservé dans le navigateur (clé `atelier-pcs-v2` pour le dossier, `commune-prete-historique` pour l'historique, `commune-prete-obs-*` pour les observateurs, `commune-prete-affichage` pour le thème et le panneau).
+- Aucune donnée de la commune n'est envoyée sur un serveur : l'état est conservé dans le navigateur (clé `atelier-pcs-v2` pour le dossier, `commune-prete-historique` pour l'historique, `commune-prete-obs-*` pour les observateurs, `commune-prete-affichage` pour le thème, le panneau et l'espace choisi, `commune-prete-pcs` pour les saisies de l'espace PCS, par code INSEE).
 
 ## Copie dans Claude (artifact)
 
