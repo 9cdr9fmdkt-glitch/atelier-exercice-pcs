@@ -2696,7 +2696,8 @@ function pcsAuto(){
   const h=S.p.insee?hCommune():[];
   if(h.length){put("maint.exercice",pDate(h[0].date)+(h[0].titre?" · "+h[0].titre:""),"historique");
     const nd=nextDue(h);if(nd)put("maint.echeance",nd.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"}),"historique");
-    const acts=[];hLoad().filter(x=>sameCommune(x,S.p)).forEach(x=>(x.actions||[]).forEach(a=>{if(a&&a.a&&!a.done)acts.push(a.a+(a.pilote?" · "+a.pilote:"")+(a.ech?" · avant le "+a.ech:""))}));
+    // le pilote d'une action est une personne : jamais repris ici, car cette valeur alimente aussi la version publique
+    const acts=[];hLoad().filter(x=>sameCommune(x,S.p)).forEach(x=>(x.actions||[]).forEach(a=>{if(a&&a.a&&!a.done)acts.push(a.a+(a.ech?" · avant le "+a.ech:""))}));
     put("maint.actions",acts,"historique")}
   return o;
 }
@@ -2829,6 +2830,7 @@ function pcsField(c,i,r){
 // valeurs pré-remplies de la rubrique (hors champs de saisie), chacune avec sa source
 function pcsFactsHTML(r){
   const A=pcsAuto(),sec=PPATH[r.id]+".",ks=Object.keys(A).filter(k=>k.indexOf(sec)===0&&PCS_LAB[k]&&!r.champs.some(c=>sec+c.k===k));
+  if(!r.champs.length&&!ks.length)return "";
   if(!ks.length&&r.id===7&&pcsLists().plansTiers.length)return "";
   if(!ks.length)return `<p class="note">Aucune donnée n'a pu être pré-remplie pour cette rubrique : les champs ci-dessous sont à compléter.</p>`;
   return `<dl class="kv">${ks.map(k=>{const v=A[k].v;return `<dt>${esc(PCS_LAB[k])}</dt><dd>${[].concat(v).map(esc).join(", ")} <span class="tg src">${esc(A[k].src)}</span></dd>`}).join("")}</dl>`;
