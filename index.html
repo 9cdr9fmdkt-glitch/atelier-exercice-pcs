@@ -1237,10 +1237,12 @@ const fv=(p,k)=>{const f=p.fiche||{},v=f[k];return v===""||v==null?null:v};
 /* Lien PCS : lieu du PCC et capacité saisie du lieu d'accueil retenu (aucune écriture : lecture seule) */
 function pcsForExercise(){
   const r={pcc:null,capAccueil:null};
-  try{
+  try{ // lecture directe : pcsCur() créerait une entrée vide, enregistrée ensuite par n'importe quelle saisie du PCS
     if(!(S&&S.p&&S.p.insee))return r;
-    const l=pcsGet("pcc.lieu");if(typeof l==="string"&&l.trim())r.pcc=l.trim();
-    const h=S.p.heberg;if(h){const c=parseInt((pcsGet("moyens.cap."+h)||"").toString().replace(/\s/g,""),10);if(isFinite(c)&&c>=0)r.capAccueil=c}
+    const e=pLoad()[S.p.insee];if(!e||typeof e!=="object")return r;
+    const l=e.pcc&&e.pcc.lieu;if(typeof l==="string"&&l.trim())r.pcc=l.trim();
+    const h=S.p.heberg,cp=e.moyens&&e.moyens.cap;
+    if(h&&cp&&typeof cp==="object"){const c=parseInt(String(cp[h]==null?"":cp[h]).replace(/\s/g,""),10);if(isFinite(c)&&c>=0)r.capAccueil=c}
   }catch(e){}
   return r;
 }
@@ -1258,7 +1260,7 @@ function ficheVars(p){
 }
 function ficheFill(p){const f=p.fiche||{};let n=0;["alerte","elus","agents","tech","reserve","cap","ge","pics","conv"].forEach(k=>{const v=f[k];if(Array.isArray(v)?v.length:(v!==""&&v!=null))n++});return n}
 function ficheHyp(p){
-  const h=[],elus=fn(p,"elus"),ag=fn(p,"agents"),tech=fn(p,"tech"),res=fn(p,"reserve"),cap=fn(p,"cap"),lits=fn(p,"lits"),veh=fn(p,"veh"),conv=fv(p,"conv")||[];
+  const h=[],elus=fn(p,"elus"),ag=fn(p,"agents"),tech=fn(p,"tech"),res=fn(p,"reserve"),cap=capEff(p),lits=fn(p,"lits"),veh=fn(p,"veh"),conv=fv(p,"conv")||[];
   if(elus!=null||ag!=null)h.push(`La commune mobilise ${elus!=null?nf(elus)+" élu"+(elus>1?"s":""):"ses élus"} et ${ag!=null?nf(ag)+" agent"+(ag>1?"s":""):"ses agents"}${tech!=null?", dont "+nf(tech)+" technique"+(tech>1?"s":""):""} : la relève au-delà de trois heures est à organiser.`);
   if(res!=null)h.push(res>0?`La réserve communale de sécurité civile (${nf(res)} membres) peut être mobilisée pour des missions de soutien.`:"La commune n'a pas de réserve communale : le soutien repose sur les agents et les bénévoles spontanés.");
   if(cap!=null)h.push(`Le lieu d'accueil (${p.heberg}) offre ${nf(cap)} places${lits!=null?" et "+nf(lits)+" lits de camp":""}.`);
@@ -2722,7 +2724,7 @@ const PCS_LAB={"gen.commune":"Commune","gen.population":"Population","gen.epci":
  "vuln.enseignement":"Établissements d'enseignement","vuln.ehpad":"EHPAD","vuln.sante":"Établissements de santé","vuln.erp":"Lieux recevant du public","vuln.reseaux":"Postes électriques et ouvrages d'eau",
  "alerte.annuaire":"Annuaire de crise","alerte.moyens":"Moyens d'alerte","pcc.cellules":"Cellules et titulaires",
  "moyens.elus":"Élus mobilisables","moyens.agents":"Agents communaux","moyens.tech":"Dont techniques","moyens.veh":"Véhicules communaux","moyens.places":"Places d'accueil (fiche)","moyens.lits":"Lits de camp","moyens.ge":"Groupe électrogène","moyens.conv":"Conventions signées","moyens.salles":"Salles et gymnases recensés",
- "reserve.effectif":"Effectif de la réserve","maint.exercice":"Dernier exercice","maint.echeance":"Prochain exercice au plus tard","maint.actions":"Actions correctives non soldées"};
+ "reserve.effectif":"Effectif de la réserve","maint.exercice":"Dernier exercice","maint.echeance":"Prochain exercice au plus tard","maint.actions":"Mises à jour issues des exercices"};
 // saisie si présente, sinon valeur pré-remplie (seuls les chemins de PCS_LAB peuvent l'être : évite un calcul inutile)
 function pcsVal(path){const s=pcsGet(path);if(pFilled(s)&&s!=="")return s;if(!(path in PCS_LAB))return s;const a=pcsAuto()[path];return a?a.v:s}
 /* Fiches réflexes (rubrique 8) : texte proposé, nouvelle doctrine à relire par le maire avant diffusion.

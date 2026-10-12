@@ -397,6 +397,16 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
       ok(/Nous sommes complets avec 5 personnes/.test(view(t)), "capacité du PCS utilisée pour le message de saturation (fiche vide)"); }
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
+  { const t = openMulti({}); await wait(300);
+    await chooseCommune(t, "bourg"); click(t, "#gen"); click(t, '[data-tab="cadrage"]'); click(t, '[data-tab="chrono"]');
+    await chooseCommune(t, "hameau", 11000);
+    click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="4"]');
+    const l = t.q('[data-pf="pcc.lieu"]'); l.value = "Mairie annexe"; l.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    const st = JSON.parse(t.w.localStorage.getItem("commune-prete-pcs") || "{}");
+    ok(Object.keys(st).length === 1 && st["09253"] !== undefined, "seule la commune éditée est enregistrée (pas de squelette pour l'autre commune)" + " : " + Object.keys(st).join(","));
+    ok(!st["09194"], "aucune entrée PCS créée par la seule consultation des exercices");
+    t.close(); }
+
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);
   ok([...v.d.querySelectorAll(".tgrp")].map(x => x.textContent).join("/") === "Préparer/Conduire/Évaluer", "onglets regroupés en trois temps");
