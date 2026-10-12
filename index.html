@@ -1472,6 +1472,12 @@ async function loadTerrain(seq){
   if(!ok())return;
   save();renderDatalists();if(S.tab==="carte"||S.tab==="scenario")render();
 }
+/* Géorisques ne fournit plus le libellé d'activité (libelleNaf) : il est déduit du code NAF et des indicateurs du site. */
+const NAF={"01":"exploitation agricole","02":"exploitation forestière","05":"industrie extractive","06":"industrie extractive","07":"industrie extractive","08":"carrière","10":"industrie agroalimentaire","11":"fabrication de boissons","16":"travail du bois","17":"industrie du papier","19":"raffinage de produits pétroliers","20":"industrie chimique","21":"industrie pharmaceutique","22":"fabrication de produits en plastique","23":"fabrication de matériaux minéraux","24":"métallurgie","25":"fabrication d'ouvrages en métaux","35":"production d'énergie","36":"captage et traitement d'eau","37":"assainissement","38":"gestion des déchets","46":"commerce de gros","52":"entreposage"};
+function icpeAct(x){
+  if(x.carriere)return "carrière";if(x.eolienne)return "parc éolien";if(x.bovins||x.porcs||x.volailles)return "élevage";
+  return NAF[String(x.codeNaf||"").replace(/\D/g,"").slice(0,2)]||"";
+}
 async function loadICPE(ok=()=>true){
   const p=S.p,zc=zoneCenter(p),big=isBig(p);
   try{
@@ -1481,11 +1487,11 @@ async function loadICPE(ok=()=>true){
       let name=String(x.raisonSociale||x.nomEts||x.nom||"").trim();if(name&&name===name.toUpperCase())name=titleCase(name);
       const lat=num(x.latitude??x.lat),lon=num(x.longitude??x.lon);
       const seveso=String(x.statutSeveso||x.seveso||""),regime=String(x.regime||""),etat=String(x.etatActivite||x.etat||"");
-      const act=String(x.libelleNaf||x.activite||x.libelleActivite||"").trim();
+      const act=String(x.libelleNaf||x.activite||x.libelleActivite||"").trim()||icpeAct(x);
       let rank=/seuil haut/i.test(seveso)?4:/seuil bas/i.test(seveso)?3:/autorisation/i.test(regime)?2:/enregistrement/i.test(regime)?1:0;
       if(/^(earl|gaec|scea|sci)/i.test(name))rank-=2;
       return {name,lat,lon,seveso,regime,act,etat,rank,d:lat!=null&&zc?Math.round(dist(zc.lat,zc.lon,lat,lon)*10)/10:null};
-    }).filter(x=>x.name&&!/cess|arr[eê]t/i.test(x.etat)&&(!big||x.d==null||x.d<=3));
+    }).filter(x=>x.name&&!/non icpe/i.test(x.regime)&&!/cess|arr[eê]t/i.test(x.etat)&&(!big||x.d==null||x.d<=3));
     L.sort((a,b)=>b.rank-a.rank||(a.d??99)-(b.d??99));
     S.icpe=L.slice(0,40);S.icpeLoaded=true;
     if(!p.icpeUser){p.icpe=L[0]&&L[0].rank>=1?L[0].name:"";const el=$("#icpe");if(el)el.value=p.icpe}

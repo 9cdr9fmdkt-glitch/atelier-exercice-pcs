@@ -31,7 +31,9 @@ const C = {
       { type: "way", id: 40, center: { lat: 43.085, lon: 1.87 }, tags: { waterway: "river", name: "L'Hers-Vif" } },
       { type: "way", id: 50, center: { lat: 42.95, lon: 1.95 }, tags: { waterway: "dam", name: "Barrage de Montbel" } },
       { type: "way", id: 30, center: { lat: 43.09, lon: 1.86 }, tags: { highway: "primary", ref: "D 119" } }],
-    icpe: [{ raisonSociale: "COOPERATIVE AGRICOLE ARTERRIS", regime: "Autorisation", statutSeveso: "Seveso seuil bas", etatActivite: "En fonctionnement", latitude: 43.095, longitude: 1.85, libelleNaf: "Commerce de gros de céréales" }],
+    // Format Géorisques constaté le 12 octobre 2026 : plus de libelleNaf, seulement codeNaf et des indicateurs (carriere, eolienne…).
+    icpe: [{ raisonSociale: "COOPERATIVE AGRICOLE ARTERRIS", regime: "Autorisation", statutSeveso: "Seveso seuil bas", etatActivite: "En exploitation avec titre", latitude: 43.095, longitude: 1.85, codeNaf: "46", carriere: false, eolienne: false, industrie: true },
+      { raisonSociale: "Durand Martine", regime: "Non ICPE", statutSeveso: null, etatActivite: null, latitude: 43.0881, longitude: 1.8741, codeNaf: "56", carriere: false, eolienne: false, industrie: false }],
     ecoles: [{ nom_etablissement: "Ecole primaire publique Les Remparts", type_etablissement: "Ecole", nombre_d_eleves: 212, latitude: 43.0885, longitude: 1.8742 }],
     flood: lat => Math.abs(lat - 43.08) < 0.001 }
 };
