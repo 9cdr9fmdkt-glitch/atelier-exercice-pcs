@@ -63,7 +63,7 @@ function openMulti(opts = {}, storage) {
         if (u.includes("overpass")) { if (opts.fail && opts.fail[code]) return Promise.reject(new Error("HTTP 429"));
           if (opts.busy && opts.busy[code] > 0) { opts.busy[code]--; overpassCalls.push(u); return Promise.resolve({ ok: false, status: 504, json: () => Promise.reject(new Error("504")) }) }
           overpassCalls.push(u); return later((opts.slow && opts.slow[code]) || 0, { ok: true, json: () => Promise.resolve({ elements: F.osm }) }) }
-        if (u.includes("gaspar/risques")) return later((opts.slowRisk && opts.slowRisk[code]) || 0, { ok: true, json: () => Promise.resolve({ data: [{ risques_detail: (F.risques || ["Inondation"]).map(l => ({ libelle_risque_long: l })) }] }) });
+        if (u.includes("gaspar/risques")) return later((opts.slowRisk && opts.slowRisk[code]) || 0, { ok: true, json: () => Promise.resolve({ data: [{ risques_detail: (opts.risques || F.risques || ["Inondation"]).map(l => ({ libelle_risque_long: l })) }] }) });
         if (u.includes("gaspar/catnat")) return R({ data: [] });
         if (u.includes("installations_classees")) return R({ data: F.icpe });
         if (u.includes("data.education")) return R({ results: F.ecoles });
@@ -328,6 +328,20 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(/Fiche réflexe : Maire, directeur des opérations/.test(v) && !/undefined|NaN|\{\w+\}/.test(v), "hameau : fiches des six fonctions sans champ non rempli");
     ok(t.d.querySelectorAll("#pcsFiches details").length >= 6, "hameau : au moins six fiches");
     t.close(); }
+
+  { const LAB = ["Inondation", "Feu de forêt", "Tempête", "Canicule", "Séisme", "Mouvement de terrain", "Transport de marchandises dangereuses", "Risque industriel", "Rupture de barrage", "Risque nucléaire", "Épidémie"];
+    const BAD = /\bde le\b|\bde les\b|\bà le\b|\bà les\b|Ouvrir au\b|\{\w+\}|undefined|NaN|  +|\s[,.]/;
+    for (const nom of ["bourg", "hameau"]) {
+      const t = openMulti({ risques: LAB }); await wait(300); await chooseCommune(t, nom, 900); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="8"]');
+      for (const k of ["canicule", "coupure", "cyber", "sanitaire", "terrorisme"]) { const cb = t.q(`[data-trans="${k}"]`); if (!cb.disabled && !cb.checked) { cb.checked = true; cb.dispatchEvent(new t.w.Event("change", { bubbles: true })) } }
+      const titres = [...t.d.querySelectorAll("#pcsFiches summary")].map(x => x.textContent);
+      ok(titres.length === 14 + 6, nom + " : 14 fiches de risque et 6 fiches de fonction (" + titres.length + ")");
+      const txt = [...t.d.querySelectorAll("#pcsFiches textarea")].map(x => x.value).join("\n") + "\n" + t.q("#pcsApercu").textContent;
+      const m = txt.match(BAD); ok(!m, nom + " : fiches sans article fautif, accolade ni double espace" + (m ? " : « " + txt.slice(Math.max(0, m.index - 40), m.index + 40).replace(/\n/g, " ") + " »" : ""));
+      if (nom === "bourg") ok(/Fiche réflexe : Cyberattaque/.test(txt) && / : /.test(txt) && !/\S: /.test(txt.replace(/https?:\/\//g, "")), "l'espace avant les deux-points est conservé");
+      ok(!t.errs.length, "aucune erreur JavaScript"); t.close(); }
+    const lit = SRC.slice(SRC.indexOf("const FICHE_RISQUE={"), SRC.indexOf("function ficheLieux"));
+    ok(!/\b(de|à) \{(le|la|les)_(secteur|axe|icpe|heberg|etab|erp|hopital|gare|aero|evt|riviere|massif)\}|Ouvrir \{au_|\{du_icpe\}/.test(lit), "texte des 19 risques (dont ferroviaire, aérien, hôpital, bombe, masse hors interface) sans article mal formé"); }
 
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);

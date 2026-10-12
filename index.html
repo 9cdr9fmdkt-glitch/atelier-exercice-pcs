@@ -2717,40 +2717,40 @@ const FICHE_TRANSVERSES=["canicule","coupure","cyber","sanitaire","terrorisme"];
 // Éléments propres à chaque risque : déclenchement (d), premières actions [action, fonction] (i), suivi (s), fin (f)
 const FICHE_RISQUE={
  inondation:{d:["Vigilance orange ou rouge « crues » ou « pluie-inondation » transmise par la préfecture ou lue sur Vigicrues","Montée des eaux ou ruissellement signalé dans {le_secteur}"],
-  i:[["Suivre les hauteurs d'eau et les prévisions de crue",1],["Fermer les voies inondées et mettre en place les déviations",4],["Contacter les personnes inscrites au registre des personnes vulnérables de {le_secteur}",3],["Ouvrir {au_heberg} pour les personnes évacuées",3]],
+  i:[["Suivre les hauteurs d'eau et les prévisions de crue",1],["Fermer les voies inondées et mettre en place les déviations",4],["Contacter les personnes inscrites au registre des personnes vulnérables {du_secteur}",3],["Ouvrir {le_heberg} pour les personnes évacuées",3]],
   s:["Faire un point de situation toutes les heures avec {Pref}","Surveiller les sous-sols, les caves et les passages à gué"],f:["Lever les mesures sur décision du maire, avec l'accord de la préfecture","Recenser les dégâts et organiser le nettoyage et le relogement"]},
- feu:{d:["Vigilance rouge « feux de forêt » ou départ de feu signalé par {Secours}","Fumées ou flammes visibles à proximité de {le_secteur}"],
-  i:[["Se mettre à la disposition du commandant des opérations de secours",1],["Fermer les accès aux massifs et aux pistes",4],["Préparer le confinement ou l'évacuation de {le_secteur}",3],["Ouvrir {au_heberg} pour les personnes évacuées",3]],
+ feu:{d:["Niveau de danger « feux de forêt » élevé ou arrêté préfectoral, ou départ de feu signalé par {Secours}","Fumées ou flammes visibles à proximité {du_secteur}"],
+  i:[["Se mettre à la disposition du commandant des opérations de secours",1],["Fermer les accès aux massifs et aux pistes",4],["Préparer le confinement ou l'évacuation {du_secteur}",3],["Ouvrir {le_heberg} pour les personnes évacuées",3]],
   s:["Suivre l'évolution du vent et du front de feu avec {Secours}","Maintenir les axes libres pour les secours"],f:["Lever les mesures sur décision du commandant des opérations de secours et du maire","Surveiller les reprises de feu les jours suivants"]},
- tempete:{d:["Vigilance orange ou rouge « vent violent », « neige-verglas » ou « orages » transmise par la préfecture","Arbres, lignes ou toitures tombés signalés à la mairie"],
+ tempete:{d:["Vigilance orange ou rouge « vent violent », « neige-verglas », « grand froid » ou « orages » transmise par la préfecture","Arbres, lignes ou toitures tombés signalés à la mairie"],
   i:[["Recenser les routes coupées et les arbres tombés",4],["Prévenir les personnes isolées et les personnes inscrites au registre",3],["Prévoir un lieu chauffé : {heberg}",3]],
   s:["Suivre les coupures de réseaux avec {Elec}","Faire dégager les axes prioritaires"],f:["Lever les mesures quand la vigilance est levée","Recenser les dégâts et les transmettre à la préfecture"]},
  canicule:{d:["Vigilance orange ou rouge « canicule » transmise par la préfecture ou {l_ars}","Plan de gestion d'une canicule déclenché par la préfecture"],
   i:[["Contacter les personnes inscrites au registre des personnes vulnérables",3],["Ouvrir un lieu rafraîchi : {heberg}",3],["Alerter les établissements pour personnes âgées et les structures d'accueil d'enfants",3],["Adapter les horaires de travail des agents de terrain",1]],
   s:["Renouveler chaque jour les appels aux personnes inscrites au registre","Suivre les besoins en eau et en ventilation"],f:["Lever les mesures à la fin de la vigilance","Rendre compte à {Pref} du nombre de personnes accueillies"]},
  seisme:{d:["Secousse ressentie sur la commune ou information du réseau de surveillance sismique","Dégâts ou personnes bloquées signalés à la mairie"],
-  i:[["Faire reconnaître les bâtiments publics et les axes principaux",4],["Couper le gaz et l'électricité des bâtiments endommagés",4],["Ouvrir {au_heberg} pour les personnes sinistrées",3],["Se mettre à la disposition du commandant des opérations de secours",1]],
+  i:[["Faire reconnaître les bâtiments publics et les axes principaux",4],["Couper le gaz et l'électricité des bâtiments endommagés",4],["Ouvrir {le_heberg} pour les personnes sinistrées",3],["Se mettre à la disposition du commandant des opérations de secours",1]],
   s:["Prévoir les répliques : maintenir les consignes d'éloignement des façades","Faire expertiser les bâtiments avant toute réoccupation"],f:["Lever les mesures bâtiment par bâtiment, après expertise","Recenser les dégâts et les transmettre à la préfecture"]},
  mvt:{d:["Fissures, éboulis ou affaissement signalés dans {le_secteur}","Arrêté de périmètre ou demande d'évacuation transmise par {Pref}"],
-  i:[["Matérialiser le périmètre interdit autour du site",4],["Évacuer les habitations menacées de {le_secteur}",3],["Ouvrir {au_heberg} pour les personnes évacuées",3]],
-  s:["Faire surveiller l'évolution du site par un expert","Maintenir la déviation de {la_axe}"],f:["Autoriser le retour sur avis de l'expert","Mettre à jour la cartographie des risques de la commune"]},
+  i:[["Matérialiser le périmètre interdit autour du site",4],["Évacuer les habitations menacées {du_secteur}",3],["Ouvrir {le_heberg} pour les personnes évacuées",3]],
+  s:["Faire surveiller l'évolution du site par un expert","Maintenir la déviation {de_axe}"],f:["Autoriser le retour sur avis de l'expert","Mettre à jour la cartographie des risques de la commune"]},
  tmd:{d:["Accident ou fuite signalé par {Secours} sur {la_axe} ou sur une canalisation","Odeur, nuage ou produit répandu signalé à la mairie"],
   i:[["Fermer et dévier la circulation sur {la_axe}",4],["Appliquer la consigne de confinement dans le périmètre fixé par le commandant des opérations de secours",3],["Prévenir les établissements du périmètre, dont les écoles",3]],
   s:["Suivre la qualité de l'air avec les secours","Préparer l'évacuation si le commandant des opérations de secours le demande"],f:["Lever le confinement sur décision du commandant des opérations de secours","Informer les habitants des précautions à reprendre (jardins, eau)"]},
- industriel:{d:["Alerte de l'exploitant de {le_icpe} ou déclenchement de la sirène","Incendie, explosion ou panache signalé par {Secours}"],
+ industriel:{d:["Alerte de l'exploitant du site industriel ou déclenchement de la sirène","Incendie, explosion ou panache signalé par {Secours}"],
   i:[["Appliquer la consigne de confinement dans le périmètre fixé par les secours",3],["Prévenir les établissements du périmètre, dont les écoles",3],["Fermer et dévier la circulation autour du site",4],["Se mettre en liaison avec l'exploitant et {Secours}",1]],
   s:["Suivre l'évolution du panache avec {Secours} et {Pref}","Préparer l'évacuation si elle est ordonnée"],f:["Lever le confinement sur décision du préfet","Informer les habitants des restrictions de consommation éventuelles"]},
  barrage:{d:["Alerte de l'exploitant ou de {Pref} annonçant un risque de rupture","Niveau d'eau anormal en aval du barrage signalé à la mairie"],
-  i:[["Évacuer les habitants vers les hauteurs, par les itinéraires prévus",3],["Fermer les routes de la vallée",4],["Prévenir les établissements situés dans la zone de submersion",3],["Ouvrir {au_heberg} en hauteur pour les personnes évacuées",3]],
+  i:[["Évacuer les habitants vers les hauteurs, par les itinéraires prévus",3],["Fermer les routes de la vallée",4],["Prévenir les établissements situés dans la zone de submersion",3],["Ouvrir {le_heberg} en hauteur pour les personnes évacuées",3]],
   s:["Suivre l'onde de submersion avec {Pref}","Recenser les personnes évacuées et les personnes manquantes"],f:["Autoriser le retour sur décision du préfet","Recenser les dégâts et organiser le relogement"]},
  nucleaire:{d:["Information de {Pref} sur un accident dans une installation nucléaire","Déclenchement du plan particulier d'intervention"],
   i:[["Appliquer la consigne de mise à l'abri",3],["Prévenir les établissements, dont les écoles, de la mise à l'abri",3],["Se tenir prêt à distribuer l'iode uniquement sur ordre du préfet",3],["Accueillir les éventuelles personnes évacuées d'une commune plus proche : {heberg}",3]],
   s:["Suivre les instructions de {Pref} d'heure en heure","Préparer l'évacuation si elle est ordonnée"],f:["Lever la mise à l'abri sur décision du préfet","Informer les habitants des restrictions de consommation éventuelles"]},
  ferroviaire:{d:["Accident signalé par {Secours} ou par l'exploitant ferroviaire","Voyageurs ou riverains en difficulté près de la voie"],
-  i:[["Fermer les accès routiers aux abords de la voie",4],["Ouvrir {au_heberg} pour les voyageurs indemnes",3],["Se mettre à la disposition du commandant des opérations de secours",1]],
+  i:[["Fermer les accès routiers aux abords de la voie",4],["Ouvrir {le_heberg} pour les voyageurs indemnes",3],["Se mettre à la disposition du commandant des opérations de secours",1]],
   s:["Relayer le numéro d'information des familles ouvert par {Pref}","Fournir eau, couvertures et soutien psychologique"],f:["Lever les mesures sur décision du commandant des opérations de secours","Organiser le retour des voyageurs avec l'exploitant"]},
  aerien:{d:["Chute d'aéronef signalée par {Secours}","Débris ou incendie signalés à proximité d'habitations"],
-  i:[["Établir un périmètre de sécurité autour du site",4],["Laisser les routes libres pour les secours",4],["Ouvrir {au_heberg} pour les impliqués",3]],
+  i:[["Établir un périmètre de sécurité autour du site",4],["Laisser les routes libres pour les secours",4],["Ouvrir {le_heberg} pour les impliqués",3]],
   s:["Relayer le numéro d'information des familles ouvert par {Pref}","Faire garder le site jusqu'à l'arrivée des enquêteurs"],f:["Lever le périmètre sur décision de l'autorité judiciaire","Proposer un soutien psychologique aux témoins"]},
  coupure:{d:["Coupure supérieure à quatre heures annoncée par {Elec}","Délestage ou coupure généralisée signalée par plusieurs habitants"],
   i:[["Se mettre en liaison avec {Elec} pour connaître la durée de la coupure",1],["Contacter les personnes inscrites au registre, en particulier celles qui dépendent d'un équipement électrique",3],["Ouvrir un lieu chauffé ou rafraîchi : {heberg}",3],["Mettre en route les groupes électrogènes des bâtiments prioritaires",4]],
@@ -2804,13 +2804,17 @@ function ficheLieux(p,key){
   (R.cats||[]).forEach(c=>{try{concerned(pk,c).forEach(x=>{if(x&&x.name&&!out.includes(x.name))out.push(x.name)})}catch(e){}});
   return out;
 }
-function ficheClean(s){return String(s).replace(/\{\w+\}/g,"").replace(/\s+([,.:;)])/g,"$1").replace(/\s{2,}/g," ").trim()}
-function fichesReflexes(){
-  const p=(S&&S.p)||{},F=t=>ficheClean(fill(t,p)),out=[];
+function ficheClean(s){return String(s).replace(/\{\w+\}/g,"").replace(/\s+([,.)])/g,"$1").replace(/\s{2,}/g," ").trim()}
+function ficheKeys(){
   const keys=[];
   if(geoRisks&&geoRisks.status==="ok"&&Array.isArray(geoRisks.items))geoRisks.items.forEach(e=>{if(e&&e.key!=="autre"&&RISKS[e.key]&&!keys.includes(e.key))keys.push(e.key)});
   const tr=pcsGet("fiches.transverses");
   (Array.isArray(tr)?tr:[]).forEach(k=>{if(FICHE_TRANSVERSES.includes(k)&&RISKS[k]&&!keys.includes(k))keys.push(k)});
+  return keys;
+}
+function fichesReflexes(){
+  const p=(S&&S.p)||{},F=t=>ficheClean(fill(t,p)),out=[];
+  const keys=ficheKeys();
   keys.forEach(k=>{
     const D=FICHE_RISQUE[k]||{d:[],i:[],s:[],f:[]},cons=CONSIGNES[k]?F(CONSIGNES[k]):"",lieux=ficheLieux(p,k);
     const imm=FICHE_DEBUT.map(a=>({action:a[0],qui:FQ[a[1]]})).concat(D.i.map(a=>({action:F(a[0]),qui:FQ[a[1]]})));
@@ -2926,10 +2930,8 @@ function rubApercu(id,opts){
 // éléments obligatoires d'une rubrique : liste de booleans (renseigné ou non)
 function reqItems(id){
   const r=PCS_RUB[id],out=[];if(!r)return out;
-  if(id===8){ // complète quand les risques recensés par Géorisques ont leur fiche et que les six fiches de fonction existent
-    const fs=fichesReflexes(),geo=geoRisks&&geoRisks.status==="ok"&&Array.isArray(geoRisks.items);
-    const need=geo?geoRisks.items.filter(e=>e.key!=="autre"&&RISKS[e.key]).map(e=>"r:"+e.key):[];
-    out.push(geo&&need.every(k=>fs.some(f=>f.id===k))&&FICHE_FONCTIONS.every((t,n)=>fs.some(f=>f.id==="f:"+n)));return out}
+  if(id===8){ // complète quand Géorisques a répondu : chaque risque recensé a sa fiche (toujours générée) et les six fonctions aussi
+    out.push(!!(geoRisks&&geoRisks.status==="ok"&&Array.isArray(geoRisks.items)&&FICHE_FONCTIONS.length===6&&FICHE_FONCTION_DATA.length===6));return out}
   r.champs.forEach(c=>{
     if(id===5&&c.k==="cap"){const cp=pcsGet("moyens.cap")||{};out.push(Object.keys(cp).some(n=>pFilled(cp[n])));return}
     let req=c.req;if(id===6&&c.k==="modalites")req=Number((S.p.fiche||{}).reserve)>0;
