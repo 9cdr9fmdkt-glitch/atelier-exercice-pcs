@@ -33,7 +33,7 @@
 
 ---
 
-### Tâche 1 : sélecteur d'espaces et squelette de l'espace PCS
+### Task 1 (tâche 1) : sélecteur d'espaces et squelette de l'espace PCS
 
 **Fichiers :**
 - Modifier : `index.html` (barre d'application, CSS, bloc « Affichage : thème et panneau », `render()`)
@@ -72,7 +72,7 @@ console.log("\nESPACE PCS");
 
 ---
 
-### Tâche 2 : données du PCS, rubriques, saisie et avancement
+### Task 2 (tâche 2) : données du PCS, rubriques, saisie et avancement
 
 **Fichiers :**
 - Modifier : `index.html` (bloc Espace PCS)
@@ -132,7 +132,7 @@ console.log("\nESPACE PCS");
 
 ---
 
-### Tâche 3 : pré-remplissage et aperçu des rubriques
+### Task 3 (tâche 3) : pré-remplissage et aperçu des rubriques
 
 **Fichiers :**
 - Modifier : `index.html` (bloc Espace PCS)
@@ -180,7 +180,7 @@ console.log("\nESPACE PCS");
 
 ---
 
-### Tâche 4 : fiches réflexes
+### Task 4 (tâche 4) : fiches réflexes
 
 **Fichiers :**
 - Modifier : `index.html` (bloc Espace PCS)
@@ -218,7 +218,7 @@ console.log("\nESPACE PCS");
 
 ---
 
-### Tâche 5 : vérification d'un PCS existant
+### Task 5 (tâche 5) : vérification d'un PCS existant
 
 **Fichiers :**
 - Modifier : `index.html` (bloc Espace PCS)
@@ -292,7 +292,7 @@ console.log("\nESPACE PCS");
 
 ---
 
-### Tâche 6 : documents
+### Task 6 (tâche 6) : documents
 
 **Fichiers :**
 - Modifier : `index.html` (bloc Espace PCS)
@@ -332,7 +332,7 @@ console.log("\nESPACE PCS");
 
 ---
 
-### Tâche 7 : lien avec les exercices
+### Task 7 (tâche 7) : lien avec les exercices
 
 **Fichiers :**
 - Modifier : `index.html` (`vCadrage`, `ficheVars`/`checks`, rubrique 9 du bloc PCS)
@@ -369,7 +369,7 @@ console.log("\nESPACE PCS");
 
 ---
 
-### Tâche 8 : réglementation, mode d'emploi, vérifications finales et publication
+### Task 8 (tâche 8) : réglementation, mode d'emploi, vérifications finales et publication
 
 **Fichiers :**
 - Modifier : `index.html` (table `REGL`, constante `VERIF`), `aide.html`, `README.md`
