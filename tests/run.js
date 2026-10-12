@@ -1,13 +1,11 @@
-// Diagnostic temporaire : lecture des articles du code de la sécurité intérieure sur Légifrance.
-const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
-const URLS = ["https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000025503132/LEGISCTA000029656954/",
-  "https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000025503132/LEGISCTA000045942728/"];
-const strip = h => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, "").replace(/<(br|\/p|\/li|\/h\d|\/div)[^>]*>/g, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;|&#160;/g, " ").replace(/&#39;|&rsquo;/g, "'").replace(/&laquo;/g, "«").replace(/&raquo;/g, "»").replace(/&amp;/g, "&").replace(/[ \t]+/g, " ").replace(/\n\s*\n+/g, "\n");
-(async () => {
-  for (const u of URLS) {
-    try { const r = await fetch(u, { headers: { "User-Agent": UA, "Accept": "text/html", "Accept-Language": "fr-FR" } }); const t = strip(await r.text());
-      console.log("\n##### " + r.status + " " + u); const i = t.indexOf("Article R731-1"); console.log(i < 0 ? t.slice(0, 1500) : t.slice(i, i + 30000)) }
-    catch (e) { console.log("ERREUR", u, e.message) }
-  }
-  process.exit(0);
-})();
+// Diagnostic temporaire : texte consolidé du code de la sécurité intérieure (codes.droit.org, source Légifrance).
+const { execSync } = require("child_process");
+const sh = c => { try { return execSync(c, { encoding: "utf8", maxBuffer: 1 << 28 }) } catch (e) { return "ERREUR " + e.message } };
+console.log(sh('curl -sSL -A "Mozilla/5.0" -o /tmp/csi.pdf -w "%{http_code} %{size_download}\\n" "https://codes.droit.org/PDF/Code%20de%20la%20s%C3%A9curit%C3%A9%20int%C3%A9rieure.pdf"'));
+console.log(sh("which pdftotext || (sudo apt-get install -y -qq poppler-utils >/dev/null 2>&1 && which pdftotext)"));
+const t = sh("pdftotext -layout /tmp/csi.pdf - 2>/dev/null");
+console.log("Longueur :", t.length); const head = t.slice(0, 600); console.log(head);
+const i = t.search(/Article R731-1\b/), j = t.search(/Article D731-18|Article R732-1\b|Chapitre II : Planification/);
+const k = t.indexOf("Article R731-1", i + 10);
+console.log("\n===== EXTRAIT =====\n" + (i < 0 ? "introuvable" : t.slice(i, Math.min(i + 45000, j > i ? j + 200 : i + 45000))));
+process.exit(0);
