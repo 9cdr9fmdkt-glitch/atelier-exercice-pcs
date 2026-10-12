@@ -258,6 +258,15 @@ const view = t => t.q("#view").textContent;
     click(t, '#espaceSeg [data-esp="exercices"]'); ok(!t.q("#config").hidden && t.q("#pcsPanel").hidden, "retour à l'espace Exercices");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg");
+    click(t, '#espaceSeg [data-esp="pcs"]');
+    ok(/Plan communal de sauvegarde/.test(t.q("#pcsView").textContent) && !/EXERCICE · EXERCICE/.test(t.q("#pcsView").textContent), "espace PCS sans bandeau « EXERCICE »");
+    click(t, '#espaceSeg [data-esp="exercices"]');
+    const v0 = t.q("#view"), c0 = t.q("#view").firstElementChild;
+    click(t, "#themeBtn"); click(t, "#panelBtn");
+    ok(t.q("#view") === v0 && t.q("#view").firstElementChild === c0, "thème et panneau sans reconstruire la vue");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);
   ok([...v.d.querySelectorAll(".tgrp")].map(x => x.textContent).join("/") === "Préparer/Conduire/Évaluer", "onglets regroupés en trois temps");

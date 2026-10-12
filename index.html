@@ -83,6 +83,7 @@ a{color:var(--primary);text-underline-offset:2px}
 .iconbtn:hover{background:var(--surface-2);color:var(--ink)}
 .iconbtn[aria-pressed=true]{color:var(--ink);background:var(--surface-2)}
 .appbar .tools-r{display:flex;gap:2px;padding-left:10px;border-left:1px solid var(--line)}
+.pcsbar{padding:10px clamp(18px,4vw,48px) 0}
 .espace{margin-right:8px;min-width:150px}
 .espace button{min-height:32px;padding:5px 10px;font-weight:600}
 .config[hidden],.bar[hidden],.head[hidden],#view[hidden],#pcsView[hidden]{display:none}
@@ -2599,8 +2600,8 @@ function renderPCS(){
     v.innerHTML=`<article class="card doc"><div class="docbody"><h3>Plan communal de sauvegarde</h3><p>Recherchez votre commune dans l'espace Exercices pour construire son plan communal de sauvegarde.</p><div><button class="btn primary" type="button" id="pcsGoEx">Rechercher ma commune</button></div></div></article>`;
     return;
   }
-  v.innerHTML=`<article class="card doc">${docHead("Plan communal de sauvegarde")}
-    <div class="bar" style="position:static;margin:0;padding:10px clamp(18px,4vw,48px) 0"><div class="tabs" role="tablist" id="pcsTabs" aria-label="Étapes du PCS">${PCS_TABS.map(t=>`<button class="tab" role="tab" type="button" id="ptab-${t[0]}" aria-selected="${PCSUI.tab===t[0]}" aria-controls="pcsBody" tabindex="${PCSUI.tab===t[0]?0:-1}" data-ptab="${t[0]}">${t[1]}</button>`).join("")}</div></div>
+  v.innerHTML=`<article class="card doc"><div class="dochead"><span class="meta">${esc(S.p.commune)} · Plan communal de sauvegarde</span></div>
+    <div class="pcsbar"><div class="tabs" role="tablist" id="pcsTabs" aria-label="Étapes du PCS">${PCS_TABS.map(t=>`<button class="tab" role="tab" type="button" id="ptab-${t[0]}" aria-selected="${PCSUI.tab===t[0]}" aria-controls="pcsBody" tabindex="${PCSUI.tab===t[0]?0:-1}" data-ptab="${t[0]}">${t[1]}</button>`).join("")}</div></div>
     <div class="docbody" id="pcsBody" role="tabpanel" aria-labelledby="ptab-${PCSUI.tab}" tabindex="-1"></div></article>`;
 }
 $("#pcsView").addEventListener("click",e=>{
@@ -2622,17 +2623,20 @@ function applyAff(){
   if(b){b.title="Thème : "+lab;b.setAttribute("aria-label","Changer le thème ("+lab+")")}
   document.body.classList.toggle("panel-off",!!AFF.panelOff);
   const pb=$("#panelBtn");if(pb){pb.setAttribute("aria-pressed",!!AFF.panelOff);pb.title=AFF.panelOff?"Afficher la préparation":"Masquer la préparation";pb.setAttribute("aria-label",pb.title)}
-  setEspace(AFF.espace||"exercices",true);
+  applyEspace();
   if(map)setTimeout(()=>map.invalidateSize(),60);
 }
 function saveAff(){try{localStorage.setItem(AKEY,JSON.stringify(AFF))}catch(e){}}
-function setEspace(e,noSave){
-  const pcs=e==="pcs";AFF.espace=pcs?"pcs":"exercices";if(!noSave)saveAff();
+function applyEspace(){
+  const pcs=AFF.espace==="pcs";AFF.espace=pcs?"pcs":"exercices";
   document.body.classList.toggle("esp-pcs",pcs);
   ["#config",".bar",".head","#view"].forEach(s=>{const el=$(s);if(el)el.hidden=pcs});
   $("#pcsPanel").hidden=!pcs;$("#pcsView").hidden=!pcs;
   document.querySelectorAll("#espaceSeg [data-esp]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.esp===AFF.espace));
-  if(S){if(pcs)renderPCS();else render()}
+}
+function setEspace(e){
+  AFF.espace=e==="pcs"?"pcs":"exercices";saveAff();applyEspace();
+  if(S){if(AFF.espace==="pcs")renderPCS();else render()}
   if(map)setTimeout(()=>map.invalidateSize(),60);
 }
 document.querySelector("#espaceSeg").addEventListener("click",e=>{const b=e.target.closest("[data-esp]");if(b)setEspace(b.dataset.esp)});
