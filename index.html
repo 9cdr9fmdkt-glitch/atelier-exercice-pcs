@@ -2638,7 +2638,7 @@ const PCS_RUB=[
   T("modalites","Modalités d'appel de la réserve communale","texte",false),T("missions","Missions confiées à la réserve","texte",false),T("benevoles","Accueil des bénévoles spontanés","texte",true)]},
  {id:7,titre:"Actions préventives",ref:"R731-2, 5°",loi:"Le plan prévoit les mesures de sauvegarde et de protection des personnes, des biens et de l'environnement, dont les actions des services communaux et le suivi des plans des tiers.",champs:[
   T("services","Actions des services communaux","texte",true),T("plans","État des plans des tiers (établissements d'enseignement, EHPAD, sites industriels)","ouinon",false)]},
- {id:8,titre:"Fiches réflexes",ref:"R731-2, II",loi:"Le plan comporte des fiches réflexes par risque et par fonction. Leur rédaction est proposée dans une prochaine étape.",champs:[]},
+ {id:8,titre:"Fiches réflexes",ref:"R731-2, II",loi:"Le plan comporte des fiches réflexes par risque et par fonction de la cellule de crise. Leur rédaction est proposée à partir des risques recensés ; elle est à relire et à adapter par le maire.",champs:[]},
  {id:9,titre:"Maintien opérationnel",ref:"R731-8, D731-9 à D731-13",loi:"Le plan est mis à jour, testé par des exercices et son retour d'expérience conservé. La population est informée de son existence et peut en consulter la version publique.",champs:[
   T("annuaireDate","Dernière mise à jour de l'annuaire","date",true),T("infoPublic","Modalités d'information du public","texte",true)]}
 ];
@@ -2709,6 +2709,152 @@ const PCS_LAB={"gen.commune":"Commune","gen.population":"Population","gen.epci":
  "reserve.effectif":"Effectif de la réserve","maint.exercice":"Dernier exercice","maint.echeance":"Prochain exercice au plus tard","maint.actions":"Actions correctives non soldées"};
 // saisie si présente, sinon valeur pré-remplie (seuls les chemins de PCS_LAB peuvent l'être : évite un calcul inutile)
 function pcsVal(path){const s=pcsGet(path);if(pFilled(s)&&s!=="")return s;if(!(path in PCS_LAB))return s;const a=pcsAuto()[path];return a?a.v:s}
+/* Fiches réflexes (rubrique 8) : texte proposé, nouvelle doctrine à relire par le maire avant diffusion.
+   Identifiants : « r:<risque> » pour un risque, « f:<n> » pour une fonction de la cellule de crise. */
+const FICHE_FONCTIONS=CELLULE.slice();
+const FQ=CELLULE.map(c=>c.replace(/ \(\w+\)$/,""));
+const FICHE_TRANSVERSES=["canicule","coupure","cyber","sanitaire","terrorisme"];
+// Éléments propres à chaque risque : déclenchement (d), premières actions [action, fonction] (i), suivi (s), fin (f)
+const FICHE_RISQUE={
+ inondation:{d:["Vigilance orange ou rouge « crues » ou « pluie-inondation » transmise par la préfecture ou lue sur Vigicrues","Montée des eaux ou ruissellement signalé dans {le_secteur}"],
+  i:[["Suivre les hauteurs d'eau et les prévisions de crue",1],["Fermer les voies inondées et mettre en place les déviations",4],["Contacter les personnes inscrites au registre des personnes vulnérables de {le_secteur}",3],["Ouvrir {au_heberg} pour les personnes évacuées",3]],
+  s:["Faire un point de situation toutes les heures avec {Pref}","Surveiller les sous-sols, les caves et les passages à gué"],f:["Lever les mesures sur décision du maire, avec l'accord de la préfecture","Recenser les dégâts et organiser le nettoyage et le relogement"]},
+ feu:{d:["Vigilance rouge « feux de forêt » ou départ de feu signalé par {Secours}","Fumées ou flammes visibles à proximité de {le_secteur}"],
+  i:[["Se mettre à la disposition du commandant des opérations de secours",1],["Fermer les accès aux massifs et aux pistes",4],["Préparer le confinement ou l'évacuation de {le_secteur}",3],["Ouvrir {au_heberg} pour les personnes évacuées",3]],
+  s:["Suivre l'évolution du vent et du front de feu avec {Secours}","Maintenir les axes libres pour les secours"],f:["Lever les mesures sur décision du commandant des opérations de secours et du maire","Surveiller les reprises de feu les jours suivants"]},
+ tempete:{d:["Vigilance orange ou rouge « vent violent », « neige-verglas » ou « orages » transmise par la préfecture","Arbres, lignes ou toitures tombés signalés à la mairie"],
+  i:[["Recenser les routes coupées et les arbres tombés",4],["Prévenir les personnes isolées et les personnes inscrites au registre",3],["Prévoir un lieu chauffé : {heberg}",3]],
+  s:["Suivre les coupures de réseaux avec {Elec}","Faire dégager les axes prioritaires"],f:["Lever les mesures quand la vigilance est levée","Recenser les dégâts et les transmettre à la préfecture"]},
+ canicule:{d:["Vigilance orange ou rouge « canicule » transmise par la préfecture ou {l_ars}","Plan de gestion d'une canicule déclenché par la préfecture"],
+  i:[["Contacter les personnes inscrites au registre des personnes vulnérables",3],["Ouvrir un lieu rafraîchi : {heberg}",3],["Alerter les établissements pour personnes âgées et les structures d'accueil d'enfants",3],["Adapter les horaires de travail des agents de terrain",1]],
+  s:["Renouveler chaque jour les appels aux personnes inscrites au registre","Suivre les besoins en eau et en ventilation"],f:["Lever les mesures à la fin de la vigilance","Rendre compte à {Pref} du nombre de personnes accueillies"]},
+ seisme:{d:["Secousse ressentie sur la commune ou information du réseau de surveillance sismique","Dégâts ou personnes bloquées signalés à la mairie"],
+  i:[["Faire reconnaître les bâtiments publics et les axes principaux",4],["Couper le gaz et l'électricité des bâtiments endommagés",4],["Ouvrir {au_heberg} pour les personnes sinistrées",3],["Se mettre à la disposition du commandant des opérations de secours",1]],
+  s:["Prévoir les répliques : maintenir les consignes d'éloignement des façades","Faire expertiser les bâtiments avant toute réoccupation"],f:["Lever les mesures bâtiment par bâtiment, après expertise","Recenser les dégâts et les transmettre à la préfecture"]},
+ mvt:{d:["Fissures, éboulis ou affaissement signalés dans {le_secteur}","Arrêté de périmètre ou demande d'évacuation transmise par {Pref}"],
+  i:[["Matérialiser le périmètre interdit autour du site",4],["Évacuer les habitations menacées de {le_secteur}",3],["Ouvrir {au_heberg} pour les personnes évacuées",3]],
+  s:["Faire surveiller l'évolution du site par un expert","Maintenir la déviation de {la_axe}"],f:["Autoriser le retour sur avis de l'expert","Mettre à jour la cartographie des risques de la commune"]},
+ tmd:{d:["Accident ou fuite signalé par {Secours} sur {la_axe} ou sur une canalisation","Odeur, nuage ou produit répandu signalé à la mairie"],
+  i:[["Fermer et dévier la circulation sur {la_axe}",4],["Appliquer la consigne de confinement dans le périmètre fixé par le commandant des opérations de secours",3],["Prévenir les établissements du périmètre, dont les écoles",3]],
+  s:["Suivre la qualité de l'air avec les secours","Préparer l'évacuation si le commandant des opérations de secours le demande"],f:["Lever le confinement sur décision du commandant des opérations de secours","Informer les habitants des précautions à reprendre (jardins, eau)"]},
+ industriel:{d:["Alerte de l'exploitant de {le_icpe} ou déclenchement de la sirène","Incendie, explosion ou panache signalé par {Secours}"],
+  i:[["Appliquer la consigne de confinement dans le périmètre fixé par les secours",3],["Prévenir les établissements du périmètre, dont les écoles",3],["Fermer et dévier la circulation autour du site",4],["Se mettre en liaison avec l'exploitant et {Secours}",1]],
+  s:["Suivre l'évolution du panache avec {Secours} et {Pref}","Préparer l'évacuation si elle est ordonnée"],f:["Lever le confinement sur décision du préfet","Informer les habitants des restrictions de consommation éventuelles"]},
+ barrage:{d:["Alerte de l'exploitant ou de {Pref} annonçant un risque de rupture","Niveau d'eau anormal en aval du barrage signalé à la mairie"],
+  i:[["Évacuer les habitants vers les hauteurs, par les itinéraires prévus",3],["Fermer les routes de la vallée",4],["Prévenir les établissements situés dans la zone de submersion",3],["Ouvrir {au_heberg} en hauteur pour les personnes évacuées",3]],
+  s:["Suivre l'onde de submersion avec {Pref}","Recenser les personnes évacuées et les personnes manquantes"],f:["Autoriser le retour sur décision du préfet","Recenser les dégâts et organiser le relogement"]},
+ nucleaire:{d:["Information de {Pref} sur un accident dans une installation nucléaire","Déclenchement du plan particulier d'intervention"],
+  i:[["Appliquer la consigne de mise à l'abri",3],["Prévenir les établissements, dont les écoles, de la mise à l'abri",3],["Se tenir prêt à distribuer l'iode uniquement sur ordre du préfet",3],["Accueillir les éventuelles personnes évacuées d'une commune plus proche : {heberg}",3]],
+  s:["Suivre les instructions de {Pref} d'heure en heure","Préparer l'évacuation si elle est ordonnée"],f:["Lever la mise à l'abri sur décision du préfet","Informer les habitants des restrictions de consommation éventuelles"]},
+ ferroviaire:{d:["Accident signalé par {Secours} ou par l'exploitant ferroviaire","Voyageurs ou riverains en difficulté près de la voie"],
+  i:[["Fermer les accès routiers aux abords de la voie",4],["Ouvrir {au_heberg} pour les voyageurs indemnes",3],["Se mettre à la disposition du commandant des opérations de secours",1]],
+  s:["Relayer le numéro d'information des familles ouvert par {Pref}","Fournir eau, couvertures et soutien psychologique"],f:["Lever les mesures sur décision du commandant des opérations de secours","Organiser le retour des voyageurs avec l'exploitant"]},
+ aerien:{d:["Chute d'aéronef signalée par {Secours}","Débris ou incendie signalés à proximité d'habitations"],
+  i:[["Établir un périmètre de sécurité autour du site",4],["Laisser les routes libres pour les secours",4],["Ouvrir {au_heberg} pour les impliqués",3]],
+  s:["Relayer le numéro d'information des familles ouvert par {Pref}","Faire garder le site jusqu'à l'arrivée des enquêteurs"],f:["Lever le périmètre sur décision de l'autorité judiciaire","Proposer un soutien psychologique aux témoins"]},
+ coupure:{d:["Coupure supérieure à quatre heures annoncée par {Elec}","Délestage ou coupure généralisée signalée par plusieurs habitants"],
+  i:[["Se mettre en liaison avec {Elec} pour connaître la durée de la coupure",1],["Contacter les personnes inscrites au registre, en particulier celles qui dépendent d'un équipement électrique",3],["Ouvrir un lieu chauffé ou rafraîchi : {heberg}",3],["Mettre en route les groupes électrogènes des bâtiments prioritaires",4]],
+  s:["Rappeler la consigne sur les chauffages d'appoint à combustion (monoxyde de carbone)","Approvisionner en carburant les groupes électrogènes"],f:["Lever les mesures au rétablissement du courant","Vérifier les installations sensibles (froid, eau, assainissement)"]},
+ hopital:{d:["Fermeture ou saturation d'un établissement de santé annoncée par {l_ars}","Fermeture des urgences signalée à la mairie"],
+  i:[["Se mettre en liaison avec {l_ars} et {Secours}",1],["Informer la population des urgences fermées et du numéro 15",5],["Contacter les personnes inscrites au registre, en particulier celles suivies à domicile",3]],
+  s:["Suivre l'évolution de la situation de l'établissement avec {l_ars}","Appuyer l'établissement sur ses besoins matériels"],f:["Informer la population de la réouverture","Rendre compte au conseil municipal"]},
+ cyber:{d:["Messagerie, logiciels ou site de la mairie inaccessibles ou rançonnés","Alerte du prestataire informatique ou de la préfecture"],
+  i:[["Isoler les postes et déconnecter la mairie du réseau",4],["Passer en mode dégradé : registres papier et téléphone portable",2],["Prévenir le prestataire informatique et déposer plainte",1],["Prévenir la préfecture et l'ANSSI via le dispositif national d'assistance",1]],
+  s:["Recenser les services interrompus et les démarches urgentes","Prévenir les habitants des courriels frauduleux"],f:["Rétablir les services après vérification par le prestataire","Notifier la CNIL si des données personnelles sont concernées"]},
+ sanitaire:{d:["Décision sanitaire nationale ou information de {l_ars} sur une épidémie","Cas groupés signalés dans la commune"],
+  i:[["Relayer les consignes sanitaires de {l_ars}",5],["Contacter les personnes isolées et les personnes inscrites au registre",3],["Organiser l'adaptation des services communaux",1],["Prévoir les masques et le gel dans les bâtiments ouverts au public",4]],
+  s:["Organiser le portage de courses et de repas pour les personnes isolées","Mettre à disposition une salle pour un centre de vaccination ou de dépistage si {l_ars} le demande"],f:["Lever les mesures sur décision nationale","Tirer le bilan avec le CCAS"]},
+ bombe:{d:["Appel ou message annonçant un engin dans un lieu public ou un établissement","Colis ou objet suspect signalé"],
+  i:[["Prévenir {la_fdo} (17) sans attendre",2],["Appliquer les consignes de {la_fdo} : évacuation ou mise à l'abri",3],["Établir un périmètre de sécurité et laisser la circulation libre",4]],
+  s:["Ne rien communiquer de précis sur l'alerte hors canal officiel","Rester en liaison avec {la_fdo}"],f:["Rouvrir le lieu sur décision de {la_fdo}","Rendre compte à {Pref}"]},
+ masse:{d:["Attaque ou tirs signalés par {la_fdo} ou par plusieurs témoins","Alerte de {Pref} (consigne « s'échapper, se cacher, alerter »)"],
+  i:[["Alerter {la_fdo} (17) et ne pas se rendre sur place",2],["Appliquer la consigne de mise à l'abri dans les bâtiments communaux",3],["Rester à l'écart du secteur et ne pas diffuser d'images",5]],
+  s:["Rester en liaison avec {la_fdo} et {Pref}","Préparer l'accueil des impliqués : {heberg}"],f:["Lever les mesures sur décision de {la_fdo} et de {Pref}","Proposer un soutien psychologique aux témoins et aux agents"]},
+ terrorisme:{d:["Attaque ou tirs signalés pendant un événement communal","Alerte de {la_fdo} ou de {Pref} (consigne « s'échapper, se cacher, alerter »)"],
+  i:[["Alerter {la_fdo} (17)",2],["Mettre à l'abri les participants dans les bâtiments communaux",3],["Interrompre l'événement et couper la sonorisation",4]],
+  s:["Rester en liaison avec {la_fdo} et {Pref}","Préparer l'accueil des impliqués : {heberg}"],f:["Lever les mesures sur décision de {la_fdo} et de {Pref}","Proposer un soutien psychologique aux témoins et aux agents"]}
+};
+// Éléments communs à toutes les fiches de risque
+const FICHE_DEBUT=[["Recevoir et horodater l'alerte",2],["Prévenir le maire et décider du déclenchement du PCS",0],["Armer le poste de commandement communal et ouvrir la main courante",1]];
+const FICHE_FONCTION_DATA=[
+ {d:["Alerte reçue par le secrétariat ou par un élu d'astreinte","Évaluation du maire : la situation dépasse les moyens courants de la mairie"],
+  i:[["Décider du déclenchement du PCS et en informer la préfecture",0],["Fixer les priorités : protéger les personnes, informer, accueillir",0],["Valider le premier message à la population",0],["Désigner un suppléant pour assurer la relève",0]],
+  s:["Tenir un point de situation à heure fixe","Rendre compte à {Pref}","Valider les décisions de réquisition et de dépense"],f:["Décider de la levée du PCS avec la préfecture","Ordonner le retour d'expérience"]},
+ {d:["Armement demandé par le maire","Lieu du poste de commandement ouvert"],
+  i:[["Réunir les responsables de cellule dans le poste de commandement communal",1],["Tenir la carte de situation",1],["Confier les missions aux cellules et noter les échéances",1],["Se mettre en liaison avec le commandant des opérations de secours",1]],
+  s:["Conduire les points de situation","Tenir à jour la liste des moyens engagés"],f:["Faire démonter le poste de commandement et récupérer les moyens","Préparer le bilan de l'événement"]},
+ {d:["Appel, message ou information reçu par la mairie","Armement du poste de commandement"],
+  i:[["Recevoir et horodater l'alerte",2],["Ouvrir la main courante",2],["Enregistrer chaque message reçu et chaque décision",2],["Rédiger le premier point de situation écrit",2]],
+  s:["Tenir la main courante et les points de situation écrits","Gérer l'annuaire de crise et les appels entrants"],f:["Clore la main courante et l'archiver","Transmettre le dossier au retour d'expérience"]},
+ {d:["Consigne de mise à l'abri ou d'évacuation décidée par le maire","Besoin d'accueil signalé"],
+  i:[["Alerter la population et les personnes inscrites au registre des personnes vulnérables",3],["Ouvrir et armer {le_heberg}",3],["Recenser les personnes accueillies",3],["Organiser l'eau, les couvertures et le ravitaillement",3]],
+  s:["Tenir à jour la liste des personnes accueillies","Accompagner les personnes fragiles et les familles avec animaux"],f:["Organiser le retour à domicile ou le relogement","Fermer et remettre en état le lieu d'accueil"]},
+ {d:["Demande du maire ou du poste de commandement","Besoin de moyens ou de reconnaissance sur le terrain"],
+  i:[["Engager les agents et les véhicules communaux",4],["Mettre en place barrières et déviations",4],["Reconnaître {le_secteur} et rendre compte au poste de commandement",4],["Faire le point sur le matériel disponible",4]],
+  s:["Relever les agents et suivre leur temps d'engagement","Suivre les besoins en matériel et en carburant"],f:["Récupérer le matériel et les équipements de signalisation","Recenser les dégâts relevés sur le terrain"]},
+ {d:["Décision du maire d'informer la population","Demande de la préfecture ou des médias"],
+  i:[["Préparer les messages à la population, à valider par le maire",5],["Diffuser le message par les moyens d'alerte de la commune",5],["Assurer la veille des réseaux sociaux",5],["Orienter les médias hors du poste de commandement",5]],
+  s:["Diffuser un message à heure fixe, même sans fait nouveau","Démentir les rumeurs et coordonner avec {Pref}"],f:["Informer la population de la fin de l'événement","Archiver les messages diffusés pour le retour d'expérience"]}
+];
+const FICHE_RAPPEL=["Faire le point avec le maire et {Pref}","Rendre compte de l'événement au conseil municipal"];
+const FICHE_FIN=["Lever les mesures de sauvegarde sur décision du maire","Organiser le retour d'expérience et mettre à jour le PCS"];
+function ficheLieux(p,key){
+  const R=RISKS[key]; if(!R)return [];
+  const pk=Object.assign({},p,{risk:key}),out=[];
+  (R.cats||[]).forEach(c=>{try{concerned(pk,c).forEach(x=>{if(x&&x.name&&!out.includes(x.name))out.push(x.name)})}catch(e){}});
+  return out;
+}
+function ficheClean(s){return String(s).replace(/\{\w+\}/g,"").replace(/\s+([,.:;)])/g,"$1").replace(/\s{2,}/g," ").trim()}
+function fichesReflexes(){
+  const p=(S&&S.p)||{},F=t=>ficheClean(fill(t,p)),out=[];
+  const keys=[];
+  if(geoRisks&&geoRisks.status==="ok"&&Array.isArray(geoRisks.items))geoRisks.items.forEach(e=>{if(e&&e.key!=="autre"&&RISKS[e.key]&&!keys.includes(e.key))keys.push(e.key)});
+  const tr=pcsGet("fiches.transverses");
+  (Array.isArray(tr)?tr:[]).forEach(k=>{if(FICHE_TRANSVERSES.includes(k)&&RISKS[k]&&!keys.includes(k))keys.push(k)});
+  keys.forEach(k=>{
+    const D=FICHE_RISQUE[k]||{d:[],i:[],s:[],f:[]},cons=CONSIGNES[k]?F(CONSIGNES[k]):"",lieux=ficheLieux(p,k);
+    const imm=FICHE_DEBUT.map(a=>({action:a[0],qui:FQ[a[1]]})).concat(D.i.map(a=>({action:F(a[0]),qui:FQ[a[1]]})));
+    if(lieux.length)imm.push({action:"Prévenir les lieux concernés : "+listNames(lieux.map(n=>({name:n})),5),qui:FQ[3]});
+    if(cons)imm.push({action:"Diffuser la consigne à la population : « "+cons+" »",qui:FQ[5]});
+    out.push({id:"r:"+k,titre:"Fiche réflexe : "+RISKS[k].label,type:"risque",blocs:{
+      declenchement:["L'alerte est reçue par le secrétariat de mairie ou l'élu d'astreinte, qui prévient le maire.","Le maire, directeur des opérations, décide du déclenchement du PCS."].concat(D.d.map(F)),
+      immediat:imm,suivi:D.s.map(F).concat(["Tenir un point de situation écrit à heure fixe dans la main courante"]),fin:D.f.map(F).concat(FICHE_FIN)}});
+  });
+  FICHE_FONCTIONS.forEach((t,n)=>{const D=FICHE_FONCTION_DATA[n];
+    out.push({id:"f:"+n,titre:"Fiche réflexe : "+t,type:"fonction",blocs:{
+      declenchement:D.d.map(F),immediat:D.i.map(a=>({action:F(a[0]),qui:FQ[a[1]]})),suivi:D.s.map(F),fin:D.f.map(F)}});
+  });
+  return out;
+}
+// texte proposé d'une fiche, sous forme de texte brut modifiable
+function ficheTexte(f){
+  const B=f.blocs,L=a=>a.map(x=>"- "+x).join("\n");
+  return ["Déclenchement",L(B.declenchement),"","Premières actions (0 à 30 minutes)",L(B.immediat.map(a=>a.action+" — qui : "+a.qui)),"","Actions de suivi",L(B.suivi),"","Fin de l'événement",L(B.fin)].join("\n");
+}
+const ficheEdit=id=>{const v=pcsGet("fiches."+id);return typeof v==="string"&&v.trim()!==""?v:null};
+function fichesHTML(){
+  const fs=fichesReflexes();
+  if(!fs.length)return "";
+  const U=a=>`<ul>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+  return fs.map(f=>{const e=ficheEdit(f.id),B=f.blocs;
+    return `<h5 class="fiche-t">${esc(f.titre)}</h5>`+(e!==null?e.split(/\n{2,}/).map(par=>`<p>${esc(par).replace(/\n/g,"<br>")}</p>`).join("")
+      :`<p><b>Déclenchement</b></p>${U(B.declenchement)}<p><b>Premières actions (0 à 30 minutes)</b></p>${U(B.immediat.map(a=>a.action+" — qui : "+a.qui))}<p><b>Actions de suivi</b></p>${U(B.suivi)}<p><b>Fin de l'événement</b></p>${U(B.fin)}`)}).join("");
+}
+// éditeur de la rubrique 8 : cases des risques transverses, puis une fiche dépliable par risque et par fonction
+function fichesEditeur(){
+  const tr=pcsGet("fiches.transverses"),sel=Array.isArray(tr)?tr:[];
+  const geo=geoRisks&&geoRisks.status==="ok"&&Array.isArray(geoRisks.items)?geoRisks.items.map(e=>e.key):[];
+  const cases=FICHE_TRANSVERSES.map(k=>`<li><label><input type="checkbox" data-trans="${k}"${sel.includes(k)||geo.includes(k)?" checked":""}${geo.includes(k)?" disabled":""}> ${esc(RISKS[k].label)}${geo.includes(k)?` <span class="tg src">Géorisques</span>`:""}</label></li>`).join("");
+  return `<fieldset class="field"><legend class="lab">Risques supplémentaires à traiter</legend><ul class="checks">${cases}</ul></fieldset>
+    <div id="pcsFiches">${fichesListeHTML()}</div>`;
+}
+function fichesListeHTML(){
+  const fs=fichesReflexes();
+  return fs.map((f,i)=>{const e=ficheEdit(f.id);
+    return `<details class="erpg"><summary>${esc(f.titre)}${e!==null?` <span class="tg src">modifiée</span>`:""}</summary>
+      <div class="field"><label for="fiche${i}">Texte de la fiche</label><textarea id="fiche${i}" rows="14" data-fiche="${esc(f.id)}">${esc(e!==null?e:ficheTexte(f))}</textarea></div>
+      <button class="btn sm" type="button" data-fiche-reset="${esc(f.id)}"${e!==null?"":" disabled"}>Revenir au texte proposé</button></details>`}).join("");
+}
 /* Aperçu : texte de la rubrique tel qu'il figurera dans le PCS (opts.public : sans noms, numéros ni lieux de repli) */
 function rubApercu(id,opts){
   const pub=!!(opts&&opts.public),p=(S&&S.p)||{},A=pcsAuto(),L=pcsLists(),a=actors(p);
@@ -2769,7 +2915,7 @@ function rubApercu(id,opts){
     o.push(L.plansTiers.length?P("Plans des tiers à suivre :")+U(L.plansTiers.map(x=>{const v=pcsGet("prev.plans."+x.nom);return esc(x.nom)+" : "+esc(x.type)+(v==="oui"||v==="non"?" (disponible : "+v+")":" ("+TODO+")")})):P("Aucun établissement devant disposer d'un plan propre n'est recensé automatiquement."));
     o.push(P(`Actions des services communaux : ${t("prev.services")}.`));
   }else if(id===8){
-    o.push(P("Les fiches réflexes par risque et par fonction seront rédigées à l'étape suivante."));
+    o.push(fichesHTML()||P("Aucune fiche n'a pu être générée."));
   }else if(id===9){
     o.push(P(A["maint.exercice"]?`Dernier exercice : ${esc(A["maint.exercice"].v)}. Prochain exercice au plus tard : ${esc((A["maint.echeance"]||{v:"à fixer"}).v)}.`:`Aucun exercice n'est enregistré dans l'historique : ${TODO}.`));
     if(av("maint.actions").length)o.push(P("Actions correctives non soldées :")+U(av("maint.actions")));
@@ -2780,6 +2926,10 @@ function rubApercu(id,opts){
 // éléments obligatoires d'une rubrique : liste de booleans (renseigné ou non)
 function reqItems(id){
   const r=PCS_RUB[id],out=[];if(!r)return out;
+  if(id===8){ // complète quand les risques recensés par Géorisques ont leur fiche et que les six fiches de fonction existent
+    const fs=fichesReflexes(),geo=geoRisks&&geoRisks.status==="ok"&&Array.isArray(geoRisks.items);
+    const need=geo?geoRisks.items.filter(e=>e.key!=="autre"&&RISKS[e.key]).map(e=>"r:"+e.key):[];
+    out.push(geo&&need.every(k=>fs.some(f=>f.id===k))&&FICHE_FONCTIONS.every((t,n)=>fs.some(f=>f.id==="f:"+n)));return out}
   r.champs.forEach(c=>{
     if(id===5&&c.k==="cap"){const cp=pcsGet("moyens.cap")||{};out.push(Object.keys(cp).some(n=>pFilled(cp[n])));return}
     let req=c.req;if(id===6&&c.k==="modalites")req=Number((S.p.fiche||{}).reserve)>0;
@@ -2841,7 +2991,7 @@ function renderRediger(){
   b.innerHTML=`<h3>${r.id}. ${esc(r.titre)}</h3>
     <div class="callout"><div><b>Ce que la loi exige</b><br>${esc(r.loi)} <span class="aside">${esc(r.ref)}</span></div></div>
     <div id="pcsFacts">${pcsFactsHTML(r)}</div>
-    ${r.champs.length?r.champs.map((c,i)=>pcsField(c,i,r)).join(""):`<p class="note">Cette rubrique ne comporte pas de saisie pour l'instant.</p>`}
+    ${r.id===8?fichesEditeur():r.champs.length?r.champs.map((c,i)=>pcsField(c,i,r)).join(""):`<p class="note">Cette rubrique ne comporte pas de saisie pour l'instant.</p>`}
     <h4 class="apt">Aperçu dans le PCS</h4><div class="apercu" id="pcsApercu">${rubApercu(r.id)}</div>`;
 }
 // met à jour l'aperçu et les données pré-remplies sans toucher aux champs (la saisie en cours ne doit pas être perdue)
@@ -2850,7 +3000,9 @@ function updateApercu(){
   ap.innerHTML=rubApercu(r.id);const fa=$("#pcsFacts");if(fa)fa.innerHTML=pcsFactsHTML(r);
 }
 // appelée quand une donnée de l'outil arrive (Géorisques, carte, établissements) pendant que l'espace PCS est affiché
-function pcsRefresh(){if(typeof AFF!=="undefined"&&AFF&&AFF.espace==="pcs"&&S&&S.p&&S.p.insee&&!S.isExample&&PCSUI.tab==="rediger"&&$("#pcsApercu")){updateApercu();updatePcsPanel()}}
+function pcsRefresh(){if(typeof AFF!=="undefined"&&AFF&&AFF.espace==="pcs"&&S&&S.p&&S.p.insee&&!S.isExample&&PCSUI.tab==="rediger"&&$("#pcsApercu")){
+  const l=$("#pcsFiches");if(l&&PCSUI.rub===8&&!l.contains(document.activeElement)){const op=[...l.querySelectorAll("details")].map(d=>d.open);renderRediger();const n=$("#pcsFiches");if(n)n.querySelectorAll("details").forEach((d,i)=>{d.open=!!op[i]})}
+  updateApercu();updatePcsPanel()}}
 function renderPCS(){
   const v=$("#pcsView");if(!v||!S)return;
   renderPcsPanel();
@@ -2868,7 +3020,17 @@ $("#pcsPanel").addEventListener("click",e=>{
   PCSUI.rub=+b.dataset.rub;PCSUI.tab="rediger";renderPCS();
   const n=document.querySelector('#pcsRub [data-rub="'+PCSUI.rub+'"]');if(n)n.focus();
 });
+function pcsSaved(){if(!pSave()&&!PWARNED){PWARNED=true;toast("Ce navigateur ne conserve pas les données : utilisez les documents de l'onglet Documents pour garder votre travail.")}}
 $("#pcsView").addEventListener("change",e=>{
+  if(!S||!S.p.insee||S.isExample)return;
+  const tr=e.target.closest("[data-trans]"),fi=e.target.closest("[data-fiche]");
+  if(tr){const cur=pcsGet("fiches.transverses"),a=(Array.isArray(cur)?cur:[]).filter(k=>k!==tr.dataset.trans);if(tr.checked)a.push(tr.dataset.trans);
+    pcsSet("fiches.transverses",a);pcsSaved();const l=$("#pcsFiches");if(l)l.innerHTML=fichesListeHTML();updatePcsPanel();updateApercu();return}
+  if(fi){const f=fichesReflexes().find(x=>x.id===fi.dataset.fiche),v=fi.value;
+    pcsSet("fiches."+fi.dataset.fiche,v.trim()===""||(f&&v.trim()===ficheTexte(f).trim())?"":v);pcsSaved();
+    const dt=fi.closest("details"),mod=pcsGet("fiches."+fi.dataset.fiche)!=="",rb=dt&&dt.querySelector("[data-fiche-reset]"),sm=dt&&dt.querySelector("summary");
+    if(rb)rb.disabled=!mod;if(sm){const tg=sm.querySelector(".tg");if(mod&&!tg)sm.insertAdjacentHTML("beforeend",` <span class="tg src">modifiée</span>`);else if(!mod&&tg)tg.remove()}
+    updatePcsPanel();updateApercu();return}
   const f=e.target.closest("[data-pf]");if(!f||!S||!S.p.insee||S.isExample)return;
   let v=f.value;if(f.type==="number"&&v!==""){const n=Number(v);v=isFinite(n)?Math.max(0,n):"";if(v!==""&&Number(f.value)!==v)f.value=v}
   pcsSet(f.dataset.pf,v);
@@ -2877,6 +3039,8 @@ $("#pcsView").addEventListener("change",e=>{
 });
 $("#pcsView").addEventListener("click",e=>{
   if(e.target.closest("#pcsGoEx")){setEspace("exercices");const c=$("#commune");if(c)c.focus();return}
+  const rs=e.target.closest("[data-fiche-reset]");
+  if(rs){pcsSet("fiches."+rs.dataset.ficheReset,"");pcsSaved();const l=$("#pcsFiches");if(l){const op=[...l.querySelectorAll("details")].map(d=>d.open);l.innerHTML=fichesListeHTML();l.querySelectorAll("details").forEach((d,i)=>{d.open=!!op[i]})}updateApercu();return}
   const b=e.target.closest("[data-ptab]");if(b){PCSUI.tab=b.dataset.ptab;renderPCS()}
 });
 $("#pcsView").addEventListener("keydown",e=>{

@@ -308,6 +308,27 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     for (let i = 0; i < 10; i++) { click(t, `#pcsRub [data-rub="${i}"]`); ok(!/undefined|NaN|\{\w+\}|Invalid Date/.test(t.q("#pcsView").textContent), "hameau : aperçu propre, rubrique " + i); }
     t.close(); }
 
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); await wait(400); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="8"]');
+    const v = t.q("#pcsView").textContent;
+    ok(/Fiche réflexe : Inondation/.test(v) && /Montez dans les étages/.test(v), "fiche réflexe du risque recensé avec la consigne à la population");
+    ok(/Fiche réflexe : Population et accueil/.test(v), "fiches par fonction");
+    ok(/0 à 30 minutes/.test(v), "premières actions datées");
+    ok(/Recevoir et horodater l'alerte — qui : Secrétariat et main courante/.test(t.q("#pcsApercu").textContent), "action avec la fonction responsable");
+    ok(t.q('#pcsRub [data-rub="8"]').dataset.state === "complete", "rubrique 8 complète : risques recensés et fonctions couverts");
+    const ta = t.q('[data-fiche="r:inondation"]'); ta.value = "Texte du maire pour l'inondation."; ta.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    ok(pcsStored(t, "fiches")["r:inondation"] === "Texte du maire pour l'inondation." && /Texte du maire pour l'inondation\./.test(t.q("#pcsApercu").textContent), "texte modifié conservé et repris dans l'aperçu");
+    click(t, '[data-fiche-reset="r:inondation"]');
+    ok(!pcsStored(t, "fiches")["r:inondation"] && /Montez dans les étages/.test(t.q("#pcsApercu").textContent), "retour au texte proposé");
+    const cb = t.q('[data-trans="cyber"]'); cb.checked = true; cb.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    ok(/Fiche réflexe : Cyberattaque/.test(t.q("#pcsApercu").textContent) && pcsStored(t, "fiches").transverses.join() === "cyber", "risque transverse coché : sa fiche s'ajoute");
+    click(t, '#pcsRub [data-rub="3"]'); ok(!/Fiche réflexe/.test(t.q("#pcsView").textContent), "fiches limitées à la rubrique 8");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+  { const t = openMulti({}); await wait(300); await chooseCommune(t, "hameau", 900); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="8"]');
+    const v = t.q("#pcsView").textContent;
+    ok(/Fiche réflexe : Maire, directeur des opérations/.test(v) && !/undefined|NaN|\{\w+\}/.test(v), "hameau : fiches des six fonctions sans champ non rempli");
+    ok(t.d.querySelectorAll("#pcsFiches details").length >= 6, "hameau : au moins six fiches");
+    t.close(); }
+
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);
   ok([...v.d.querySelectorAll(".tgrp")].map(x => x.textContent).join("/") === "Préparer/Conduire/Évaluer", "onglets regroupés en trois temps");
