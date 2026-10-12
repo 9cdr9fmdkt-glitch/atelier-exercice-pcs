@@ -2315,8 +2315,9 @@ function printHTML(html){
 const MARK_PRINT=`<svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true"><defs><clipPath id="cpP"><rect width="64" height="64" rx="14"/></clipPath></defs><g clip-path="url(#cpP)"><rect width="64" height="64" fill="#21456c"/><path d="M32 9.5 L52 22.5 H12 Z" fill="#ffffff"/><circle cx="32" cy="17.6" r="2.6" fill="#21456c"/>\n    <rect x="14" y="25" width="36" height="3.5" fill="#ffffff"/>\n    <rect x="17" y="30.5" width="5" height="13.5" fill="#ffffff"/><rect x="29.5" y="30.5" width="5" height="13.5" fill="#ffffff"/><rect x="42" y="30.5" width="5" height="13.5" fill="#ffffff"/>\n    <rect x="0" y="48" width="64" height="16" fill="#ffffff"/>\n    <path d="M-6 64 L10 48 H18 L2 64 Z M10 64 L26 48 H34 L18 64 Z M26 64 L42 48 H50 L34 64 Z M42 64 L58 48 H66 L50 64 Z M58 64 L74 48 H82 L66 64 Z" fill="#e0590c"/></g></svg>`;
 const cssq=t=>'"'+String(t).replace(/["\\]/g,"\\$&").replace(/\n/g," ")+'"';
 // Feuille commune aux documents imprimés. Word ignore @page et les marges nommées ; le PDF (navigateur) les applique.
-function printCss(titre){
-  return `@page{size:A4;margin:22mm 17mm 20mm 17mm;@top-left{content:"EXERCICE · EXERCICE · EXERCICE";color:#d4530a;font:bold 7.5pt Calibri,Arial,sans-serif;letter-spacing:1.5pt}@top-right{content:${cssq((S.isExample?"EXEMPLE FICTIF · ":"")+S.p.commune+" · "+titre)};color:#536070;font:8pt Calibri,Arial,sans-serif}@bottom-left{content:"Document d'exercice · ne pas diffuser en dehors de l'exercice";color:#8a94a1;font:7.5pt Calibri,Arial,sans-serif}@bottom-right{content:"Page " counter(page) " sur " counter(pages);color:#536070;font:8pt Calibri,Arial,sans-serif}}
+function printCss(titre,o){
+  const ex=!(o&&o.exercice===false);
+  return `@page{size:A4;margin:22mm 17mm 20mm 17mm;@top-left{content:${ex?'"EXERCICE · EXERCICE · EXERCICE"':'none'};color:#d4530a;font:bold 7.5pt Calibri,Arial,sans-serif;letter-spacing:1.5pt}@top-right{content:${cssq((S.isExample?"EXEMPLE FICTIF · ":"")+S.p.commune+" · "+titre)};color:#536070;font:8pt Calibri,Arial,sans-serif}@bottom-left{content:${ex?'"Document d\'exercice · ne pas diffuser en dehors de l\'exercice"':cssq((o&&o.pied)||"")};color:#8a94a1;font:7.5pt Calibri,Arial,sans-serif}@bottom-right{content:"Page " counter(page) " sur " counter(pages);color:#536070;font:8pt Calibri,Arial,sans-serif}}
 @page:first{@top-left{content:none}@top-right{content:none}}
 @page paysage{size:A4 landscape;margin:16mm 14mm 16mm 14mm}
 *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}
@@ -2898,6 +2899,7 @@ function rubApercu(id,opts){
     else o.push(P("L'annuaire de crise est tenu à jour en mairie ; il n'est pas diffusé."));
     o.push(P(av("alerte.moyens").length?"Moyens d'alerte de la population : "+pEt(av("alerte.moyens"))+".":`Moyens d'alerte de la population : ${TODO}.`));
     if(!pub)o.push(P(`Réception de l'alerte 24 h/24 : ${t("alerte.astreinte")}.`));
+    else o.push(P("Réception de l'alerte 24 h/24 : [numéro non publié]."));
     o.push(P(`Règlement d'emploi des moyens d'alerte : ${t("alerte.reglement")}. DICRIM : ${d("alerte.dicrim")}, joint en annexe du PCS.`));
   }else if(id===4){
     if(!pub)o.push(P("Cellules du poste de commandement communal :")+U(av("pcc.cellules")));
@@ -3085,6 +3087,100 @@ function renderVerifier(){
 function updateVerif(){
   if(verifSyncActions())pcsSaved();const s=$("#verifSynth"),p=$("#verifPlan");if(s)s.innerHTML=verifSynthHTML();if(p)p.innerHTML=verifActionsHTML();
 }
+/* ---------- Documents du PCS ---------- */
+const PCS_CSS=`.todo{color:#8f5c0d}h5.fiche-t{font-size:11pt;color:#21456c;margin:12pt 0 4pt;break-after:avoid;page-break-after:avoid}.pcs-rub{margin:0 0 14pt}.sig{margin-top:26pt}.letter{break-before:page;page-break-before:always}`;
+const NOPHONE=/(?:\+33\s?|0)[1-9](?:[\s.-]?\d{2}){4}/g;
+const pcsDateLong=()=>new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"});
+function pcsDoc(titre,body,pied){
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(titre)} — ${esc(S.p.commune)}</title><style>${printCss(titre,{exercice:false,pied})}${PCS_CSS}</style></head><body>${body}</body></html>`;
+}
+function pcsCover(titre,sous,kv,extra){
+  const p=S.p;
+  return `<div class="cover"><div class="band"></div><p class="brandline">${MARK_PRINT}<span>Commune Prête</span></p>
+  <p class="com">Commune de ${esc(p.commune)}</p><h1>${esc(titre)}</h1><p class="risk">${esc(sous)}</p>
+  <table class="kv">${kv.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join("")}</table>${extra||""}
+  <div class="end">Document établi le ${pcsDateLong()} avec Commune Prête, au titre des articles L731-3 et R731-1 à R731-8 du code de la sécurité intérieure.</div></div>`;
+}
+function pcsHTML(opts){
+  const pub=!!(opts&&opts.public),p=S.p,a=actors(p);
+  const da=pcsVal("gen.dateApprob"),appr=typeof da==="string"&&da!==""?esc(pDate(da)):"date d'approbation à saisir";
+  const kv=[["Commune",esc(p.commune)+(Number(p.pop)>0?" · "+nf(Number(p.pop))+" habitants":"")+(p.dept?" · "+esc(p.dept):"")],["Intercommunalité",esc(p.epci||"À préciser")],["Arrêté d'approbation",appr],["Version",pub?"Version publique, consultable en mairie":"Version complète, à usage interne"]];
+  const annexes=pub?[]:["Annuaire de crise","DICRIM"];
+  const sommaire=`<h4>Sommaire</h4><table><thead><tr><th>Partie</th><th>Contenu</th></tr></thead>${PCS_RUB.map(r=>`<tr><td>${r.id}. ${esc(r.titre)}</td><td>${esc(r.ref)}</td></tr>`).join("")}${annexes.map(x=>`<tr><td>Annexe : ${x}</td><td></td></tr>`).join("")}</table>`+(pub?`<p class="note">Cette version publique ne comporte ni annuaire, ni noms, ni numéros de téléphone, ni lieu de repli, ni liaisons du poste de commandement, ni effectifs par secteur des personnes vulnérables (article R731-8 du code de la sécurité intérieure).</p>`:"");
+  let body=pcsCover(pub?"Plan communal de sauvegarde, version publique":"Plan communal de sauvegarde",pub?"Version publique":"Version complète",kv,sommaire);
+  PCS_RUB.forEach((r,i)=>{body+=`<div class="pcs-rub${i===0?" piece":""}"><h2>${r.id}. ${esc(r.titre)}</h2>${rubApercu(r.id,{public:pub})}</div>`});
+  if(!pub){
+    const an=S.annu||[];
+    body+=`<div class="piece"><h2>Annexe : annuaire de crise</h2>${an.length?`<table><thead><tr><th>Nom</th><th>Fonction</th><th>Téléphone</th></tr></thead>${an.map(c=>`<tr><td>${esc(c.nom)}</td><td>${esc(c.fonction)}</td><td>${esc(c.tel)}</td></tr>`).join("")}</table>`:`<p class="todo">[à compléter] Aucun annuaire n'a été importé.</p>`}${S.annuAt?`<p class="note">Annuaire importé le ${esc(pDate(S.annuAt))}.</p>`:""}</div>
+    <div class="piece"><h2>Annexe : DICRIM</h2><p>Emplacement prévu pour le document d'information communal sur les risques majeurs (DICRIM), à joindre au plan.</p></div>`;
+  }
+  let html=pcsDoc(pub?"Plan communal de sauvegarde, version publique":"Plan communal de sauvegarde",body,"Plan communal de sauvegarde de "+p.commune+(pub?" · Version publique":""));
+  if(pub){
+    html=html.replace(NOPHONE,"[numéro non publié]");
+    (S.annu||[]).forEach(c=>{const n=String(c.nom||"").trim();if(n.length<3)return;
+      [n,esc(n)].forEach(v=>{html=html.split(v).join("[nom non publié]")})});
+  }
+  return html;
+}
+function arreteHTML(){
+  const p=S.p,a=actors(p),pt=partners(p);
+  const pref=pt.pref.replace(/^Préfecture/,"préfet"),ep=p.epci?(art(p.epci.replace(/^CC /,"communauté de communes ").replace(/^CA /,"communauté d'agglomération ").replace(/^CU /,"communauté urbaine "),"epci")||{du:"de "+p.epci}).du:"de l'intercommunalité";
+  const da=pcsVal("gen.dateApprob"),appr=typeof da==="string"&&da!==""?esc(pDate(da)):"[date]";
+  const body=`<p class="note"><b>Modèle à faire relire avant signature.</b></p>
+  <p class="com">Commune de ${esc(p.commune)}</p>
+  <h1>ARRÊTÉ MUNICIPAL N° [numéro] portant approbation du plan communal de sauvegarde</h1>
+  <p>Le maire de ${esc(p.commune)},</p>
+  <p>Vu le code général des collectivités territoriales, notamment son article L2212-2 ;</p>
+  <p>Vu le code de la sécurité intérieure, notamment ses articles L731-3 et R731-1 à R731-8 ;</p>
+  <p>Vu le plan communal de sauvegarde élaboré par les services de la commune ;</p>
+  <p>Considérant la nécessité d'organiser la sauvegarde de la population en cas d'événement majeur ;</p>
+  <h4>ARRÊTE</h4>
+  <p><b>Article 1.</b> Le plan communal de sauvegarde de la commune de ${esc(p.commune)}, annexé au présent arrêté, est approuvé.</p>
+  <p><b>Article 2.</b> La version publique du plan est consultable en mairie, aux jours et heures d'ouverture au public.</p>
+  <p><b>Article 3.</b> Le présent arrêté et le plan sont transmis au préfet et au président ${ep}.</p>
+  <p><b>Article 4.</b> Le plan est révisé au plus tard dans un délai de cinq ans à compter de la date du présent arrêté, et mis à jour autant que nécessaire.</p>
+  <p class="sig">Fait à ${esc(p.commune)}, le ${appr}.</p>
+  <p>Le maire,<br><br><br>[nom et signature]</p>
+  <div class="letter"><p class="note"><b>Modèle à faire relire avant signature.</b></p>
+  <p>Mairie de ${esc(p.commune)}<br>[adresse de la mairie]</p>
+  <p style="margin-left:50%">À l'attention de Monsieur ou Madame le ${esc(pref)}</p>
+  <p>${esc(p.commune)}, le [date]</p>
+  <p><b>Objet : transmission du plan communal de sauvegarde</b></p>
+  <p>Monsieur ou Madame le ${esc(pref)},</p>
+  <p>Conformément à l'article R731-3 du code de la sécurité intérieure, j'ai l'honneur de vous transmettre le plan communal de sauvegarde de la commune de ${esc(p.commune)}, approuvé par arrêté municipal du ${appr}, ainsi que cet arrêté.</p>
+  <p>Ce plan sera révisé au plus tard dans un délai de cinq ans. Une version publique est consultable en mairie.</p>
+  <p>Je vous prie d'agréer, Monsieur ou Madame le ${esc(pref)}, l'expression de ma considération distinguée.</p>
+  <p>Le maire,<br><br><br>[nom et signature]</p>
+  <p class="note">Copie à Monsieur ou Madame le président ${esc(ep)}.</p></div>`;
+  return pcsDoc("Arrêté et courrier de transmission",body,"Plan communal de sauvegarde de "+p.commune+" · Modèle à faire relire");
+}
+function verifHTML(){
+  const p=S.p,r=verifResult(),cot=pcsCur().verif.cot,tot=PCS_GRILLE.length;
+  const ech=r.echeance?esc(r.echeance.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"}))+(r.depassee?" (dépassée)":""):"date d'approbation à saisir";
+  const lab=Object.fromEntries(VERIF_REP);
+  const acts=pcsCur().verif.actions;
+  const body=`<div class="mark">PLAN COMMUNAL DE SAUVEGARDE</div><p class="com">Commune de ${esc(p.commune)}</p><h1>Rapport de vérification</h1>
+  <table class="facts"><tr><td><b class="score">${r.taux==null?"—":r.taux+" %"}</b><br><span class="note">taux de conformité</span></td><td><b>${r.cotes} sur ${tot}</b><br><span class="note">points cotés</span></td><td><b>${esc(ech)}</b><br><span class="note">échéance de révision</span></td></tr></table>
+  <h2>Manques à combler</h2>${r.manques.length?`<table><thead><tr><th>Point</th><th>Nature</th><th>État</th><th>Référence</th></tr></thead>${r.manques.map(m=>`<tr><td>${esc(m.texte)}</td><td>${m.grav==="loi"?"obligation légale":"bonne pratique"}</td><td>${m.v==="ko"?"absent":"à compléter"}</td><td>${esc(m.ref)}</td></tr>`).join("")}</table>`:`<p>Aucun manque relevé.</p>`}
+  <h2>Plan de mise à jour</h2>${acts.length?`<table><thead><tr><th>Action</th><th>Pilote</th><th>Échéance</th></tr></thead>${acts.map(x=>`<tr><td>${esc(x.a)}</td><td>${esc(x.pilote)}</td><td>${esc(x.ech)}</td></tr>`).join("")}</table>`:`<p>Aucune action prévue.</p>`}
+  <h2>Détail des cotations</h2><table><thead><tr><th>Point</th><th>Référence</th><th>Cotation</th></tr></thead>${PCS_GRILLE.map(g=>`<tr><td>${esc(g.texte)}</td><td>${esc(g.ref)}</td><td>${esc(lab[cot[g.id]]||"Non coté")}</td></tr>`).join("")}</table>
+  <p class="note">Rapport établi le ${pcsDateLong()} avec Commune Prête. Les points « sans objet » ne comptent pas dans le taux.</p>`;
+  return pcsDoc("Rapport de vérification du PCS",body,"Plan communal de sauvegarde de "+p.commune+" · Rapport de vérification");
+}
+const PCS_DOCS=[["pcsDoc","Plan communal de sauvegarde complet","Maire et cellule de crise. Contient l'annuaire : ne pas diffuser.","pcsDocPdf"],["pcsPub","Version publique","Population, consultable en mairie (R731-8). Sans annuaire, noms, numéros ni lieu de repli.","pcsPubPdf"],["pcsArr","Arrêté d'approbation et courrier de transmission","Préfet et président de l'intercommunalité. Modèle à faire relire avant signature.",null],["pcsVer","Rapport de vérification","Maire et services : taux de conformité, manques et plan de mise à jour.","pcsVerPdf"]];
+function renderDocuments(){
+  const b=$("#pcsBody");if(!b)return;
+  b.innerHTML=`<h3>Documents</h3><p class="note">Chaque document se télécharge au format Word ou s'enregistre en PDF depuis la fenêtre d'impression.</p>
+    ${PCS_DOCS.map(d=>`<div class="callout"><b>${d[1]}</b><p class="note">${d[2]}</p><div class="lbtns"><button class="btn sm" type="button" id="${d[0]}">Télécharger (Word)</button>${d[3]?` <button class="btn sm" type="button" id="${d[3]}">PDF</button>`:""}</div></div>`).join("")}`;
+}
+function pcsDocClick(id){
+  const W="application/msword",bom="﻿",F=n=>fileBase().replace(/^exercice/,n),PDF="Choisissez « Enregistrer au format PDF » dans la fenêtre d'impression.";
+  const m={pcsDoc:["pcs",()=>pcsHTML({public:false}),"PCS téléchargé."],pcsPub:["pcs-public",()=>pcsHTML({public:true}),"Version publique téléchargée."],pcsArr:["arrete-pcs",arreteHTML,"Arrêté et courrier téléchargés."],pcsVer:["verification-pcs",verifHTML,"Rapport de vérification téléchargé."]};
+  const pdf={pcsDocPdf:()=>pcsHTML({public:false}),pcsPubPdf:()=>pcsHTML({public:true}),pcsVerPdf:verifHTML};
+  if(m[id]){dl(F(m[id][0])+".doc",W,bom+m[id][1]()).then(r=>toast(dlMsg(r,m[id][2])));return true}
+  if(pdf[id]){printHTML(pdf[id]());toast(PDF);return true}
+  return false;
+}
 function renderPCS(){
   const v=$("#pcsView");if(!v||!S)return;
   renderPcsPanel();
@@ -3095,7 +3191,7 @@ function renderPCS(){
   v.innerHTML=`<article class="card doc"><div class="dochead"><span class="meta">${esc(S.p.commune)} · Plan communal de sauvegarde</span></div>
     <div class="pcsbar"><div class="tabs" role="tablist" id="pcsTabs" aria-label="Étapes du PCS">${PCS_TABS.map(t=>`<button class="tab" role="tab" type="button" id="ptab-${t[0]}" aria-selected="${PCSUI.tab===t[0]}" aria-controls="pcsBody" tabindex="${PCSUI.tab===t[0]?0:-1}" data-ptab="${t[0]}">${t[1]}</button>`).join("")}</div></div>
     <div class="docbody" id="pcsBody" role="tabpanel" aria-labelledby="ptab-${PCSUI.tab}" tabindex="-1"></div></article>`;
-  if(PCSUI.tab==="rediger")renderRediger();else if(PCSUI.tab==="verifier")renderVerifier();
+  if(PCSUI.tab==="rediger")renderRediger();else if(PCSUI.tab==="verifier")renderVerifier();else if(PCSUI.tab==="documents")renderDocuments();
 }
 $("#pcsPanel").addEventListener("click",e=>{
   const b=e.target.closest("[data-rub]");if(!b)return;
@@ -3120,6 +3216,7 @@ $("#pcsView").addEventListener("change",e=>{
   updatePcsPanel();updateApercu();
 });
 $("#pcsView").addEventListener("click",e=>{
+  if(S&&S.p.insee&&!S.isExample&&e.target.id&&pcsDocClick(e.target.id))return;
   if(e.target.closest("#pcsGoEx")){setEspace("exercices");const c=$("#commune");if(c)c.focus();return}
   const rs=e.target.closest("[data-fiche-reset]");
   if(rs){pcsSet("fiches."+rs.dataset.ficheReset,"");pcsSaved();const l=$("#pcsFiches");if(l){const op=[...l.querySelectorAll("details")].map(d=>d.open);l.innerHTML=fichesListeHTML();l.querySelectorAll("details").forEach((d,i)=>{d.open=!!op[i]})}updateApercu();return}
