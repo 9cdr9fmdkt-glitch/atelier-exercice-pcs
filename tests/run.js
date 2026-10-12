@@ -91,6 +91,7 @@ const click = (t, s) => { const e = t.q(s); if (!e) throw new Error("élément a
 function gen(t) { click(t, "#gen"); if (t.q("#genLabel").textContent.includes("Confirmer")) click(t, "#gen") }
 const view = t => t.q("#view").textContent;
 
+const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete-pcs"))["09194"][sec];
 (async () => {
   { const A = fs.readFileSync(path.join(__dirname, "..", "aide.html"), "utf8");
     console.log("\nMODE D'EMPLOI");
@@ -282,6 +283,16 @@ const view = t => t.q("#view").textContent;
     const f = t.q('[data-pf="gen.referent"]'); f.value = "Adjoint à la sécurité"; f.dispatchEvent(new t.w.Event("change", { bubbles: true }));
     ok(/ne conserve pas/.test(t.q("#toast").textContent), "PCS sans stockage : avertissement");
     ok(!t.errs.length, "aucune erreur JavaScript sans stockage"); t.close(); }
+
+  { const t = openMulti(); await wait(300); await chooseCommune(t, "bourg"); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="0"]');
+    const b1 = t.q('#pcsRub [data-rub="1"]'), f = t.q('[data-pf="gen.referent"]');
+    f.value = "Adjoint"; f.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    ok(t.q('#pcsRub [data-rub="1"]') === b1, "boutons des rubriques conservés après une saisie");
+    click(t, '#pcsRub [data-rub="1"]');
+    ok(!!t.q('[data-pf="risques.ddrm"]'), "premier clic sur une autre rubrique pris en compte");
+    click(t, '#pcsRub [data-rub="5"]'); const n = t.d.querySelector('[data-pf^="moyens.cap."]');
+    if (n) { n.value = "-4"; n.dispatchEvent(new t.w.Event("change", { bubbles: true })); ok(pcsStored(t, "moyens").cap[n.dataset.pf.slice(11)] === 0, "capacité négative ramenée à 0"); }
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);

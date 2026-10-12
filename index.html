@@ -2657,8 +2657,13 @@ function renderPcsPanel(){
   const el=$("#pcsRubs");if(!el)return;
   const live=!!(S&&S.p&&S.p.insee&&!S.isExample);
   el.innerHTML=`<ol id="pcsRub" class="pcsrub">${PCS_RUB.map(r=>{const st=live?rubState(r.id):"",m=RUB_MARK[st];
-    return `<li><button class="btn sm${PCSUI.rub===r.id?" on":""}" type="button" data-rub="${r.id}"${st?` data-state="${st}"`:""} aria-current="${PCSUI.rub===r.id}"><span class="pm" aria-hidden="true">${m?m[0]:""}</span> ${r.id}. ${esc(r.titre)}${m?` <span class="sr">(${m[1]})</span>`:""}</button></li>`}).join("")}</ol>
+    return `<li><button class="btn sm${PCSUI.rub===r.id?" on":""}" type="button" data-rub="${r.id}"${st?` data-state="${st}"`:""} aria-current="${PCSUI.rub===r.id}"><span class="pm" aria-hidden="true">${m?m[0]:""}</span> ${r.id}. ${esc(r.titre)}<span class="sr st">${m?" ("+m[1]+")":""}</span></button></li>`}).join("")}</ol>
     <p class="note" id="pcsTaux">${live?"Avancement : "+pcsTaux()+" %":"Choisissez une commune pour suivre l'avancement."}</p>`;
+}
+function updatePcsPanel(){ // met à jour les boutons existants sans les remplacer (le clic en cours ne doit pas être perdu)
+  const bs=document.querySelectorAll("#pcsRub [data-rub]");if(bs.length!==PCS_RUB.length){renderPcsPanel();return}
+  bs.forEach(b=>{const st=rubState(+b.dataset.rub),m=RUB_MARK[st];b.dataset.state=st;b.querySelector(".pm").textContent=m[0];b.querySelector(".st").textContent=" ("+m[1]+")"});
+  const t=$("#pcsTaux");if(t)t.textContent="Avancement : "+pcsTaux()+" %";
 }
 function pcsField(c,i,r){
   const id="pf"+i,sec=PPATH[r.id],path=sec+"."+c.k,pubNote=c.public===false?` <span class="aside">(ne figure pas dans la version publique)</span>`:"";
@@ -2706,10 +2711,10 @@ $("#pcsPanel").addEventListener("click",e=>{
 });
 $("#pcsView").addEventListener("change",e=>{
   const f=e.target.closest("[data-pf]");if(!f||!S||!S.p.insee||S.isExample)return;
-  let v=f.value;if(f.type==="number"&&v!==""){const n=Number(v);v=isFinite(n)?n:""}
+  let v=f.value;if(f.type==="number"&&v!==""){const n=Number(v);v=isFinite(n)?Math.max(0,n):"";if(v!==""&&Number(f.value)!==v)f.value=v}
   pcsSet(f.dataset.pf,v);
   if(!pSave()&&!PWARNED){PWARNED=true;toast("Ce navigateur ne conserve pas les données : utilisez les documents de l'onglet Documents pour garder votre travail.")}
-  renderPcsPanel();
+  updatePcsPanel();
 });
 $("#pcsView").addEventListener("click",e=>{
   if(e.target.closest("#pcsGoEx")){setEspace("exercices");const c=$("#commune");if(c)c.focus();return}
