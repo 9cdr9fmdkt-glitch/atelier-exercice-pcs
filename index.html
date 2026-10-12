@@ -248,6 +248,7 @@ details.more .inner{display:flex;flex-direction:column;gap:12px;padding-bottom:1
 @media (max-width:560px){.kv{grid-template-columns:minmax(0,1fr)}.kv dt{border-bottom:0;padding-bottom:0}.kv dd{padding-left:0;padding-top:2px}}
 .ref{font-size:12.5px;color:var(--primary);background:var(--primary-soft);padding:1px 8px;border-radius:999px;white-space:nowrap;text-decoration:none}
 .ref:hover{text-decoration:underline}
+.docbody h4.apt{margin:22px 0 8px}.apercu{border:1px solid var(--line);border-radius:10px;padding:4px 16px;background:var(--surface-2)}.apercu p{margin:10px 0}.apercu ul{margin:6px 0 10px;padding-left:20px}.apercu .todo{color:var(--muted)}
 .pcsrub{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.pcsrub .btn{width:100%;justify-content:flex-start;text-align:left}.pcsrub .btn[aria-current=true]{border-color:var(--primary);background:var(--primary-soft)}.pcsrub .pm{display:inline-block;width:1.2em}
 .callout{display:flex;gap:12px;border-left:3px solid var(--primary);border-radius:0 var(--r-sm) var(--r-sm) 0;padding:12px 16px;background:var(--primary-soft);color:var(--ink);font-size:14px;max-width:84ch}
 .callout svg{flex:none;color:var(--primary);margin-top:2px}
@@ -1443,7 +1444,7 @@ async function loadRisks(insee){
     if(first)S.p.risk=first.key;
     save();
   }catch(e){if(stale())return;geoRisks={status:"error",insee}}
-  renderRisks();
+  renderRisks();pcsRefresh();
 }
 
 
@@ -1552,6 +1553,7 @@ async function loadPlaces(opt={}){
   }catch(e){if(stale())return;S.geo={status:"error",insee};const auto=!opt.auto;const n=$("#lieuxNote");if(n)n.textContent="OpenStreetMap n'a pas répondu (ses serveurs publics sont saturés) : les lieux ci-dessous sont génériques. "+(auto?"Un nouvel essai automatique aura lieu dans une minute ; vous pouvez aussi réessayer depuis l'onglet Carte, ou saisir vos lieux réels.":"Réessayez plus tard depuis l'onglet Carte, ou saisissez vos lieux réels.");
     if(auto)setTimeout(()=>{if(S.p.insee===insee&&S.geo&&S.geo.status==="error"&&seq===placesSeq)loadPlaces({...opt,auto:true})},60000)}
   renderDatalists();renderRisks();if(S.tab==="carte"||S.tab==="scenario")render();else renderMapState();
+  pcsRefresh();
   if(S.geo.status==="ok")loadTerrain(seq);
 }
 /* ---------- Terrain : installations classées et zones inondables (Géorisques) ---------- */
@@ -1586,6 +1588,7 @@ async function loadICPE(ok=()=>true){
     if(!p.icpeUser){p.icpe=L[0]&&L[0].rank>=1?L[0].name:"";const el=$("#icpe");if(el)el.value=p.icpe}
     L.filter(x=>x.lat!=null).slice(0,15).forEach(x=>{if(!(S.places||[]).some(y=>y.name===x.name))S.places.push({id:"icpe"+x.name,cat:"industrie",name:x.name,named:true,lat:x.lat,lon:x.lon,d:x.d,seveso:x.seveso})});
   }catch(e){if(ok())S.icpeLoaded=false}
+  if(ok())pcsRefresh();
 }
 async function loadEcoles(ok=()=>true){
   const p=S.p,zc=zoneCenter(p);
@@ -1600,6 +1603,7 @@ async function loadEcoles(ok=()=>true){
     S.ecoles=L;
     if(!p.etabUser&&!isSchool(p)&&L.length){const b=L.slice().sort((a,b)=>(a.d??0)-(b.d??0))[0];p.etab=b.name;const el=$("#etab");if(el)el.value=p.etab}
   }catch(e){}
+  pcsRefresh();
 }
 async function checkFlood(ok=()=>true){
   const p=S.p,cand=(S.quartiers||[]).slice(0,8);
@@ -1610,6 +1614,7 @@ async function checkFlood(ok=()=>true){
   S.floodChecked=true;
   const fq=(S.quartiers||[]).find(q=>q.inond);
   if(fq&&p.secteurAuto!==false){p.secteur=fq.name;const el=$("#secteur");if(el)el.value=fq.name}
+  pcsRefresh();
 }
 function best(cat,opts={}){
   let list=(S.places||[]).filter(x=>x.cat===cat&&x.named);
@@ -1774,14 +1779,15 @@ function parseAnnu(txt){
   return rows.slice(start).map(r=>({nom:r[iN]||"",fonction:r[iF]||"",tel:r[iT]||""})).filter(x=>x.nom).slice(0,200);
 }
 const ROLE_KEYS=[[/directeur des opérations|DOS/,/^maire\b|\bmaire$|^le maire/i],[/actions communales/,/adjoint|responsable des actions|\brac\b/i],[/Secrétariat/,/secr[ée]tai|\bdgs\b|directeur g[ée]n[ée]ral|directrice g[ée]n[ée]rale|main courante/i],[/Population et accueil/,/ccas|social|accueil|population|care/i],[/Logistique/,/technique|voirie|logistique|\bst\b|agent/i],[/^Communication/,/communication|presse/i]];
+const CELLULE=["Maire, directeur des opérations (DOS)","Responsable des actions communales","Secrétariat et main courante","Population et accueil (CARE)","Logistique et terrain","Communication"];
 function holders(title){const k=ROLE_KEYS.find(x=>x[0].test(title));if(!k)return [];return (S.annu||[]).filter(c=>k[1].test(c.fonction)).slice(0,3)}
 function renderAnnu(){
   const a=S.annu||[];$("#annuCount").textContent=a.length?a.length+" contact"+(a.length>1?"s":""):"";
   $("#annuList").innerHTML=a.slice(0,8).map(c=>`<li>${esc(c.nom)} <span class="note">· ${esc(c.fonction||"fonction ?")} · ${esc(c.tel||"pas de numéro")}</span></li>`).join("")+(a.length>8?`<li class="note">et ${a.length-8} autres</li>`:"");
 }
-$("#annuImport").addEventListener("click",()=>{const a=parseAnnu($("#annuPaste").value);if(!a.length){toast("Aucun contact reconnu. Collez au moins un nom.");return}S.annu=a;$("#annuPaste").value="";renderAnnu();save();if(S.tab==="roles"||S.tab==="conduite")render();toast(a.length+" contacts importés.")});
+$("#annuImport").addEventListener("click",()=>{const a=parseAnnu($("#annuPaste").value);if(!a.length){toast("Aucun contact reconnu. Collez au moins un nom.");return}S.annu=a;S.annuAt=new Date().toISOString().slice(0,10);$("#annuPaste").value="";renderAnnu();save();if(S.tab==="roles"||S.tab==="conduite")render();toast(a.length+" contacts importés.")});
 $("#annuFile").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(!f)return;f.text().then(t=>{$("#annuPaste").value=t;$("#annuImport").click()});e.target.value=""});
-$("#annuClear").addEventListener("click",()=>{S.annu=[];renderAnnu();save();if(S.tab==="roles"||S.tab==="conduite")render();toast("Annuaire vidé.")});
+$("#annuClear").addEventListener("click",()=>{S.annu=[];S.annuAt=null;renderAnnu();save();if(S.tab==="roles"||S.tab==="conduite")render();toast("Annuaire vidé.")});
 function renderFiche(){
   const f=S.p.fiche||{},num=([k,l])=>`<div class="field"><label for="fi-${k}">${esc(l)}</label><input type="number" min="0" inputmode="numeric" id="fi-${k}" data-fi="${k}" value="${esc(f[k]??"")}"></div>`;
   const sel=(k,l)=>`<div class="field"><label for="fi-${k}">${esc(l)}</label><select id="fi-${k}" data-fi="${k}"><option value="">Non renseigné</option><option value="oui"${f[k]==="oui"?" selected":""}>Oui</option><option value="non"${f[k]==="non"?" selected":""}>Non</option></select></div>`;
@@ -1846,7 +1852,7 @@ function pick(c){
   Object.assign(S.p,{commune:c.nom,insee:c.code,pop:c.population||"",dept:c.departement?c.departement.nom+" ("+c.departement.code+")":"",region:c.region?c.region.nom:"",epci:c.epci?c.epci.nom:"",part:{},fiche:{},exclus:[],lat:c.centre?c.centre.coordinates[1]:null,lon:c.centre?c.centre.coordinates[0]:null});
   PLACE_KEYS.forEach(k=>S.p[k]=GENERIC[k]||DEFAULTS[k]);S.p.focus=null;S.p.fdo="auto";S.p.icpeUser=false;S.p.etabUser=false;S.p.secteurAuto=true;clearGeo();geoRisks=null;S.ctx=null;writeForm();
   $("#commune").value=c.nom;S.isExample=false;renderId();save();render();
-  S.annu=[];renderAnnu();renderPart();renderFiche();loadRisks(c.code).then(()=>{if(geoRisks&&geoRisks.status==="ok"&&geoRisks.insee===c.code)toast("Risques de "+c.nom+" chargés depuis Géorisques.")});
+  S.annu=[];S.annuAt=null;renderAnnu();renderPart();renderFiche();loadRisks(c.code).then(()=>{if(geoRisks&&geoRisks.status==="ok"&&geoRisks.insee===c.code)toast("Risques de "+c.nom+" chargés depuis Géorisques.")});
   loadPlaces();
 }
 
@@ -2117,12 +2123,12 @@ function delays(){
 function vRoles(){
   const p=S.p;
   const R=[
-    ["J","Maire, directeur des opérations (DOS)",["Déclenche le PCS et arme le PCC","Décide des mesures de sauvegarde","Valide toute communication externe","Rend compte à la préfecture"]],
-    ["J","Responsable des actions communales",["Coordonne les cellules du PCC","Conduit les points de situation","Tient la carte de situation","Assure le lien avec le COS"]],
-    ["J","Secrétariat et main courante",["Reçoit et horodate les messages","Tient la main courante","Prépare les points de situation écrits","Gère l'annuaire de crise"]],
-    ["J","Population et accueil (CARE)",["Alerte la population et les personnes vulnérables","Ouvre le lieu d'accueil : "+p.heberg,"Recense les personnes accueillies","Organise le ravitaillement"]],
-    ["J","Logistique et terrain",["Engage les agents et moyens communaux","Met en place barrières et déviations","Reconnaît les secteurs touchés","Suit les besoins en matériel"]],
-    ["J","Communication",["Prépare les messages à la population","Assure la veille des réseaux sociaux","Accueille les médias hors du PCC","Coordonne avec la préfecture"]],
+    ["J",CELLULE[0],["Déclenche le PCS et arme le PCC","Décide des mesures de sauvegarde","Valide toute communication externe","Rend compte à la préfecture"]],
+    ["J",CELLULE[1],["Coordonne les cellules du PCC","Conduit les points de situation","Tient la carte de situation","Assure le lien avec le COS"]],
+    ["J",CELLULE[2],["Reçoit et horodate les messages","Tient la main courante","Prépare les points de situation écrits","Gère l'annuaire de crise"]],
+    ["J",CELLULE[3],["Alerte la population et les personnes vulnérables","Ouvre le lieu d'accueil : "+p.heberg,"Recense les personnes accueillies","Organise le ravitaillement"]],
+    ["J",CELLULE[4],["Engage les agents et moyens communaux","Met en place barrières et déviations","Reconnaît les secteurs touchés","Suit les besoins en matériel"]],
+    ["J",CELLULE[5],["Prépare les messages à la population","Assure la veille des réseaux sociaux","Accueille les médias hors du PCC","Coordonne avec la préfecture"]],
     ["A","Directeur d'exercice",["Garant du cadre et de la sécurité","Déclenche et arrête le jeu","Ajuste le rythme des injects","Anime le débriefing à chaud"]],
     ["A","Animateurs",["Jouent préfecture, SDIS, gendarmerie, habitants, presse","Envoient les injects à l'heure prévue","Répondent aux appels sortants","Signalent les écarts au directeur"]],
     ["A","Observateurs",["Un observateur par cellule si possible","Renseignent la grille d'observation","Notent des faits horodatés","N'interviennent jamais dans le jeu"]]
@@ -2639,13 +2645,144 @@ const PCS_RUB=[
 const PPR_OPT=["aucun","prescrit","approuvé"];
 const pFilled=v=>v!==""&&v!=null&&v!==undefined;
 function pCapPlaces(){return ((S&&S.places)||[]).filter(x=>(x.cat==="salle"||x.cat==="sport")&&x.named).slice(0,40).map(x=>x.name)}
+/* Pré-remplissage : valeurs tirées des données déjà détenues par l'outil, avec leur source */
+const FICHE_LAB=Object.fromEntries(FICHE_NUM);
+const pDate=v=>{const d=new Date(String(v)+"T12:00:00");return isNaN(d)?String(v):d.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})};
+const pEt=a=>a.length<2?a.join(""):a.slice(0,-1).join(", ")+" et "+a[a.length-1];
+function pcsLists(){
+  const P=((S&&S.places)||[]),named=c=>P.filter(x=>x.cat===c&&x.named&&x.name),p=(S&&S.p)||{};
+  const risques=geoRisks&&geoRisks.status==="ok"&&Array.isArray(geoRisks.items)?geoRisks.items.map(e=>{
+    const lab=e.key!=="autre"&&RISKS[e.key]?RISKS[e.key].label:(e.group||(e.labels||[])[0]||"");
+    return {label:lab,catnat:e.catnat||0,last:e.last instanceof Date&&!isNaN(e.last)?e.last.getFullYear():null}}).filter(x=>x.label):[];
+  const ecoles=allEtabs().filter(x=>x.name).slice(0,40).map(x=>({name:x.name,eleves:x.eleves,cat:"ecole",src:"carte"}));
+  const etabs=ecoles.concat(named("ehpad").slice(0,20).map(x=>({name:x.name,eleves:null,cat:"ehpad",src:"carte"})),named("sante").slice(0,20).map(x=>({name:x.name,eleves:null,cat:"sante",src:"carte"})));
+  const erp=P.filter(x=>ERP_CATS.includes(x.cat)&&!["ecole","ehpad","sante"].includes(x.cat)&&x.named&&x.name).slice(0,40).map(x=>({name:x.name,cat:x.cat}));
+  const reseaux=P.filter(x=>(x.cat==="energie"||x.cat==="eau")&&x.name).slice(0,20).map(x=>({name:x.name,cat:x.cat}));
+  const icpe=((S&&S.icpe)||[]).filter(x=>/autorisation/i.test(x.regime||"")||/seuil (haut|bas)/i.test(x.seveso||"")).slice(0,15);
+  const seen={},plansTiers=[];
+  const add=(nom,type,src)=>{if(nom&&!seen[nom]){seen[nom]=1;plansTiers.push({nom,type,src})}};
+  ecoles.forEach(x=>add(x.name,"PPMS","carte"));
+  etabs.filter(x=>x.cat==="ehpad").forEach(x=>add(x.name,"plan bleu","carte"));
+  icpe.forEach(x=>add(x.name,"plan d'urgence de l'exploitant","Géorisques"));
+  const cellule=CELLULE.map(f=>({fonction:f,titulaires:holders(f).map(c=>c.nom).filter(Boolean)}));
+  return {risques,etabs,erp,reseaux,accueil:pCapPlaces(),plansTiers,cellule,icpe};
+}
+function pcsAuto(){
+  const o={},put=(k,v,src)=>{if(Array.isArray(v)?v.length:pFilled(v))o[k]={v,src}};
+  if(!(S&&S.p&&S.p.insee))return o;
+  const p=S.p,f=p.fiche||{},L=pcsLists();
+  put("gen.commune",p.commune,"carte");put("gen.population",Number(p.pop)>0?nf(Number(p.pop))+" habitants":"","carte");put("gen.epci",p.epci,"carte");
+  if(f.pics==="oui"||f.pics==="non")put("gen.pics",f.pics==="oui"?"Un plan intercommunal de sauvegarde existe":"Pas de plan intercommunal de sauvegarde","fiche Moyens");
+  put("risques.liste",L.risques.map(r=>r.label+(r.catnat?" · "+pl(r.catnat,"arrêté")+" CatNat"+(r.last?" · dernier en "+r.last:""):"")),"Géorisques");
+  put("risques.icpe",L.icpe.map(x=>x.name+(/seuil/i.test(x.seveso||"")?" ("+x.seveso+")":" (autorisation)")),"Géorisques");
+  put("risques.barrages",((S&&S.dams)||[]).slice(0,5).map(x=>x.name+(x.d!=null?" · "+String(x.d).replace(".",",")+" km":"")),"carte");
+  put("risques.centrale",((S&&S.nucs)||[]).slice(0,3).map(x=>x.name+(x.d!=null?" · "+String(x.d).replace(".",",")+" km":"")),"carte");
+  put("risques.inondables",((S&&S.quartiers)||[]).filter(x=>x.inond).slice(0,15).map(x=>x.name),"Géorisques");
+  const eName=x=>x.name+(x.eleves?" ("+nf(x.eleves)+" élèves)":"");
+  put("vuln.enseignement",L.etabs.filter(x=>x.cat==="ecole").map(eName),"carte");
+  put("vuln.ehpad",L.etabs.filter(x=>x.cat==="ehpad").map(eName),"carte");
+  put("vuln.sante",L.etabs.filter(x=>x.cat==="sante").map(eName),"carte");
+  put("vuln.erp",L.erp.map(x=>x.name),"carte");
+  put("vuln.reseaux",L.reseaux.map(x=>x.name),"carte");
+  if((S.annu||[]).length)put("alerte.annuaire",pl(S.annu.length,"contact")+(S.annuAt?", importé le "+pDate(S.annuAt):""),"annuaire");
+  put("alerte.moyens",ALERTES.filter(a=>(f.alerte||[]).includes(a[0])).map(a=>a[1]),"fiche Moyens");
+  put("pcc.cellules",L.cellule.map(c=>c.fonction+" : "+(c.titulaires.length?c.titulaires.join(", "):"à désigner")),"annuaire");
+  FICHE_NUM.forEach(([k,l])=>{if(k!=="reserve"&&k!=="cap"&&fn(p,k)!=null)put("moyens."+k,nf(fn(p,k)),"fiche Moyens")});
+  if(fn(p,"cap")!=null)put("moyens.places",nf(fn(p,"cap")),"fiche Moyens");
+  if(f.ge==="oui"||f.ge==="non")put("moyens.ge",f.ge==="oui"?"Oui":"Non","fiche Moyens");
+  put("moyens.conv",CONVS.filter(c=>(f.conv||[]).includes(c[0])).map(c=>c[1]),"fiche Moyens");
+  put("moyens.salles",L.accueil,"carte");
+  if(fn(p,"reserve")!=null)put("reserve.effectif",nf(fn(p,"reserve"))+(fn(p,"reserve")>1?" réservistes":" réserviste"),"fiche Moyens");
+  const h=S.p.insee?hCommune():[];
+  if(h.length){put("maint.exercice",pDate(h[0].date)+(h[0].titre?" · "+h[0].titre:""),"historique");
+    const nd=nextDue(h);if(nd)put("maint.echeance",nd.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"}),"historique");
+    const acts=[];hLoad().filter(x=>sameCommune(x,S.p)).forEach(x=>(x.actions||[]).forEach(a=>{if(a&&a.a&&!a.done)acts.push(a.a+(a.pilote?" · "+a.pilote:"")+(a.ech?" · avant le "+a.ech:""))}));
+    put("maint.actions",acts,"historique")}
+  return o;
+}
+const PCS_LAB={"gen.commune":"Commune","gen.population":"Population","gen.epci":"Intercommunalité","gen.pics":"Plan intercommunal (PICS)",
+ "risques.liste":"Risques recensés","risques.icpe":"Installations classées (autorisation ou Seveso)","risques.barrages":"Barrages à moins de 40 km","risques.centrale":"Centrale nucléaire à moins de 40 km","risques.inondables":"Quartiers en zone inondable",
+ "vuln.enseignement":"Établissements d'enseignement","vuln.ehpad":"EHPAD","vuln.sante":"Établissements de santé","vuln.erp":"Lieux recevant du public","vuln.reseaux":"Postes électriques et ouvrages d'eau",
+ "alerte.annuaire":"Annuaire de crise","alerte.moyens":"Moyens d'alerte","pcc.cellules":"Cellules et titulaires",
+ "moyens.elus":"Élus mobilisables","moyens.agents":"Agents communaux","moyens.tech":"Dont techniques","moyens.veh":"Véhicules communaux","moyens.places":"Places d'accueil (fiche)","moyens.lits":"Lits de camp","moyens.ge":"Groupe électrogène","moyens.conv":"Conventions signées","moyens.salles":"Salles et gymnases recensés",
+ "reserve.effectif":"Effectif de la réserve","maint.exercice":"Dernier exercice","maint.echeance":"Prochain exercice au plus tard","maint.actions":"Actions correctives non soldées"};
+// saisie si présente, sinon valeur pré-remplie (seuls les chemins de PCS_LAB peuvent l'être : évite un calcul inutile)
+function pcsVal(path){const s=pcsGet(path);if(pFilled(s)&&s!=="")return s;if(!(path in PCS_LAB))return s;const a=pcsAuto()[path];return a?a.v:s}
+/* Aperçu : texte de la rubrique tel qu'il figurera dans le PCS (opts.public : sans noms, numéros ni lieux de repli) */
+function rubApercu(id,opts){
+  const pub=!!(opts&&opts.public),p=(S&&S.p)||{},A=pcsAuto(),L=pcsLists(),a=actors(p);
+  const TODO=`<span class="todo">[à compléter]</span>`;
+  const t=k=>{const v=pcsVal(k);return pFilled(v)&&v!==""&&typeof v!=="object"?esc(v):TODO};
+  const d=k=>{const v=pcsVal(k);return pFilled(v)&&v!==""&&typeof v!=="object"?esc(pDate(v)):TODO};
+  const yn=k=>{const v=pcsVal(k);return v==="oui"?"oui":v==="non"?"non":TODO};
+  const av=k=>A[k]?[].concat(A[k].v).map(esc):[];
+  const P=x=>`<p>${x}</p>`,U=arr=>arr.length?`<ul>${arr.map(x=>`<li>${x}</li>`).join("")}</ul>`:"";
+  const o=[];
+  if(id===0){
+    const pop=Number(p.pop)>0?`, ${nf(Number(p.pop))} habitants`:"";
+    o.push(P(`Plan communal de sauvegarde de ${esc(p.commune||"la commune")}${pop}${p.epci?`, membre de ${esc(a.l_epci)}`:""}, arrêté par le maire.`));
+    o.push(P(`Obligation notifiée par le préfet : ${yn("gen.notifie")}${pFilled(pcsVal("gen.dateNotif"))&&pcsVal("gen.dateNotif")!==""?`, le ${d("gen.dateNotif")}`:""}. Information du conseil municipal et de l'EPCI au lancement : ${d("gen.infoConseil")}.`));
+    o.push(P(`Arrêté d'approbation du maire : ${d("gen.dateApprob")}. Présentation au conseil municipal : ${d("gen.datePresent")}.`));
+    if(A["gen.pics"])o.push(P(av("gen.pics")[0]+"."));
+    if(!pub)o.push(P(`Élu chargé de la sécurité civile ou correspondant incendie et secours : ${t("gen.referent")}.`));
+  }else if(id===1){
+    const r=av("risques.liste");
+    o.push(r.length?P("Risques recensés sur la commune (Géorisques) :")+U(r):P(`Aucun risque n'a pu être recensé automatiquement : ${TODO}.`));
+    if(av("risques.icpe").length)o.push(P("Installations classées soumises à autorisation ou classées Seveso :")+U(av("risques.icpe")));
+    if(av("risques.barrages").length)o.push(P("Barrages à moins de 40 km : "+pEt(av("risques.barrages"))+"."));
+    if(av("risques.centrale").length)o.push(P("Centrale nucléaire à moins de 40 km : "+pEt(av("risques.centrale"))+"."));
+    if(av("risques.inondables").length)o.push(P("Quartiers en zone inondable : "+pEt(av("risques.inondables"))+"."));
+    o.push(P(`Dossier départemental sur les risques majeurs consulté : ${yn("risques.ddrm")}. Plan de prévention des risques : ${t("risques.ppr")}. Plan particulier d'intervention applicable : ${yn("risques.ppi")}.`));
+    if(pFilled(pcsVal("risques.locaux"))&&pcsVal("risques.locaux")!=="")o.push(P(`Risques locaux complémentaires : ${t("risques.locaux")}.`));
+  }else if(id===2){
+    [["vuln.enseignement","Établissements d'enseignement"],["vuln.ehpad","EHPAD"],["vuln.sante","Établissements de santé"],["vuln.erp","Lieux recevant du public"],["vuln.reseaux","Postes électriques et ouvrages d'eau"]].forEach(([k,l])=>{if(av(k).length)o.push(P(l+" :")+U(av(k)))});
+    if(!o.length)o.push(P(`Aucun établissement ni lieu public n'est recensé automatiquement : ${TODO}.`));
+    o.push(P(`Registre des personnes vulnérables : détenu par ${t("vuln.detenteur")}, conservé à ${t("vuln.conservation")}. Mise à jour : ${t("vuln.miseAJour")}. Activation : ${t("vuln.activation")}.`));
+    if(!pub&&pFilled(pcsVal("vuln.effectifs"))&&pcsVal("vuln.effectifs")!=="")o.push(P(`Effectifs par secteur : ${t("vuln.effectifs")}.`));
+  }else if(id===3){
+    if(!pub)o.push(P(A["alerte.annuaire"]?`Annuaire de crise : ${esc(A["alerte.annuaire"].v)}.`:`Annuaire de crise : ${TODO}.`));
+    else o.push(P("L'annuaire de crise est tenu à jour en mairie ; il n'est pas diffusé."));
+    o.push(P(av("alerte.moyens").length?"Moyens d'alerte de la population : "+pEt(av("alerte.moyens"))+".":`Moyens d'alerte de la population : ${TODO}.`));
+    if(!pub)o.push(P(`Réception de l'alerte 24 h/24 : ${t("alerte.astreinte")}.`));
+    o.push(P(`Règlement d'emploi des moyens d'alerte : ${t("alerte.reglement")}. DICRIM : ${d("alerte.dicrim")}, joint en annexe du PCS.`));
+  }else if(id===4){
+    if(!pub)o.push(P("Cellules du poste de commandement communal :")+U(av("pcc.cellules")));
+    else o.push(P("Le poste de commandement communal comprend six cellules : "+pEt(CELLULE.map(esc))+"."));
+    o.push(P(`Lieu principal du poste de commandement : ${t("pcc.lieu")}.`));
+    if(!pub)o.push(P(`Lieu de repli : ${t("pcc.repli")}. Liaisons : ${t("pcc.liaisons")}.`));
+    o.push(P(`Main courante tenue : ${yn("pcc.mainCourante")}. Articulation avec le plan intercommunal : ${t("pcc.pics")}.`));
+  }else if(id===5){
+    const m=[["moyens.elus","élus mobilisables"],["moyens.agents","agents communaux"],["moyens.tech","dont techniques"],["moyens.veh","véhicules communaux"],["moyens.places","places d'accueil"],["moyens.lits","lits de camp"]].filter(x=>A[x[0]]).map(x=>esc(A[x[0]].v)+" "+x[1]);
+    if(A["moyens.ge"])m.push("groupe électrogène : "+esc(A["moyens.ge"].v).toLowerCase());
+    o.push(P(m.length?"Moyens de la commune : "+pEt(m)+".":`Moyens de la commune : ${TODO}.`));
+    if(av("moyens.conv").length)o.push(P("Conventions signées : "+pEt(av("moyens.conv"))+"."));
+    const cp=pcsGet("moyens.cap")||{},pl_=L.accueil;
+    o.push(pl_.length?P("Lieux d'accueil :")+U(pl_.map(n=>esc(n)+" : "+(pFilled(cp[n])&&cp[n]!==""?nf(cp[n])+" personnes":TODO))):P(`Lieux d'accueil : ${TODO}.`));
+    o.push(P(`Transport de la population : ${t("moyens.transport")}. Ravitaillement : ${t("moyens.ravitaillement")}.`));
+    if(pFilled(pcsVal("moyens.prives"))&&pcsVal("moyens.prives")!=="")o.push(P(`Moyens privés mobilisables : ${t("moyens.prives")}.`));
+  }else if(id===6){
+    o.push(P(A["reserve.effectif"]?`Réserve communale de sécurité civile : ${esc(A["reserve.effectif"].v)}.`:"Aucune réserve communale n'est déclarée dans la fiche Moyens."));
+    o.push(P(`Modalités d'appel : ${t("reserve.modalites")}. Missions confiées : ${t("reserve.missions")}.`));
+    o.push(P(`Accueil des bénévoles spontanés : ${t("reserve.benevoles")}.`));
+  }else if(id===7){
+    o.push(L.plansTiers.length?P("Plans des tiers à suivre :")+U(L.plansTiers.map(x=>{const v=pcsGet("prev.plans."+x.nom);return esc(x.nom)+" : "+esc(x.type)+(v==="oui"||v==="non"?" (disponible : "+v+")":" ("+TODO+")")})):P("Aucun établissement devant disposer d'un plan propre n'est recensé automatiquement."));
+    o.push(P(`Actions des services communaux : ${t("prev.services")}.`));
+  }else if(id===8){
+    o.push(P("Les fiches réflexes par risque et par fonction seront rédigées à l'étape suivante."));
+  }else if(id===9){
+    o.push(P(A["maint.exercice"]?`Dernier exercice : ${esc(A["maint.exercice"].v)}. Prochain exercice au plus tard : ${esc((A["maint.echeance"]||{v:"à fixer"}).v)}.`:`Aucun exercice n'est enregistré dans l'historique : ${TODO}.`));
+    if(av("maint.actions").length)o.push(P("Actions correctives non soldées :")+U(av("maint.actions")));
+    o.push(P(`Dernière mise à jour de l'annuaire : ${d("maint.annuaireDate")}. Information du public : ${t("maint.infoPublic")}.`));
+  }
+  return o.join("");
+}
 // éléments obligatoires d'une rubrique : liste de booleans (renseigné ou non)
 function reqItems(id){
   const r=PCS_RUB[id],out=[];if(!r)return out;
   r.champs.forEach(c=>{
     if(id===5&&c.k==="cap"){const cp=pcsGet("moyens.cap")||{};out.push(Object.keys(cp).some(n=>pFilled(cp[n])));return}
     let req=c.req;if(id===6&&c.k==="modalites")req=Number((S.p.fiche||{}).reserve)>0;
-    if(req)out.push(pFilled(pcsGet(PPATH[id]+"."+c.k)));
+    if(req)out.push(pFilled(pcsVal(PPATH[id]+"."+c.k)));
   });
   return out;
 }
@@ -2681,17 +2818,37 @@ function pcsField(c,i,r){
     return `<div class="field"><span class="lab">${lab}</span>${pl.length?pl.map((n,j)=>`<div class="field"><label for="${id}-${j}">${esc(n)}</label>${one("moyens.cap."+n,cp[n],n,id+"-"+j)}</div>`).join(""):`<p class="note">Aucune salle ni équipement sportif recensé pour l'instant : les lieux d'accueil pourront être ajoutés plus tard.</p>`}</div>`;
   }
   if(r.id===7&&c.k==="plans"){
-    return `<div class="field"><span class="lab">${lab}</span><p class="note">Aucun plan de tiers à suivre n'est encore listé pour cette commune.</p></div>`;
+    const pt=pcsLists().plansTiers;
+    if(!pt.length)return `<div class="field"><span class="lab">${lab}</span><p class="note">Aucun établissement devant disposer d'un plan propre n'est recensé pour cette commune.</p></div>`;
+    const pv=pcsGet("prev.plans")||{};
+    return `<div class="field"><span class="lab">${lab}</span>${pt.map((x,j)=>`<div class="field"><label for="${id}-${j}">${esc(x.nom)} : ${esc(x.type)} <span class="tg src">${esc(x.src)}</span></label>${one("prev.plans."+x.nom,pv[x.nom],x.nom,id+"-"+j)}</div>`).join("")}</div>`;
   }
-  return `<div class="field"><label for="${id}">${lab}</label>${one(path,val,c.label,id)}</div>`;
+  const au=pcsAuto()[path],tg=au&&!pFilled(val)?` <span class="tg src">${esc(au.src)}</span>`:"";
+  return `<div class="field"><label for="${id}">${lab}${tg}</label>${one(path,pFilled(val)?val:(au?au.v:val),c.label,id)}</div>`;
+}
+// valeurs pré-remplies de la rubrique (hors champs de saisie), chacune avec sa source
+function pcsFactsHTML(r){
+  const A=pcsAuto(),sec=PPATH[r.id]+".",ks=Object.keys(A).filter(k=>k.indexOf(sec)===0&&PCS_LAB[k]&&!r.champs.some(c=>sec+c.k===k));
+  if(!ks.length&&r.id===7&&pcsLists().plansTiers.length)return "";
+  if(!ks.length)return `<p class="note">Aucune donnée n'a pu être pré-remplie pour cette rubrique : les champs ci-dessous sont à compléter.</p>`;
+  return `<dl class="kv">${ks.map(k=>{const v=A[k].v;return `<dt>${esc(PCS_LAB[k])}</dt><dd>${[].concat(v).map(esc).join(", ")} <span class="tg src">${esc(A[k].src)}</span></dd>`}).join("")}</dl>`;
 }
 function renderRediger(){
   const b=$("#pcsBody");if(!b)return;
   const r=PCS_RUB[PCSUI.rub]||PCS_RUB[0];
   b.innerHTML=`<h3>${r.id}. ${esc(r.titre)}</h3>
     <div class="callout"><div><b>Ce que la loi exige</b><br>${esc(r.loi)} <span class="aside">${esc(r.ref)}</span></div></div>
-    ${r.champs.length?r.champs.map((c,i)=>pcsField(c,i,r)).join(""):`<p class="note">Cette rubrique ne comporte pas de saisie pour l'instant.</p>`}`;
+    <div id="pcsFacts">${pcsFactsHTML(r)}</div>
+    ${r.champs.length?r.champs.map((c,i)=>pcsField(c,i,r)).join(""):`<p class="note">Cette rubrique ne comporte pas de saisie pour l'instant.</p>`}
+    <h4 class="apt">Aperçu dans le PCS</h4><div class="apercu" id="pcsApercu">${rubApercu(r.id)}</div>`;
 }
+// met à jour l'aperçu et les données pré-remplies sans toucher aux champs (la saisie en cours ne doit pas être perdue)
+function updateApercu(){
+  const ap=$("#pcsApercu");if(!ap)return;const r=PCS_RUB[PCSUI.rub]||PCS_RUB[0];
+  ap.innerHTML=rubApercu(r.id);const fa=$("#pcsFacts");if(fa)fa.innerHTML=pcsFactsHTML(r);
+}
+// appelée quand une donnée de l'outil arrive (Géorisques, carte, établissements) pendant que l'espace PCS est affiché
+function pcsRefresh(){if(typeof AFF!=="undefined"&&AFF&&AFF.espace==="pcs"&&S&&S.p&&S.p.insee&&!S.isExample&&PCSUI.tab==="rediger"&&$("#pcsApercu")){updateApercu();updatePcsPanel()}}
 function renderPCS(){
   const v=$("#pcsView");if(!v||!S)return;
   renderPcsPanel();
@@ -2714,7 +2871,7 @@ $("#pcsView").addEventListener("change",e=>{
   let v=f.value;if(f.type==="number"&&v!==""){const n=Number(v);v=isFinite(n)?Math.max(0,n):"";if(v!==""&&Number(f.value)!==v)f.value=v}
   pcsSet(f.dataset.pf,v);
   if(!pSave()&&!PWARNED){PWARNED=true;toast("Ce navigateur ne conserve pas les données : utilisez les documents de l'onglet Documents pour garder votre travail.")}
-  updatePcsPanel();
+  updatePcsPanel();updateApercu();
 });
 $("#pcsView").addEventListener("click",e=>{
   if(e.target.closest("#pcsGoEx")){setEspace("exercices");const c=$("#commune");if(c)c.focus();return}

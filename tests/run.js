@@ -294,6 +294,20 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     if (n) { n.value = "-4"; n.dispatchEvent(new t.w.Event("change", { bubbles: true })); ok(pcsStored(t, "moyens").cap[n.dataset.pf.slice(11)] === 0, "capacité négative ramenée à 0"); }
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); await wait(400); click(t, '#espaceSeg [data-esp="pcs"]');
+    click(t, '#pcsRub [data-rub="1"]'); const v1 = t.q("#pcsView").textContent;
+    ok(/Inondation/.test(v1) && /Arterris/.test(v1) && /Seveso seuil bas/.test(v1) && /Géorisques/.test(v1), "analyse des risques pré-remplie");
+    click(t, '#pcsRub [data-rub="2"]'); const v2 = t.q("#pcsView").textContent;
+    ok(/Collège Victor Hugo/.test(v2) && /École privée Sainte-Marie/.test(v2) && /Médiathèque Jean-Jaurès/.test(v2), "enjeux pré-remplis");
+    click(t, '#pcsRub [data-rub="7"]'); ok(/PPMS/.test(t.q("#pcsView").textContent), "plans des établissements à suivre");
+    ok(!!t.q('[data-pf="prev.plans.Collège Victor Hugo"]'), "champ de suivi du plan de chaque établissement");
+    ok(/Aperçu dans le PCS/.test(t.q("#pcsView").textContent) && !!t.q("#pcsApercu"), "aperçu sous les champs");
+    for (let i = 0; i < 10; i++) { click(t, `#pcsRub [data-rub="${i}"]`); ok(!/undefined|NaN|\{\w+\}|Invalid Date/.test(t.q("#pcsView").textContent), "aucun champ non rempli dans l'aperçu de la rubrique " + i); }
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+  { const t = openMulti({}); await wait(300); await chooseCommune(t, "hameau", 900); click(t, '#espaceSeg [data-esp="pcs"]');
+    for (let i = 0; i < 10; i++) { click(t, `#pcsRub [data-rub="${i}"]`); ok(!/undefined|NaN|\{\w+\}|Invalid Date/.test(t.q("#pcsView").textContent), "hameau : aperçu propre, rubrique " + i); }
+    t.close(); }
+
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);
   ok([...v.d.querySelectorAll(".tgrp")].map(x => x.textContent).join("/") === "Préparer/Conduire/Évaluer", "onglets regroupés en trois temps");
