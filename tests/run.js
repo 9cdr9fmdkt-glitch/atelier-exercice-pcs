@@ -333,9 +333,9 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     const BAD = /\bde le\b|\bde les\b|\bà le\b|\bà les\b|Ouvrir au\b|\{\w+\}|undefined|NaN|  +|\s[,.]/;
     for (const nom of ["bourg", "hameau"]) {
       const t = openMulti({ risques: LAB }); await wait(300); await chooseCommune(t, nom, 900); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="8"]');
-      for (const k of ["canicule", "coupure", "cyber", "sanitaire", "terrorisme"]) { const cb = t.q(`[data-trans="${k}"]`); if (!cb.disabled && !cb.checked) { cb.checked = true; cb.dispatchEvent(new t.w.Event("change", { bubbles: true })) } }
+      for (const k of ["canicule", "coupure", "cyber", "sanitaire", "terrorisme", "ferroviaire", "aerien", "hopital", "bombe", "masse"]) { const cb = t.q(`[data-trans="${k}"]`); if (!cb.disabled && !cb.checked) { cb.checked = true; cb.dispatchEvent(new t.w.Event("change", { bubbles: true })) } }
       const titres = [...t.d.querySelectorAll("#pcsFiches summary")].map(x => x.textContent);
-      ok(titres.length === 14 + 6, nom + " : 14 fiches de risque et 6 fiches de fonction (" + titres.length + ")");
+      ok(titres.length === 19 + 6, nom + " : 19 fiches de risque et 6 fiches de fonction (" + titres.length + ")");
       const txt = [...t.d.querySelectorAll("#pcsFiches textarea")].map(x => x.value).join("\n") + "\n" + t.q("#pcsApercu").textContent;
       const m = txt.match(BAD); ok(!m, nom + " : fiches sans article fautif, accolade ni double espace" + (m ? " : « " + txt.slice(Math.max(0, m.index - 40), m.index + 40).replace(/\n/g, " ") + " »" : ""));
       if (nom === "bourg") ok(/Fiche réflexe : Cyberattaque/.test(txt) && / : /.test(txt) && !/\S: /.test(txt.replace(/https?:\/\//g, "")), "l'espace avant les deux-points est conservé");

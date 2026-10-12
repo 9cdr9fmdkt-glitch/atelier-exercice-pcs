@@ -2713,7 +2713,8 @@ function pcsVal(path){const s=pcsGet(path);if(pFilled(s)&&s!=="")return s;if(!(p
    Identifiants : « r:<risque> » pour un risque, « f:<n> » pour une fonction de la cellule de crise. */
 const FICHE_FONCTIONS=CELLULE.slice();
 const FQ=CELLULE.map(c=>c.replace(/ \(\w+\)$/,""));
-const FICHE_TRANSVERSES=["canicule","coupure","cyber","sanitaire","terrorisme"];
+const FICHE_TRANSVERSES=["canicule","coupure","cyber","sanitaire","terrorisme","ferroviaire","aerien","hopital","bombe","masse"]; // risques que la commune peut ajouter (stockés dans fiches.transverses)
+const FICHE_SITE={ferroviaire:"gare",aerien:"aero",hopital:"hopital"};
 // Éléments propres à chaque risque : déclenchement (d), premières actions [action, fonction] (i), suivi (s), fin (f)
 const FICHE_RISQUE={
  inondation:{d:["Vigilance orange ou rouge « crues » ou « pluie-inondation » transmise par la préfecture ou lue sur Vigicrues","Montée des eaux ou ruissellement signalé dans {le_secteur}"],
@@ -2848,8 +2849,8 @@ function fichesHTML(){
 function fichesEditeur(){
   const tr=pcsGet("fiches.transverses"),sel=Array.isArray(tr)?tr:[];
   const geo=geoRisks&&geoRisks.status==="ok"&&Array.isArray(geoRisks.items)?geoRisks.items.map(e=>e.key):[];
-  const cases=FICHE_TRANSVERSES.map(k=>`<li><label><input type="checkbox" data-trans="${k}"${sel.includes(k)||geo.includes(k)?" checked":""}${geo.includes(k)?" disabled":""}> ${esc(RISKS[k].label)}${geo.includes(k)?` <span class="tg src">Géorisques</span>`:""}</label></li>`).join("");
-  return `<fieldset class="field"><legend class="lab">Risques supplémentaires à traiter</legend><ul class="checks">${cases}</ul></fieldset>
+  const cases=FICHE_TRANSVERSES.map(k=>`<li><label><input type="checkbox" data-trans="${k}"${sel.includes(k)||geo.includes(k)?" checked":""}${geo.includes(k)?" disabled":""}> ${esc(RISKS[k].label)}${geo.includes(k)?` <span class="tg src">Géorisques</span>`:(FICHE_SITE[k]&&S.p[FICHE_SITE[k]]&&S.p[FICHE_SITE[k]]!==DEFAULTS[FICHE_SITE[k]]?` <span class="aside">(${esc(S.p[FICHE_SITE[k]])})</span>`:"")}</label></li>`).join("");
+  return `<fieldset class="field"><legend class="lab">Autres risques à couvrir</legend><ul class="checks">${cases}</ul></fieldset>
     <div id="pcsFiches">${fichesListeHTML()}</div>`;
 }
 function fichesListeHTML(){
