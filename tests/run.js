@@ -267,6 +267,22 @@ const view = t => t.q("#view").textContent;
     ok(t.q("#view") === v0 && t.q("#view").firstElementChild === c0, "thème et panneau sans reconstruire la vue");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
+  { const t = openMulti(); await wait(300); await chooseCommune(t, "bourg");
+    click(t, '#espaceSeg [data-esp="pcs"]');
+    ok(t.d.querySelectorAll("#pcsRub li").length === 10, "dix rubriques");
+    click(t, '#pcsRub [data-rub="0"]'); const f = t.q('[data-pf="gen.dateApprob"]');
+    f.value = "2024-03-15"; f.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    ok(JSON.parse(t.w.localStorage.getItem("commune-prete-pcs"))["09194"].gen.dateApprob === "2024-03-15", "saisie enregistrée pour la commune");
+    ok(t.q('#pcsRub [data-rub="0"]').dataset.state === "encours", "rubrique en cours");
+    ok(/\d+ %/.test(t.q("#pcsTaux").textContent), "taux d'avancement affiché");
+    click(t, '#espaceSeg [data-esp="exercices"]'); await chooseCommune(t, "hameau"); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="0"]');
+    ok(t.q('[data-pf="gen.dateApprob"]').value === "", "aucune saisie d'une autre commune");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+  { const t = open("bourg", "", null, { noStorage: true }); await wait(300); await pickCommune(t, "bourg"); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="0"]');
+    const f = t.q('[data-pf="gen.referent"]'); f.value = "Adjoint à la sécurité"; f.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    ok(/ne conserve pas/.test(t.q("#toast").textContent), "PCS sans stockage : avertissement");
+    ok(!t.errs.length, "aucune erreur JavaScript sans stockage"); t.close(); }
+
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);
   ok([...v.d.querySelectorAll(".tgrp")].map(x => x.textContent).join("/") === "Préparer/Conduire/Évaluer", "onglets regroupés en trois temps");

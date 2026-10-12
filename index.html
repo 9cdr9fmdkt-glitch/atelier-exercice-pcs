@@ -248,6 +248,7 @@ details.more .inner{display:flex;flex-direction:column;gap:12px;padding-bottom:1
 @media (max-width:560px){.kv{grid-template-columns:minmax(0,1fr)}.kv dt{border-bottom:0;padding-bottom:0}.kv dd{padding-left:0;padding-top:2px}}
 .ref{font-size:12.5px;color:var(--primary);background:var(--primary-soft);padding:1px 8px;border-radius:999px;white-space:nowrap;text-decoration:none}
 .ref:hover{text-decoration:underline}
+.pcsrub{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.pcsrub .btn{width:100%;justify-content:flex-start;text-align:left}.pcsrub .btn[aria-current=true]{border-color:var(--primary);background:var(--primary-soft)}.pcsrub .pm{display:inline-block;width:1.2em}
 .callout{display:flex;gap:12px;border-left:3px solid var(--primary);border-radius:0 var(--r-sm) var(--r-sm) 0;padding:12px 16px;background:var(--primary-soft);color:var(--ink);font-size:14px;max-width:84ch}
 .callout svg{flex:none;color:var(--primary);margin-top:2px}
 .callout.warn{background:var(--warn-soft);border-left-color:var(--warn)}
@@ -2594,8 +2595,101 @@ function initObs(){
 /* ---------- Espace PCS ---------- */
 const PCSUI={tab:"rediger",rub:0};
 const PCS_TABS=[["rediger","Rédiger"],["verifier","Vérifier"],["documents","Documents"]];
+/* Données du PCS : un objet par code INSEE, clé commune-prete-pcs */
+const PKEY="commune-prete-pcs";
+let PMEM=null,PWARNED=false; // données gardées en mémoire (et seule copie si le navigateur refuse le stockage)
+function pLoad(){if(PMEM)return PMEM;let o=null;try{o=JSON.parse(localStorage.getItem(PKEY))}catch(e){}PMEM=o&&typeof o==="object"&&!Array.isArray(o)?o:{};return PMEM}
+function pSave(){const d=pLoad();try{localStorage.setItem(PKEY,JSON.stringify(d));return true}catch(e){return false}}
+const PEMPTY=()=>({gen:{},risques:{},vuln:{},alerte:{},pcc:{},moyens:{cap:{}},reserve:{},prev:{plans:{}},fiches:{},maint:{},verif:{cot:{},actions:[]}});
+function pcsCur(){
+  const d=pLoad(),k=(S&&S.p&&S.p.insee)||"";
+  const e=d[k]&&typeof d[k]==="object"?d[k]:(d[k]={}),z=PEMPTY();
+  Object.keys(z).forEach(s=>{if(!e[s]||typeof e[s]!=="object")e[s]=z[s];else if(z[s].cap&&!e[s].cap)e[s].cap={};else if(z[s].plans&&!e[s].plans)e[s].plans={}});
+  if(!e.verif.cot)e.verif.cot={};if(!Array.isArray(e.verif.actions))e.verif.actions=[];
+  return e;
+}
+// chemin « section.cle » ou « section.cle.reste » (le reste peut contenir des points : noms de lieux)
+function pPath(path){const a=path.indexOf("."),b=a<0?-1:path.indexOf(".",a+1);return a<0?[path]:b<0?[path.slice(0,a),path.slice(a+1)]:[path.slice(0,a),path.slice(a+1,b),path.slice(b+1)]}
+function pcsGet(path){const p=pPath(path),e=pcsCur();let o=e[p[0]];if(o==null)return undefined;if(p.length>1)o=o[p[1]];if(p.length>2)o=o==null?undefined:o[p[2]];return o}
+function pcsSet(path,v){const p=pPath(path),e=pcsCur();if(p.length<2)return;if(!e[p[0]])e[p[0]]={};
+  if(p.length===2)e[p[0]][p[1]]=v;else{if(!e[p[0]][p[1]]||typeof e[p[0]][p[1]]!=="object")e[p[0]][p[1]]={};e[p[0]][p[1]][p[2]]=v}}
+const T=(k,label,type,req,pub)=>pub===false?{k,label,type,req,public:false}:{k,label,type,req};
+const PCS_RUB=[
+ {id:0,titre:"Généralités et approbation",ref:"R731-1 IV, R731-3, R731-4, D731-14",loi:"Le plan communal de sauvegarde est arrêté par le maire, après information du conseil municipal. Il est révisé au moins tous les cinq ans. Un correspondant incendie et secours est désigné au sein du conseil municipal.",champs:[
+  T("notifie","Obligation d'élaborer un PCS notifiée par le préfet","ouinon",false),T("dateNotif","Date de la notification","date",false),T("infoConseil","Information du conseil municipal et de l'EPCI au lancement (date)","date",false),
+  T("dateApprob","Date d'approbation par arrêté du maire","date",true),T("datePresent","Date de présentation au conseil municipal","date",true),T("referent","Élu chargé de la sécurité civile ou correspondant incendie et secours","texte",true,false)]},
+ {id:1,titre:"Analyse des risques",ref:"R731-1",loi:"Le plan comprend le diagnostic des risques et des conséquences prévisibles pour les personnes, les biens et l'environnement, à partir du dossier départemental sur les risques majeurs (DDRM) et des plans de prévention et d'intervention.",champs:[
+  T("ddrm","Dossier départemental sur les risques majeurs (DDRM) consulté","ouinon",true),T("ppr","Plan de prévention des risques (PPR)","liste",false),T("ppi","Plan particulier d'intervention (PPI) applicable","ouinon",false),T("locaux","Risques locaux complémentaires","texte",false)]},
+ {id:2,titre:"Enjeux et personnes vulnérables",ref:"R731-2, 1°",loi:"Le plan recense les moyens d'alerte et le dispositif de recensement des personnes vulnérables et dépendantes, ainsi que les zones et infrastructures sensibles. Aucun nom de personne ne figure dans cet outil.",champs:[
+  T("detenteur","Détenteur du registre des personnes vulnérables","texte",true),T("conservation","Lieu de conservation du registre","texte",true),T("miseAJour","Modalités de mise à jour du registre","texte",true),T("activation","Conditions d'activation du registre","texte",true),T("effectifs","Effectifs par secteur (nombres seulement)","texte",false,false)]},
+ {id:3,titre:"Alerte, information, annuaire",ref:"R731-2, 2°",loi:"Le plan fixe l'organisation assurant l'alerte, l'information et la protection de la population, avec la réception de l'alerte en permanence, le règlement d'emploi des moyens d'alerte et le document d'information communal sur les risques majeurs (DICRIM).",champs:[
+  T("astreinte","Réception de l'alerte 24 h/24 (astreinte)","texte",true,false),T("reglement","Règlement d'emploi des moyens d'alerte (qui déclenche, quand, quel message)","texte",true),T("dicrim","Date du DICRIM, joint en annexe du PCS","date",true)]},
+ {id:4,titre:"Poste de commandement communal",ref:"R731-2, 4°",loi:"Le plan désigne les responsables et fixe l'organisation du poste de commandement communal, en articulation avec le plan intercommunal le cas échéant.",champs:[
+  T("lieu","Lieu principal du poste de commandement","texte",true),T("repli","Lieu de repli","texte",false,false),T("liaisons","Liaisons du poste de commandement","texte",false,false),T("mainCourante","Main courante tenue","ouinon",false),T("pics","Articulation avec le plan intercommunal (PICS)","texte",false)]},
+ {id:5,titre:"Moyens et lieux d'accueil",ref:"R731-2, 6°",loi:"Le plan recense les moyens disponibles et les dispositions assurant le soutien de la population : lieux d'accueil et d'hébergement, ravitaillement, transport.",champs:[
+  T("cap","Capacité d'accueil de chaque lieu (personnes)","nombre",true),T("transport","Transport de la population","texte",true),T("ravitaillement","Ravitaillement","texte",true),T("prives","Moyens privés mobilisables","texte",false)]},
+ {id:6,titre:"Réserve communale et bénévoles",ref:"R731-2, 3°",loi:"Le plan prévoit les modalités de mise en œuvre de la réserve communale de sécurité civile lorsqu'elle existe, et l'accueil des bénévoles spontanés.",champs:[
+  T("modalites","Modalités d'appel de la réserve communale","texte",false),T("missions","Missions confiées à la réserve","texte",false),T("benevoles","Accueil des bénévoles spontanés","texte",true)]},
+ {id:7,titre:"Actions préventives",ref:"R731-2, 5°",loi:"Le plan prévoit les mesures de sauvegarde et de protection des personnes, des biens et de l'environnement, dont les actions des services communaux et le suivi des plans des tiers.",champs:[
+  T("services","Actions des services communaux","texte",true),T("plans","État des plans des tiers (établissements d'enseignement, EHPAD, sites industriels)","ouinon",false)]},
+ {id:8,titre:"Fiches réflexes",ref:"R731-2, II",loi:"Le plan comporte des fiches réflexes par risque et par fonction. Leur rédaction est proposée dans une prochaine étape.",champs:[]},
+ {id:9,titre:"Maintien opérationnel",ref:"R731-8, D731-9 à D731-13",loi:"Le plan est mis à jour, testé par des exercices et son retour d'expérience conservé. La population est informée de son existence et peut en consulter la version publique.",champs:[
+  T("annuaireDate","Dernière mise à jour de l'annuaire","date",true),T("infoPublic","Modalités d'information du public","texte",true)]}
+];
+const PPR_OPT=["aucun","prescrit","approuvé"];
+const pFilled=v=>v!==""&&v!=null&&v!==undefined;
+function pCapPlaces(){return ((S&&S.places)||[]).filter(x=>(x.cat==="salle"||x.cat==="sport")&&x.named).slice(0,40).map(x=>x.name)}
+// éléments obligatoires d'une rubrique : liste de booleans (renseigné ou non)
+function reqItems(id){
+  const r=PCS_RUB[id],out=[];if(!r)return out;
+  r.champs.forEach(c=>{
+    if(id===5&&c.k==="cap"){const cp=pcsGet("moyens.cap")||{};out.push(Object.keys(cp).some(n=>pFilled(cp[n])));return}
+    let req=c.req;if(id===6&&c.k==="modalites")req=Number((S.p.fiche||{}).reserve)>0;
+    if(req)out.push(pFilled(pcsGet(PPATH[id]+"."+c.k)));
+  });
+  return out;
+}
+const PPATH=["gen","risques","vuln","alerte","pcc","moyens","reserve","prev","fiches","maint"];
+function rubState(id){const it=reqItems(id),n=it.filter(Boolean).length;return !it.length||!n?"afaire":n===it.length?"complete":"encours"}
+function pcsTaux(){let n=0,t=0;PCS_RUB.forEach((r,i)=>{const it=reqItems(i);t+=it.length;n+=it.filter(Boolean).length});return t?Math.round(n/t*100):0}
+const RUB_MARK={complete:["✓","complète"],encours:["◐","en cours"],afaire:["○","à faire"]};
+function renderPcsPanel(){
+  const el=$("#pcsRubs");if(!el)return;
+  const live=!!(S&&S.p&&S.p.insee&&!S.isExample);
+  el.innerHTML=`<ol id="pcsRub" class="pcsrub">${PCS_RUB.map(r=>{const st=live?rubState(r.id):"",m=RUB_MARK[st];
+    return `<li><button class="btn sm${PCSUI.rub===r.id?" on":""}" type="button" data-rub="${r.id}"${st?` data-state="${st}"`:""} aria-current="${PCSUI.rub===r.id}"><span class="pm" aria-hidden="true">${m?m[0]:""}</span> ${r.id}. ${esc(r.titre)}${m?` <span class="sr">(${m[1]})</span>`:""}</button></li>`}).join("")}</ol>
+    <p class="note" id="pcsTaux">${live?"Avancement : "+pcsTaux()+" %":"Choisissez une commune pour suivre l'avancement."}</p>`;
+}
+function pcsField(c,i,r){
+  const id="pf"+i,sec=PPATH[r.id],path=sec+"."+c.k,pubNote=c.public===false?` <span class="aside">(ne figure pas dans la version publique)</span>`:"";
+  const lab=`${esc(c.label)}${c.req?` <span aria-hidden="true">*</span><span class="sr">(obligatoire)</span>`:""}${pubNote}`;
+  const val=pcsGet(path),one=(p,v,lbl,idd,pf)=>{
+    const vv=v==null?"":v,a=`id="${idd}" data-pf="${esc(p)}"`;
+    if(c.type==="date")return `<input type="date" ${a} value="${esc(vv)}">`;
+    if(c.type==="nombre")return `<input type="number" min="0" inputmode="numeric" ${a} value="${esc(vv)}">`;
+    if(c.type==="ouinon")return `<select ${a}><option value=""></option>${["oui","non"].map(o=>`<option value="${o}"${vv===o?" selected":""}>${o==="oui"?"Oui":"Non"}</option>`).join("")}</select>`;
+    if(c.type==="liste")return `<select ${a}><option value=""></option>${PPR_OPT.map(o=>`<option value="${o}"${vv===o?" selected":""}>${o}</option>`).join("")}</select>`;
+    return `<input type="text" ${a} value="${esc(vv)}">`;
+  };
+  if(r.id===5&&c.k==="cap"){
+    const pl=pCapPlaces(),cp=pcsGet("moyens.cap")||{};
+    return `<div class="field"><span class="lab">${lab}</span>${pl.length?pl.map((n,j)=>`<div class="field"><label for="${id}-${j}">${esc(n)}</label>${one("moyens.cap."+n,cp[n],n,id+"-"+j)}</div>`).join(""):`<p class="note">Aucune salle ni équipement sportif recensé pour l'instant : les lieux d'accueil pourront être ajoutés plus tard.</p>`}</div>`;
+  }
+  if(r.id===7&&c.k==="plans"){
+    return `<div class="field"><span class="lab">${lab}</span><p class="note">Aucun plan de tiers à suivre n'est encore listé pour cette commune.</p></div>`;
+  }
+  return `<div class="field"><label for="${id}">${lab}</label>${one(path,val,c.label,id)}</div>`;
+}
+function renderRediger(){
+  const b=$("#pcsBody");if(!b)return;
+  const r=PCS_RUB[PCSUI.rub]||PCS_RUB[0];
+  b.innerHTML=`<h3>${r.id}. ${esc(r.titre)}</h3>
+    <div class="callout"><div><b>Ce que la loi exige</b><br>${esc(r.loi)} <span class="aside">${esc(r.ref)}</span></div></div>
+    ${r.champs.length?r.champs.map((c,i)=>pcsField(c,i,r)).join(""):`<p class="note">Cette rubrique ne comporte pas de saisie pour l'instant.</p>`}`;
+}
 function renderPCS(){
   const v=$("#pcsView");if(!v||!S)return;
+  renderPcsPanel();
   if(!S.p.insee||S.isExample){
     v.innerHTML=`<article class="card doc"><div class="docbody"><h3>Plan communal de sauvegarde</h3><p>Recherchez votre commune dans l'espace Exercices pour construire son plan communal de sauvegarde.</p><div><button class="btn primary" type="button" id="pcsGoEx">Rechercher ma commune</button></div></div></article>`;
     return;
@@ -2603,7 +2697,20 @@ function renderPCS(){
   v.innerHTML=`<article class="card doc"><div class="dochead"><span class="meta">${esc(S.p.commune)} · Plan communal de sauvegarde</span></div>
     <div class="pcsbar"><div class="tabs" role="tablist" id="pcsTabs" aria-label="Étapes du PCS">${PCS_TABS.map(t=>`<button class="tab" role="tab" type="button" id="ptab-${t[0]}" aria-selected="${PCSUI.tab===t[0]}" aria-controls="pcsBody" tabindex="${PCSUI.tab===t[0]?0:-1}" data-ptab="${t[0]}">${t[1]}</button>`).join("")}</div></div>
     <div class="docbody" id="pcsBody" role="tabpanel" aria-labelledby="ptab-${PCSUI.tab}" tabindex="-1"></div></article>`;
+  if(PCSUI.tab==="rediger")renderRediger();
 }
+$("#pcsPanel").addEventListener("click",e=>{
+  const b=e.target.closest("[data-rub]");if(!b)return;
+  PCSUI.rub=+b.dataset.rub;PCSUI.tab="rediger";renderPCS();
+  const n=document.querySelector('#pcsRub [data-rub="'+PCSUI.rub+'"]');if(n)n.focus();
+});
+$("#pcsView").addEventListener("change",e=>{
+  const f=e.target.closest("[data-pf]");if(!f||!S||!S.p.insee||S.isExample)return;
+  let v=f.value;if(f.type==="number"&&v!==""){const n=Number(v);v=isFinite(n)?n:""}
+  pcsSet(f.dataset.pf,v);
+  if(!pSave()&&!PWARNED){PWARNED=true;toast("Ce navigateur ne conserve pas les données : utilisez les documents de l'onglet Documents pour garder votre travail.")}
+  renderPcsPanel();
+});
 $("#pcsView").addEventListener("click",e=>{
   if(e.target.closest("#pcsGoEx")){setEspace("exercices");const c=$("#commune");if(c)c.focus();return}
   const b=e.target.closest("[data-ptab]");if(b){PCSUI.tab=b.dataset.ptab;renderPCS()}
