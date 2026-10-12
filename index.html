@@ -407,6 +407,8 @@ body.obsmode .nowb{min-height:42px}
 #map{height:min(62vh,560px);width:100%}
 @media (max-width:620px){#map{height:340px}}
 .mapmsg{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:var(--muted);font-size:13.5px;z-index:1100;background:color-mix(in srgb,var(--surface-2) 92%,transparent)}
+.mapmsg.err{inset:12px 12px auto 56px;display:block;text-align:left;padding:10px 14px;border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.mapmsg.err div{display:inline-block;margin:0 0 0 10px!important}
 .catchips{display:flex;flex-wrap:wrap;gap:6px}
 .catchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:500;color:var(--ink);cursor:pointer}
 .catchip i{width:9px;height:9px;border-radius:50%;background:var(--c);flex:none}
@@ -597,7 +599,7 @@ body.obsmode .nowb{min-height:42px}
 const API = {
   geo: q => "https://geo.api.gouv.fr/communes?nom="+encodeURIComponent(q)+"&fields=nom,code,population,departement,region,epci,centre&boost=population&limit=7",
   contour: code => "https://geo.api.gouv.fr/communes/"+code+"?fields=nom,contour,centre&format=geojson&geometry=contour",
-  overpass: ["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"],
+  overpass: ["https://overpass-api.de/api/interpreter","https://overpass.private.coffee/api/interpreter","https://overpass.kumi.systems/api/interpreter"],
   risques: insee => "https://georisques.gouv.fr/api/v1/gaspar/risques?code_insee="+insee,
   catnat: insee => "https://georisques.gouv.fr/api/v1/gaspar/catnat?code_insee="+insee+"&page_size=100",
   icpe: insee => "https://georisques.gouv.fr/api/v1/installations_classees?code_insee="+insee+"&page_size=100",
@@ -1481,13 +1483,18 @@ function overpassQuery(p){
     (big?'way'+Z+'["highway"~"^(trunk|primary|secondary)$"]["name"];out center tags 120;':'')+
     'way'+Z+'["railway"="rail"];out tags 1;';
 }
+// Les serveurs Overpass publics sont souvent saturés (réponses 429 ou 504) : on alterne le serveur principal et ses miroirs,
+// avec une courte pause avant de revenir au principal. Une erreur de requête (400) n'est pas retentée.
 async function postOverpass(q,outer){
-  let last;
-  for(const url of API.overpass){
+  const [main,...alt]=API.overpass,plan=[[main,0],[alt[0],0],[main,3000],[alt[1],0],[main,6000]];let last;
+  for(const [url,pause] of plan){
+    if(outer&&outer.aborted)throw new Error("annulé");
+    if(pause)await new Promise(r=>setTimeout(r,pause));
     if(outer&&outer.aborted)throw new Error("annulé");
     const c=new AbortController();const t=setTimeout(()=>c.abort(),30000);if(outer)outer.addEventListener("abort",()=>c.abort(),{once:true});
-    try{const r=await fetch(url,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"},signal:c.signal});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}
-    catch(e){last=e}finally{clearTimeout(t)}
+    try{const r=await fetch(url,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded",Accept:"application/json"},signal:c.signal});
+      if(!r.ok){last=new Error("HTTP "+r.status);if(r.status===400)throw last;continue}return await r.json()}
+    catch(e){last=e;if(/HTTP 400/.test(e.message))throw e}finally{clearTimeout(t)}
   }
   throw last;
 }
@@ -1526,7 +1533,8 @@ async function loadPlaces(opt={}){
     S.geo={status:"ok",at:new Date().toISOString(),insee,v:2};
     autoAssign(opt);save();
     toast(places.length+" lieux "+(big?"de la zone d'exercice":"de "+p.commune)+" chargés depuis OpenStreetMap.");
-  }catch(e){if(stale())return;S.geo={status:"error",insee};const n=$("#lieuxNote");if(n)n.textContent="OpenStreetMap n'a pas répondu : les lieux ci-dessous sont génériques. Saisissez vos lieux réels, ou réessayez depuis l'onglet Carte."}
+  }catch(e){if(stale())return;S.geo={status:"error",insee};const auto=!opt.auto;const n=$("#lieuxNote");if(n)n.textContent="OpenStreetMap n'a pas répondu (ses serveurs publics sont saturés) : les lieux ci-dessous sont génériques. "+(auto?"Un nouvel essai automatique aura lieu dans une minute ; vous pouvez aussi réessayer depuis l'onglet Carte, ou saisir vos lieux réels.":"Réessayez plus tard depuis l'onglet Carte, ou saisissez vos lieux réels.");
+    if(auto)setTimeout(()=>{if(S.p.insee===insee&&S.geo&&S.geo.status==="error"&&seq===placesSeq)loadPlaces({...opt,auto:true})},60000)}
   renderDatalists();renderRisks();if(S.tab==="carte"||S.tab==="scenario")render();else renderMapState();
   if(S.geo.status==="ok")loadTerrain(seq);
 }
@@ -1655,9 +1663,9 @@ function renderMapState(){
   if(!window.L)m="La carte ne peut pas s'afficher dans cet aperçu. Elle fonctionne sur la version en ligne de l'outil.";
   else if(!S.p.insee)m="Recherchez une commune pour afficher sa carte et ses lieux.";
   else if(g.status==="loading")m="Chargement des lieux depuis OpenStreetMap…";
-  else if(g.status==="error")m="OpenStreetMap n'a pas répondu (le service limite le nombre de demandes).";
-  el.textContent=m;el.hidden=!m;
-  if(g.status==="error"&&window.L&&S.p.insee)el.insertAdjacentHTML("beforeend",'<div style="margin-top:12px"><button class="btn sm primary" type="button" id="placesRetry">Réessayer</button></div>');
+  else if(g.status==="error")m="Les lieux n'ont pas pu être chargés : les serveurs publics d'OpenStreetMap sont saturés. Le fond de carte reste consultable.";
+  el.textContent=m;el.hidden=!m;el.classList.toggle("err",g.status==="error"&&!!window.L&&!!S.p.insee);
+  if(g.status==="error"&&window.L&&S.p.insee)el.insertAdjacentHTML("beforeend",'<div style="margin-top:8px"><button class="btn sm primary" type="button" id="placesRetry">Réessayer</button></div>');
 }
 function drawMap(){
   if(map){map.remove();map=null}

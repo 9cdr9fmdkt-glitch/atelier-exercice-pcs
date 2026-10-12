@@ -43,6 +43,7 @@ async function pickCommune(t, name) {
 
 // Navigateur simulé où plusieurs communes coexistent : chaque réponse dépend du code INSEE demandé.
 // opts.slow[code] = délai en ms de la réponse OpenStreetMap ; opts.fail[code] = OpenStreetMap ne répond pas pour cette commune.
+const overpassCalls = [];
 function openMulti(opts = {}, storage) {
   const errs = [], blobs = [], byCode = {};
   Object.values(FIX).forEach(F => byCode[F.commune.code] = F);
@@ -59,7 +60,9 @@ function openMulti(opts = {}, storage) {
         const F = byCode[code];
         if (u.includes("communes?nom")) { const q = decodeURIComponent(u.split("nom=")[1].split("&")[0]).toLowerCase(); return R(Object.values(FIX).filter(f => f.commune.nom.toLowerCase().startsWith(q)).map(f => f.commune)) }
         if (u.includes("geometry=contour")) return R({ type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] } });
-        if (u.includes("overpass")) { if (opts.fail && opts.fail[code]) return Promise.reject(new Error("HTTP 429")); return later((opts.slow && opts.slow[code]) || 0, { ok: true, json: () => Promise.resolve({ elements: F.osm }) }) }
+        if (u.includes("overpass")) { if (opts.fail && opts.fail[code]) return Promise.reject(new Error("HTTP 429"));
+          if (opts.busy && opts.busy[code] > 0) { opts.busy[code]--; overpassCalls.push(u); return Promise.resolve({ ok: false, status: 504, json: () => Promise.reject(new Error("504")) }) }
+          overpassCalls.push(u); return later((opts.slow && opts.slow[code]) || 0, { ok: true, json: () => Promise.resolve({ elements: F.osm }) }) }
         if (u.includes("gaspar/risques")) return later((opts.slowRisk && opts.slowRisk[code]) || 0, { ok: true, json: () => Promise.resolve({ data: [{ risques_detail: (F.risques || ["Inondation"]).map(l => ({ libelle_risque_long: l })) }] }) });
         if (u.includes("gaspar/catnat")) return R({ data: [] });
         if (u.includes("installations_classees")) return R({ data: F.icpe });
@@ -204,7 +207,7 @@ const view = t => t.q("#view").textContent;
     const t = openMulti({ fail: { "09253": true } }); await wait(300);
     await chooseCommune(t, "bourg"); click(t, "#gen"); click(t, '[data-tab="carte"]');
     ok(MIREPOIX.test(everything(t)), "première commune chargée (Mirepoix)");
-    await chooseCommune(t, "hameau"); click(t, "#gen"); if (t.q("#genLabel").textContent.includes("Confirmer")) click(t, "#gen");
+    await chooseCommune(t, "hameau", 11000); click(t, "#gen"); if (t.q("#genLabel").textContent.includes("Confirmer")) click(t, "#gen");
     const all = everything(t), m = all.match(MIREPOIX);
     ok(!m, "aucun lieu de la commune précédente après changement de commune" + (m ? " : « " + m[0] + " »" : ""));
     ok(/OpenStreetMap n'a pas répondu/.test(t.q("#lieuxNote").textContent), "échec de chargement signalé à l'utilisateur");
@@ -234,6 +237,16 @@ const view = t => t.q("#view").textContent;
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : ""));
     t.close();
   }
+
+  console.log("\nOPENSTREETMAP SATURÉ");
+  { // Les serveurs Overpass publics répondent souvent « 504 » quand ils sont saturés : l'outil réessaie avant d'abandonner.
+    overpassCalls.length = 0; const t = openMulti({ busy: { "09194": 2 } }); await wait(300);
+    await chooseCommune(t, "bourg", 9000);
+    ok(/Mirepoix/.test(t.q("#lieuxNote").textContent) || /Lieux proposés/.test(t.q("#lieuxNote").textContent), "lieux chargés malgré deux réponses « serveur saturé »");
+    ok(overpassCalls.length === 3, "trois demandes à OpenStreetMap (" + overpassCalls.length + ")");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+  { const t = openMulti({ fail: { "09194": true } }); await wait(300); await chooseCommune(t, "bourg", 11000);
+    ok(/nouvel essai automatique/.test(t.q("#lieuxNote").textContent), "nouvel essai automatique annoncé après un échec"); t.close(); }
 
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);
