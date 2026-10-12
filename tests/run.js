@@ -342,6 +342,20 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
       ok(!t.errs.length, "aucune erreur JavaScript"); t.close(); }
     const lit = SRC.slice(SRC.indexOf("const FICHE_RISQUE={"), SRC.indexOf("function ficheLieux"));
     ok(!/\b(de|à) \{(le|la|les)_(secteur|axe|icpe|heberg|etab|erp|hopital|gare|aero|evt|riviere|massif)\}|Ouvrir \{au_|\{du_icpe\}/.test(lit), "texte des 19 risques (dont ferroviaire, aérien, hôpital, bombe, masse hors interface) sans article mal formé"); }
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsTabs [data-ptab="verifier"]');
+    ok(t.d.querySelectorAll("[data-gv]").length === 35 * 4, "35 points de contrôle, quatre réponses chacun");
+    ok(/date d'approbation à saisir/.test(t.q("#pcsView").textContent) && !/Invalid Date/.test(t.q("#pcsView").textContent), "échéance sans date d'approbation");
+    click(t, '[data-gv="g1"][data-v="ok"]'); click(t, '[data-gv="g2"][data-v="part"]'); click(t, '[data-gv="g3"][data-v="ko"]'); click(t, '[data-gv="r4"][data-v="na"]');
+    ok(/50 %/.test(t.q("#verifTaux").textContent), "taux : présent 1, à compléter 0,5, absent 0, sans objet exclu");
+    ok(/présenté au conseil municipal/.test(t.q("#verifManques").textContent), "manque légal listé");
+    ok(t.d.querySelectorAll("[data-va]").length === 2, "une action par manque");
+    click(t, '[data-gv="g3"][data-v="ko"]'); ok(t.q('[data-gv="g3"][data-v="ko"]').getAttribute("aria-pressed") === "false", "second clic sur une cotation : elle est effacée");
+    click(t, '[data-gv="g3"][data-v="ko"]'); ok(t.d.querySelectorAll("[data-va]").length === 2, "pas d'action en double");
+    click(t, '[data-gcomp="g3"]'); ok(t.q('#pcsTabs [data-ptab="rediger"]').getAttribute("aria-selected") === "true" && t.q('#pcsRub [data-rub="0"]').getAttribute("aria-current") === "true", "bouton Compléter vers la rubrique");
+    click(t, '#pcsRub [data-rub="0"]'); const f = t.q('[data-pf="gen.dateApprob"]'); f.value = "2020-01-10"; f.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    click(t, '#pcsTabs [data-ptab="verifier"]'); ok(/10 janvier 2025/.test(t.q("#pcsView").textContent) && /dépassée/.test(t.q("#pcsView").textContent), "échéance de révision dépassée signalée");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
 
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);

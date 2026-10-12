@@ -356,6 +356,8 @@ body.obsmode .nowb{min-height:42px}
 .cot button{border:0;background:transparent;font-size:13px;color:var(--muted);padding:6px 10px;min-height:32px;border-radius:5px;cursor:pointer;white-space:nowrap}
 .cot button:hover{color:var(--ink)}
 .cot button[aria-pressed=true]{font-weight:700;color:#fff}
+.cot.c4{grid-auto-flow:row;grid-template-columns:repeat(4,auto)}@media (max-width:480px){.cot.c4{grid-template-columns:repeat(2,minmax(0,1fr));width:100%}}
+.cot button[aria-pressed=true][data-v=na]{background:var(--muted);color:var(--sunk)}
 .cot button[aria-pressed=true][data-v=ok]{background:var(--ok)}
 .cot button[aria-pressed=true][data-v=part]{background:var(--warn)}
 .cot button[aria-pressed=true][data-v=ko]{background:var(--bad)}
@@ -3006,6 +3008,83 @@ function updateApercu(){
 function pcsRefresh(){if(typeof AFF!=="undefined"&&AFF&&AFF.espace==="pcs"&&S&&S.p&&S.p.insee&&!S.isExample&&PCSUI.tab==="rediger"&&$("#pcsApercu")){
   const l=$("#pcsFiches");if(l&&PCSUI.rub===8&&!l.contains(document.activeElement)){const op=[...l.querySelectorAll("details")].map(d=>d.open);renderRediger();const n=$("#pcsFiches");if(n)n.querySelectorAll("details").forEach((d,i)=>{d.open=!!op[i]})}
   updateApercu();updatePcsPanel()}}
+/* Vérification d'un PCS existant : grille de 35 points de contrôle */
+const G=(id,rub,texte,ref,grav)=>({id,rub,texte,ref,grav});
+const PCS_GRILLE=[
+ G("g1",0,"Arrêté d'approbation du maire signé","R731-3 III","loi"),
+ G("g2",0,"PCS transmis au préfet et au président de l'intercommunalité","R731-3 III","loi"),
+ G("g3",0,"PCS présenté au conseil municipal depuis le renouvellement général de mars 2026","R731-3 IV","loi"),
+ G("g4",0,"Élu chargé de la sécurité civile ou correspondant incendie et secours désigné","D731-14","loi"),
+ G("r1",1,"Risques du dossier départemental des risques majeurs repris","R731-1 III","loi"),
+ G("r2",1,"PPR, PPI et cartes des surfaces inondables pris en compte","R731-1 III","loi"),
+ G("r3",1,"Risques propres aux particularités locales analysés","R731-1 II","loi"),
+ G("r4",1,"Carte des aléas et des enjeux jointe","bonne pratique","bp"),
+ G("e1",2,"Recensement des personnes vulnérables : registre et modalités d'activation décrits","R731-2 1°","loi"),
+ G("e2",2,"Établissements sensibles et lieux recevant du public recensés","R731-2 1°","loi"),
+ G("e3",2,"Infrastructures sensibles recensées (eau, énergie, réseaux)","R731-2 1°","loi"),
+ G("a1",3,"Réception de l'alerte des autorités organisée 24 h sur 24","R731-2 2°","loi"),
+ G("a2",3,"Annuaire opérationnel présent","R731-2 2°","loi"),
+ G("a3",3,"Annuaire mis à jour depuis moins d'un an","R731-8 I","bp"),
+ G("a4",3,"Règlement d'emploi des moyens d'alerte","R731-2 2°","loi"),
+ G("a5",3,"DICRIM réalisé et inséré au PCS","R731-2 2°","loi"),
+ G("a6",3,"Messages d'alerte et d'information préparés","bonne pratique","bp"),
+ G("c1",4,"Organisation du poste de commandement communal","R731-2 4°","loi"),
+ G("c2",4,"Lieu de repli du PCC prévu","bonne pratique","bp"),
+ G("c3",4,"Titulaires et suppléants désignés pour chaque fonction","bonne pratique","bp"),
+ G("c4",4,"Main courante prévue","bonne pratique","bp"),
+ G("m1",5,"Inventaire des moyens propres de la commune","R731-2 6°","loi"),
+ G("m2",5,"Moyens mobilisables auprès de tiers : transport, hébergement, ravitaillement","R731-2 6°","loi"),
+ G("m3",5,"Capacité de chaque lieu d'accueil connue","bonne pratique","bp"),
+ G("m4",5,"Utilisation des capacités de l'intercommunalité prévue","R731-2 6°","loi"),
+ G("v1",6,"Modalités de mise en œuvre de la réserve communale (si elle existe)","R731-2 3°","loi"),
+ G("v2",6,"Prise en compte des bénévoles spontanés","R731-2 3°","loi"),
+ G("p1",7,"Actions préventives et correctives des services communaux","R731-2 5°","loi"),
+ G("p2",7,"Dispositions des établissements et entreprises recensées (PPMS, plans bleus, plans d'urgence)","R731-2 5°","loi"),
+ G("f1",8,"Dispositions spécifiques pour chaque risque recensé","R731-2 II","loi"),
+ G("f2",8,"Fiches réflexes par fonction de la cellule de crise","bonne pratique","bp"),
+ G("o1",9,"Révision datant de moins de cinq ans","R731-8 I","loi"),
+ G("o2",9,"Exercice ou mise en œuvre réelle depuis moins de cinq ans, avec retour d'expérience","R731-8 III, D731-12, D731-13","loi"),
+ G("o3",9,"Existence du PCS portée à la connaissance du public, version consultable","R731-8 V","loi"),
+ G("o4",9,"Acteurs du plan informés régulièrement","R731-8 IV","loi")];
+const VERIF_REP=[["ok","Présent"],["part","À compléter"],["ko","Absent"],["na","Sans objet"]];
+function verifResult(){
+  const cot=pcsCur().verif.cot,W={ok:1,part:.5,ko:0};let s=0,n=0,cotes=0;const man=[];
+  PCS_GRILLE.forEach(g=>{const v=cot[g.id];if(!VERIF_REP.some(x=>x[0]===v))return;cotes++;if(v==="na")return;n++;s+=W[v];if(v==="ko"||v==="part")man.push({id:g.id,texte:g.texte,ref:g.ref,grav:g.grav,v})});
+  man.sort((a,b)=>(a.grav===b.grav?0:a.grav==="loi"?-1:1)||(a.v===b.v?0:a.v==="ko"?-1:1));
+  let ech=null;const da=pcsVal("gen.dateApprob");
+  if(typeof da==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(da)){const d=new Date(da+"T12:00:00");if(!isNaN(d)){d.setFullYear(d.getFullYear()+5);ech=d}}
+  const t0=new Date();t0.setHours(0,0,0,0);
+  return {taux:n?Math.round(s/n*100):null,cotes,manques:man,echeance:ech,depassee:!!ech&&ech<t0};
+}
+// une action par manque, à sa première apparition ; rien n'est retiré ni modifié
+function verifSyncActions(){
+  const v=pcsCur().verif,r=verifResult();if(!Array.isArray(v.gen))v.gen=[];let n=0;
+  r.manques.forEach(m=>{if(v.gen.indexOf(m.id)<0&&!v.actions.some(a=>a.id===m.id)){v.gen.push(m.id);v.actions.push({id:m.id,a:m.texte,pilote:"À désigner",ech:"À fixer"});n++}});
+  return n;
+}
+function verifSynthHTML(){
+  const r=verifResult(),tot=PCS_GRILLE.length;
+  const ech=r.echeance?`Échéance de révision : ${esc(r.echeance.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"}))}${r.depassee?" (dépassée)":""}`:"Échéance de révision : date d'approbation à saisir";
+  return `<p id="verifTaux"><b>${r.taux==null?"Aucun point coté pour l'instant":"Taux de conformité : "+r.taux+" %"}</b> <span class="aside">${r.cotes} point${r.cotes>1?"s":""} coté${r.cotes>1?"s":""} sur ${tot}</span></p>
+    <p id="verifEch">${ech}</p>
+    <div id="verifManques"><h4>Manques à combler</h4>${r.manques.length?`<ul>${r.manques.map(m=>`<li>${esc(m.texte)} <span class="tg">${m.grav==="loi"?"obligation légale":"bonne pratique"}</span> <span class="aside">${m.v==="ko"?"absent":"à compléter"} · ${esc(m.ref)}</span> <button class="btn sm" type="button" data-gcomp="${m.id}">Compléter</button></li>`).join("")}</ul>`:`<p class="note">Aucun manque relevé pour l'instant.</p>`}</div>`;
+}
+function verifActionsHTML(){
+  const acts=pcsCur().verif.actions.map((x,n)=>`<tr data-va="${n}"><td><div contenteditable="true" role="textbox" aria-label="Action" data-vaf="a">${esc(x.a)}</div></td><td><div contenteditable="true" role="textbox" aria-label="Pilote" data-vaf="pilote">${esc(x.pilote)}</div></td><td><div contenteditable="true" role="textbox" aria-label="Échéance" data-vaf="ech">${esc(x.ech)}</div></td><td><button class="del" type="button" data-vadel="${n}" aria-label="Supprimer l'action">×</button></td></tr>`).join("");
+  return `<div class="tablewrap"><table style="min-width:540px"><thead><tr><th>Action</th><th>Pilote</th><th>Échéance</th><th><span class="sr">Supprimer</span></th></tr></thead><tbody>${acts}</tbody></table></div>`;
+}
+function renderVerifier(){
+  const b=$("#pcsBody");if(!b)return;if(verifSyncActions())pcsSaved();
+  const cot=pcsCur().verif.cot;
+  b.innerHTML=`<h3>Vérifier un PCS existant</h3><p class="note">Cotez chaque point au regard de votre plan : le taux de conformité et la liste des manques se mettent à jour. Les points « sans objet » ne comptent pas.</p>
+    <div class="callout" id="verifSynth">${verifSynthHTML()}</div>
+    ${PCS_RUB.map(ru=>{const gs=PCS_GRILLE.filter(g=>g.rub===ru.id);if(!gs.length)return "";
+      return `<div class="obsg"><div class="gh"><span>${ru.id}. ${esc(ru.titre)}</span></div>${gs.map(g=>`<div class="obsr"><span>${esc(g.texte)}<details><summary>Exigence</summary><p class="note">${g.grav==="loi"?"Obligation légale":"Bonne pratique"} · ${esc(g.ref)}</p></details></span><span class="cot c4" role="group" aria-label="Cotation : ${esc(g.texte)}">${VERIF_REP.map(x=>`<button type="button" data-gv="${g.id}" data-v="${x[0]}" aria-pressed="${cot[g.id]===x[0]}">${x[1]}</button>`).join("")}</span></div>`).join("")}</div>`}).join("")}
+    <h4 class="apt">Plan de mise à jour</h4><div id="verifPlan">${verifActionsHTML()}</div><div><button class="btn sm" type="button" id="addVAct">+ Ajouter une action</button></div>`;
+}
+function updateVerif(){
+  if(verifSyncActions())pcsSaved();const s=$("#verifSynth"),p=$("#verifPlan");if(s)s.innerHTML=verifSynthHTML();if(p)p.innerHTML=verifActionsHTML();
+}
 function renderPCS(){
   const v=$("#pcsView");if(!v||!S)return;
   renderPcsPanel();
@@ -3016,7 +3095,7 @@ function renderPCS(){
   v.innerHTML=`<article class="card doc"><div class="dochead"><span class="meta">${esc(S.p.commune)} · Plan communal de sauvegarde</span></div>
     <div class="pcsbar"><div class="tabs" role="tablist" id="pcsTabs" aria-label="Étapes du PCS">${PCS_TABS.map(t=>`<button class="tab" role="tab" type="button" id="ptab-${t[0]}" aria-selected="${PCSUI.tab===t[0]}" aria-controls="pcsBody" tabindex="${PCSUI.tab===t[0]?0:-1}" data-ptab="${t[0]}">${t[1]}</button>`).join("")}</div></div>
     <div class="docbody" id="pcsBody" role="tabpanel" aria-labelledby="ptab-${PCSUI.tab}" tabindex="-1"></div></article>`;
-  if(PCSUI.tab==="rediger")renderRediger();
+  if(PCSUI.tab==="rediger")renderRediger();else if(PCSUI.tab==="verifier")renderVerifier();
 }
 $("#pcsPanel").addEventListener("click",e=>{
   const b=e.target.closest("[data-rub]");if(!b)return;
@@ -3044,7 +3123,19 @@ $("#pcsView").addEventListener("click",e=>{
   if(e.target.closest("#pcsGoEx")){setEspace("exercices");const c=$("#commune");if(c)c.focus();return}
   const rs=e.target.closest("[data-fiche-reset]");
   if(rs){pcsSet("fiches."+rs.dataset.ficheReset,"");pcsSaved();const l=$("#pcsFiches");if(l){const op=[...l.querySelectorAll("details")].map(d=>d.open);l.innerHTML=fichesListeHTML();l.querySelectorAll("details").forEach((d,i)=>{d.open=!!op[i]})}updateApercu();return}
+  const gv=e.target.closest("[data-gv]");
+  if(gv&&S&&S.p.insee&&!S.isExample){const c=pcsCur().verif.cot,id=gv.dataset.gv;if(c[id]===gv.dataset.v)delete c[id];else c[id]=gv.dataset.v;pcsSaved();
+    gv.parentNode.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",c[id]===x.dataset.v));updateVerif();return}
+  const gc=e.target.closest("[data-gcomp]");
+  if(gc){const g=PCS_GRILLE.find(x=>x.id===gc.dataset.gcomp);if(g){PCSUI.rub=g.rub;PCSUI.tab="rediger";renderPCS();const n=document.querySelector('#pcsRub [data-rub="'+g.rub+'"]');if(n)n.focus()}return}
+  const vd=e.target.closest("[data-vadel]");
+  if(vd){pcsCur().verif.actions.splice(+vd.dataset.vadel,1);pcsSaved();const p=$("#verifPlan");if(p)p.innerHTML=verifActionsHTML();return}
+  if(e.target.id==="addVAct"){pcsCur().verif.actions.push({id:"m"+Date.now(),a:"Nouvelle action",pilote:"À désigner",ech:"À fixer"});pcsSaved();const p=$("#verifPlan");if(p)p.innerHTML=verifActionsHTML();return}
   const b=e.target.closest("[data-ptab]");if(b){PCSUI.tab=b.dataset.ptab;renderPCS()}
+});
+$("#pcsView").addEventListener("focusout",e=>{
+  const ce=e.target.closest("[data-vaf]");if(!ce||!S||!S.p.insee||S.isExample)return;
+  const tr=ce.closest("[data-va]"),a=tr&&pcsCur().verif.actions[+tr.dataset.va];if(a){a[ce.dataset.vaf]=ce.textContent.trim();pcsSaved()}
 });
 $("#pcsView").addEventListener("keydown",e=>{
   if(!e.target.closest("#pcsTabs")||(e.key!=="ArrowRight"&&e.key!=="ArrowLeft"))return;
