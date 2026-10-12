@@ -173,6 +173,7 @@ details.more summary::before{content:"";width:7px;height:7px;border-right:1.5px 
 details.more[open] summary::before{transform:rotate(45deg)}
 details.more summary:hover{color:var(--primary)}
 details.more .inner{display:flex;flex-direction:column;gap:12px;padding-bottom:18px}
+.erpg summary{cursor:pointer;font-size:14px;padding:6px 0;min-height:32px}.erpg .checks{margin:0 0 6px}
 .more summary .aside{margin-left:auto;font-weight:400;font-size:12.5px;color:var(--faint)}
 #comboAdd{font-size:14px}
 
@@ -421,7 +422,7 @@ body.obsmode .nowb{min-height:42px}
 .site i{width:10px;height:10px;border-radius:50%;background:var(--c);margin-top:6px;flex:none}
 .site b{display:block;font-size:13.5px;font-weight:600;overflow-wrap:anywhere}
 .site span{font-size:12px;color:var(--muted)}
-.c-mairie{--c:var(--primary)}.c-ecole{--c:var(--warn)}.c-sante{--c:var(--bad)}.c-ehpad{--c:var(--violet)}.c-secours{--c:var(--bad)}.c-pharmacie{--c:var(--ok)}.c-salle{--c:var(--teal)}.c-commerce{--c:var(--accent)}.c-sport{--c:var(--teal)}.c-culte{--c:var(--muted)}.c-energie{--c:var(--warn)}.c-eau{--c:var(--primary)}.c-industrie{--c:var(--violet)}.c-camping{--c:var(--ok)}.c-gare{--c:var(--ink)}.c-aero{--c:var(--ink)}.c-place{--c:var(--accent)}
+.c-mairie{--c:var(--primary)}.c-ecole{--c:var(--warn)}.c-sante{--c:var(--bad)}.c-ehpad{--c:var(--violet)}.c-secours{--c:var(--bad)}.c-pharmacie{--c:var(--ok)}.c-salle{--c:var(--teal)}.c-commerce{--c:var(--accent)}.c-sport{--c:var(--teal)}.c-culte{--c:var(--muted)}.c-energie{--c:var(--warn)}.c-eau{--c:var(--primary)}.c-industrie{--c:var(--violet)}.c-camping{--c:var(--ok)}.c-gare{--c:var(--ink)}.c-aero{--c:var(--ink)}.c-place{--c:var(--accent)}.c-culture{--c:var(--violet)}.c-justice{--c:var(--primary)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 @media (max-width:1180px){.logo small{display:none}:root{--panel:330px}.step{padding:18px 18px}details.more{margin-inline:-18px;padding:0 18px}.cta{padding-inline:18px}}
 @media (max-height:820px) and (min-width:621px){:root{--bar:50px}.work{padding-top:6px;gap:10px}.bar{padding-top:4px}.step{padding-block:14px}.stephead h2{font-size:14.5px}.docbody{padding-top:22px;gap:22px}.dochead{padding-block:10px 9px}.sum dt{font-size:12px}.sum dd{font-size:14.5px}.cta{padding-block:10px}.cta .note{display:none}}
@@ -537,6 +538,7 @@ body.obsmode .nowb{min-height:42px}
             </div>
             <div class="field"><label for="icpe">Site industriel (installations classées)</label><input type="text" id="icpe" list="dl-icpe" placeholder="Aucun : site fictif"></div>
             <div class="field"><label for="fdo">Forces de l'ordre compétentes</label><select id="fdo"><option value="auto">Selon la taille de la commune</option><option value="gendarmerie">Gendarmerie nationale</option><option value="police">Police nationale</option></select></div>
+            <div class="field" id="erpBox" hidden><span class="lab">Établissements et lieux publics pris en compte</span><p class="note">Tous sont pris en compte. Décochez ceux à écarter du scénario.</p><div id="erpList"></div></div>
             <div id="datalists" hidden></div>
           </div>
         </details>
@@ -707,7 +709,7 @@ const LIB = {
 inondation:{
   contexte:"Après plusieurs jours de pluies soutenues sur le bassin versant, les sols sont saturés. Un épisode orageux stationnaire provoque une montée rapide {du_riviere}, qui traverse {commune}.",
   initiale:"À H, Vigicrues place le tronçon en vigilance rouge. Le pic de crue est attendu vers H+3. {Le_secteur} est situé en zone inondable.",
-  hypotheses:["Le pic de crue intervient en fin d'exercice","{Le_etab} accueille {n_eleves_txt} et leurs personnels","La circulation est coupée sur {la_axe} à hauteur du pont en cours d'exercice","Le réseau téléphonique fonctionne normalement"],
+  hypotheses:["Le pic de crue intervient en fin d'exercice","{H_etab_accueil}","La circulation est coupée sur {la_axe} à hauteur du pont en cours d'exercice","Le réseau téléphonique fonctionne normalement"],
   phases:[["Alerte","Réception de la vigilance, déclenchement du PCS, armement du PCC."],["Montée en puissance","Alerte des riverains, premières mises en sécurité, ouverture de l'accueil."],["Gestion de crise","Évacuations, hébergement, pression médiatique, points de situation."],["Décrue","Préparation du retour à la normale et FINEX."]],
   injects:[
    [0,"ALERTE","{Pref_sidpc}","Maire","SMS + appel","Vigilance crue rouge sur {la_riviere}. Pic attendu vers H+3. Merci de déclencher votre PCS et de confirmer.","Déclenchement du PCS, convocation de la cellule de crise, accusé de réception à la préfecture."],
@@ -728,7 +730,7 @@ inondation:{
 feu:{
   contexte:"Après six semaines sans pluie et sous un vent soutenu, le niveau de danger feu de forêt est très sévère. Un départ de feu est signalé dans {le_massif}, qui borde {commune}.",
   initiale:"À H, un feu d'environ 5 hectares progresse vers {le_secteur}, en interface forêt-habitat. Les moyens aériens sont engagés sur un autre incendie du département.",
-  hypotheses:["Le vent tourne et accélère la propagation vers H+1","Des fumées gênent la circulation sur {la_axe}","{Le_etab} accueille du public au moment de l'alerte","Une coupure électrique touche une partie du secteur"],
+  hypotheses:["Le vent tourne et accélère la propagation vers H+1","Des fumées gênent la circulation sur {la_axe}","{H_etab_public}","Une coupure électrique touche une partie du secteur"],
   phases:[["Alerte","Signalement du feu, déclenchement du PCS, armement du PCC."],["Menace","Confinement ou évacuation du secteur, gestion des fumées et des axes."],["Crise","Accueil des évacués, pression médiatique, coupure de réseaux."],["Fixation","Feu fixé, retour progressif et FINEX."]],
   injects:[
    [0,"ALERTE","{Secours}","Maire","Téléphone","Feu de forêt en cours, environ 5 hectares, progression vers {le_secteur}. Merci de déclencher votre PCS.","Déclenchement du PCS, armement du PCC, information de la préfecture."],
@@ -770,7 +772,7 @@ tempete:{
 tmd:{
   contexte:"Un camion-citerne transportant un produit chimique toxique se renverse sur {la_axe}, à l'entrée de {commune}. Une fuite est constatée.",
   initiale:"À H, les secours sont sur place. Poussé par un vent {vent_tmd}, le nuage se dirige vers {le_secteur}, situé à {dist_tmd}. Un périmètre de sécurité est en cours de définition.",
-  hypotheses:["Le vent pousse le nuage vers les habitations","{Le_etab} se trouve dans le périmètre de confinement","La circulation reste interdite sur {la_axe} pendant toute la durée de l'exercice","La nature exacte du produit n'est confirmée qu'à H+45"],
+  hypotheses:["Le vent pousse le nuage vers les habitations","{H_etab_perimetre}","La circulation reste interdite sur {la_axe} pendant toute la durée de l'exercice","La nature exacte du produit n'est confirmée qu'à H+45"],
   phases:[["Alerte","Information par les secours, déclenchement du PCS, armement du PCC."],["Protection","Confinement de la population, fermeture des axes."],["Gestion","Inquiétude des familles, accueil, médias."],["Levée","Fin de la fuite, levée du confinement et FINEX."]],
   injects:[
    [0,"ALERTE","{Secours}","Maire","Téléphone","Accident de poids lourd TMD sur {la_axe}, fuite de produit toxique. Déclenchez votre PCS.","Déclenchement du PCS, armement du PCC."],
@@ -790,7 +792,7 @@ tmd:{
 seisme:{
   contexte:"Un séisme de magnitude 5,4 est ressenti fortement sur {commune}. L'épicentre se situe à une vingtaine de kilomètres.",
   initiale:"À H, de nombreux appels arrivent en mairie. Des fissures sont signalées sur des bâtiments anciens {du_secteur}. Le réseau mobile est saturé.",
-  hypotheses:["Une réplique intervient à H+1","{Le_etab} déclenche son plan de mise en sûreté","Une partie de la population refuse de rentrer chez elle","Les moyens de secours sont engagés sur tout le département"],
+  hypotheses:["Une réplique intervient à H+1","{H_etab_ppms}","Une partie de la population refuse de rentrer chez elle","Les moyens de secours sont engagés sur tout le département"],
   phases:[["Choc","Secousse, afflux d'appels, déclenchement du PCS."],["Reconnaissance","Recensement des dégâts et des personnes, sécurisation."],["Soutien","Accueil des sinistrés, réplique, pression des familles."],["Bilan","Premier bilan, organisation des expertises et FINEX."]],
   injects:[
    [0,"ALERTE","{Pref}","Maire","Téléphone","Séisme ressenti sur le département. Merci d'activer votre PCS et de remonter un premier bilan.","Déclenchement du PCS, armement du PCC malgré la saturation des réseaux."],
@@ -810,7 +812,7 @@ seisme:{
 coupure:{
   contexte:"Un incident majeur sur le réseau de transport d'électricité prive {commune} et plusieurs communes voisines d'électricité, en plein épisode de grand froid.",
   initiale:"À H, la coupure dure depuis deux heures. Le gestionnaire annonce un rétablissement incertain, au-delà de 24 heures. Les températures nocturnes descendent à -8 °C.",
-  hypotheses:["Le réseau mobile se dégrade à partir de H+1","La station de pompage d'eau potable n'a qu'une autonomie limitée","{Le_etab} doit fermer","Les carburants deviennent difficiles à trouver"],
+  hypotheses:["Le réseau mobile se dégrade à partir de H+1","La station de pompage d'eau potable n'a qu'une autonomie limitée","{H_etab_ferme}","Les carburants deviennent difficiles à trouver"],
   phases:[["Alerte","Information du gestionnaire, déclenchement du PCS."],["Vulnérables","Recensement et prise en charge des personnes fragiles."],["Durée","Chauffage, eau, communications dégradées."],["Tenue","Organisation de la nuit, relève et FINEX."]],
   injects:[
    [0,"ALERTE","{Pref}","Maire","Téléphone","Coupure électrique de longue durée sur le secteur. Activez votre PCS.","Déclenchement du PCS, armement du PCC avec moyens autonomes."],
@@ -829,7 +831,7 @@ coupure:{
 industriel:{
   contexte:"{icpe_ctx}",
   initiale:"À H, poussé par un vent {vent_ind}, un panache de fumée noire se dirige vers {le_secteur}, situé à {dist_ind}. L'exploitant a déclenché son plan d'urgence et les sapeurs-pompiers sont engagés. La composition des fumées n'est pas encore connue.",
-  hypotheses:["Le vent pousse les fumées vers les habitations","{Le_etab} se trouve sous le panache","Des suies retombent sur les jardins et les cultures","Le suivi environnemental se poursuit au-delà de l'exercice"],
+  hypotheses:["Le vent pousse les fumées vers les habitations","{H_etab_panache}","Des suies retombent sur les jardins et les cultures","Le suivi environnemental se poursuit au-delà de l'exercice"],
   phases:[["Alerte","Information par les secours, déclenchement du PCS, armement du PCC."],["Protection","Confinement sous le panache, évacuation du périmètre de danger."],["Inquiétude","Retombées, questions sanitaires, pression médiatique."],["Maîtrise","Feu maîtrisé, levée des mesures, suivi environnemental et FINEX."]],
   note:"Pour un site classé Seveso, le plan particulier d'intervention (PPI) arrêté par le préfet prime : le PCS de la commune doit s'y articuler, notamment pour l'alerte et le confinement.",
   injects:[
@@ -894,7 +896,7 @@ cyber:{
 sanitaire:{
   contexte:"Un nouveau virus respiratoire se propage rapidement en France, sur le modèle de la Covid-19. Le gouvernement active son plan pandémie ; le préfet et {l_ars} pilotent la réponse dans le département. Les cas se multiplient à {commune}.",
   initiale:"L'exercice se joue en sauts de temps : J (premiers cas et mesures nationales), J+3 (confinement annoncé), J+10 (crise installée), J+30 (sortie progressive). Chaque inject indique le jour simulé.",
-  hypotheses:["Un tiers des agents municipaux est absent (malades ou garde d'enfants)","{Le_etab} ferme sur décision nationale","Les personnes âgées isolées ne peuvent plus faire leurs courses","Un scrutin ou un conseil municipal doit se tenir pendant la crise"],
+  hypotheses:["Un tiers des agents municipaux est absent (malades ou garde d'enfants)","{H_etab_ferme_nat}","Les personnes âgées isolées ne peuvent plus faire leurs courses","Un scrutin ou un conseil municipal doit se tenir pendant la crise"],
   phases:[["J · Montée","Premières mesures, activation du PCS, plan de continuité des services."],["J+3 · Confinement","Personnes isolées, écoles, services essentiels."],["J+10 · Durée","Absentéisme, solidarité, rumeurs, soutien à la campagne sanitaire."],["J+30 · Sortie","Reprise progressive, retour d'expérience et FINEX."]],
   note:"Dans une crise sanitaire, l'État (préfet, ARS) décide des mesures. La commune garantit la continuité de ses services, protège les personnes vulnérables, relaie les consignes et organise la solidarité locale.",
   noteRef:["Plan pandémie 2024","https://www.sgdsn.gouv.fr/files/files/Circulaires%20et%20instructions/SGDSN-PLAN_GOUVERNEMENTAL_PANDEMIE_V8-NUM%20(1).pdf"],
@@ -916,7 +918,7 @@ sanitaire:{
 canicule:{
   contexte:"Météo-France place le département en vigilance rouge canicule pour cinq jours. Les températures dépassent 40 °C le jour et ne descendent pas sous 25 °C la nuit sur {commune}.",
   initiale:"À H, la préfecture demande l'activation des mesures de gestion de la vague de chaleur. Le registre communal des personnes vulnérables compte {n_registre} inscrits.",
-  hypotheses:["La vague de chaleur dure au-delà de l'exercice","La consommation d'eau atteint un niveau record","Les cours sont maintenus {au_etab} malgré la chaleur","Les agents techniques travaillent en extérieur"],
+  hypotheses:["La vague de chaleur dure au-delà de l'exercice","La consommation d'eau atteint un niveau record","{H_etab_cours}","Les agents techniques travaillent en extérieur"],
   phases:[["Alerte","Vigilance rouge, déclenchement du PCS, mobilisation du registre."],["Vulnérables","Appels, visites, prise en charge des personnes isolées."],["Durée","Lieux rafraîchis, eau, adaptation des activités."],["Tenue","Organisation dans la durée, relève et FINEX."]],
   note:"Le maire tient le registre nominatif des personnes vulnérables qui en font la demande et le mobilise dès la vigilance canicule.",
   noteRef:["CASF L121-6-1","https://nausica-avocats.fr/maire-et-canicule-quels-pouvoirs-quels-responsabilites/"],
@@ -1118,7 +1120,7 @@ const DEFAULTS = {
   commune:"Sainte-Croix-du-Lez", insee:"", pop:1240, dept:"Ariège (09)", risk:"inondation", format:"cadre",
   duree:"180", heureH:"09:00", date:"", objs:[...OKEYS],
   secteur:"quartier du Moulin", etab:"école primaire", heberg:"salle des fêtes", axe:"RD 119",
-  erp:"supermarché", hopital:"centre hospitalier de secteur", gare:"gare", aero:"aérodrome", evt:"place de la mairie", barrage:"barrage situé en amont", centrale:"centrale nucléaire voisine", fiche:{}, region:"", epci:"", part:{}, riviere:"cours d'eau principal", massif:"massif boisé", icpe:"", fdo:"auto", focus:null, lat:null, lon:null, combo:[]
+  erp:"supermarché", hopital:"centre hospitalier de secteur", gare:"gare", aero:"aérodrome", evt:"place de la mairie", barrage:"barrage situé en amont", centrale:"centrale nucléaire voisine", exclus:[], fiche:{}, region:"", epci:"", part:{}, riviere:"cours d'eau principal", massif:"massif boisé", icpe:"", fdo:"auto", focus:null, lat:null, lon:null, combo:[]
 };
 const GENERIC={secteur:"secteur exposé",axe:"route principale",evt:"place principale"};
 const PLACE_KEYS=["secteur","evt","etab","heberg","erp","hopital","gare","aero","axe","riviere","massif","icpe","barrage","centrale"];
@@ -1130,7 +1132,7 @@ function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r)}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const GEN={ecole:"f",college:"m",lycee:"m",groupe:"m",creche:"f",institut:"m",centre:"m",etablissement:"m",salle:"f",foyer:"m",maison:"f",espace:"m",halle:"f",hall:"m",gymnase:"m",stade:"m",complexe:"m",hopital:"m",clinique:"f",polyclinique:"f",chu:"m",ch:"m",ehpad:"m",residence:"f",gare:"f",halte:"f",aerodrome:"m",aeroport:"m",base:"f",supermarche:"m",hypermarche:"m",magasin:"m",marche:"m",mairie:"f",hotel:"m",piscine:"f",cinema:"m",eglise:"f",mediatheque:"f",bibliotheque:"f",quartier:"m",hameau:"m",lotissement:"m",zone:"f",route:"f",avenue:"f",rue:"f",place:"f",village:"m",bourg:"m",camping:"m",parc:"m",ecole_:"f",esplanade:"f",parvis:"m",square:"m",jardin:"m",cours:"m",allee:"f",faubourg:"m",cite:"f",lieu:"m",plaine:"f",promenade:"f",port:"m",quai:"m",boulevard:"m",champ:"m",pre:"m",foirail:"m",mail:"m",parking:"m",ile:"f",butte:"f",colline:"f",commerce:"m",epicerie:"f",boulangerie:"f",superette:"f",cafe:"m",restaurant:"m",auberge:"f",arrondissement:"m",secteur:"m",centreville:"m",domaine:"m",terrain:"m",theatre:"m",salle_:"f",kiosque:"m",foire:"f",barrage:"m",centrale:"f",retenue:"f",communaute:"f",metropole:"f",syndicat:"m",massif:"m",foret:"f",bois:"m",riviere:"f",ruisseau:"m",canal:"m",fleuve:"m",gave:"m",torrent:"m",site:"m",societe:"f",usine:"f",entrepot:"m",cooperative:"f",depot:"m",lac:"m",etang:"m"};
+const GEN={maternelle:"f",universite:"f",faculte:"f",erea:"m",ecole:"f",college:"m",lycee:"m",groupe:"m",creche:"f",institut:"m",centre:"m",etablissement:"m",salle:"f",foyer:"m",maison:"f",espace:"m",halle:"f",hall:"m",gymnase:"m",stade:"m",complexe:"m",hopital:"m",clinique:"f",polyclinique:"f",chu:"m",ch:"m",ehpad:"m",residence:"f",gare:"f",halte:"f",aerodrome:"m",aeroport:"m",base:"f",supermarche:"m",hypermarche:"m",magasin:"m",marche:"m",mairie:"f",hotel:"m",piscine:"f",cinema:"m",eglise:"f",mediatheque:"f",bibliotheque:"f",quartier:"m",hameau:"m",lotissement:"m",zone:"f",route:"f",avenue:"f",rue:"f",place:"f",village:"m",bourg:"m",camping:"m",parc:"m",ecole_:"f",esplanade:"f",parvis:"m",square:"m",jardin:"m",cours:"m",allee:"f",faubourg:"m",cite:"f",lieu:"m",plaine:"f",promenade:"f",port:"m",quai:"m",boulevard:"m",champ:"m",pre:"m",foirail:"m",mail:"m",parking:"m",ile:"f",butte:"f",colline:"f",commerce:"m",epicerie:"f",boulangerie:"f",superette:"f",cafe:"m",restaurant:"m",auberge:"f",arrondissement:"m",secteur:"m",centreville:"m",domaine:"m",terrain:"m",theatre:"m",salle_:"f",kiosque:"m",foire:"f",barrage:"m",centrale:"f",retenue:"f",communaute:"f",metropole:"f",syndicat:"m",massif:"m",foret:"f",bois:"m",riviere:"f",ruisseau:"m",canal:"m",fleuve:"m",gave:"m",torrent:"m",site:"m",societe:"f",usine:"f",entrepot:"m",cooperative:"f",depot:"m",lac:"m",etang:"m"};
 const ASPIRE=["halle","hall","hangar","hameau"];
 const ROLE_NOUN={etab:["établissement","m"],heberg:["salle","f"],erp:["magasin","m"],hopital:["centre hospitalier","m"],gare:["gare","f"],aero:["aérodrome","m"],mairie:["mairie","f"],evt:["site","m"],riviere:["cours d'eau","m"],massif:["massif","m"],icpe:["site","m"],barrage:["barrage","m"],centrale:["centrale","f"],epci:["intercommunalité","f"]};
 const norm=w=>String(w||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z_]/g,"");
@@ -1252,6 +1254,66 @@ function etabInfo(p){
   if(!m&&e)m=list.filter(x=>x.lat!=null).map(x=>({x,d:dist(e.lat,e.lon,x.lat,x.lon)})).filter(o=>o.d<.35).sort((a,b)=>a.d-b.d).map(o=>o.x)[0];
   return m||null;
 }
+/* ---------- Établissements d'enseignement et lieux publics concernés ----------
+   Une commune compte souvent plusieurs établissements (publics et privés, de la maternelle au lycée) et plusieurs lieux recevant du public.
+   Le scénario les prend tous en compte : autour du point exposé pour un risque localisé, sur toute la commune sinon. */
+const ERP_CATS=["ecole","ehpad","sante","salle","commerce","place","sport","culte","culture","justice","gare","mairie"];
+const LOCAL_R={inondation:1.5,tmd:1.2,industriel:1.5,feu:1.5,mvt:1,aerien:.8,barrage:2.5};
+const ETAB_RISKS=Object.keys(LIB).filter(k=>/etab|eleves/.test(JSON.stringify(LIB[k])));
+const excluded=(p,name)=>(p.exclus||[]).includes(name);
+function allEtabs(){
+  const out=((S&&S.ecoles)||[]).map(x=>({...x,cat:"ecole"}));
+  ((S&&S.places)||[]).filter(x=>x.cat==="ecole"&&x.named).forEach(o=>{if(!out.some(x=>norm(x.name)===norm(o.name)||(x.lat!=null&&dist(x.lat,x.lon,o.lat,o.lon)<.12)))out.push({name:o.name,lat:o.lat,lon:o.lon,d:o.d,cat:"ecole",eleves:null})});
+  return out;
+}
+function hazardPoint(p){
+  if(p.risk==="industriel"){const ic=(S&&S.icpe||[]).find(x=>x.name===p.icpe);if(ic&&ic.lat!=null)return ic}
+  if(p.risk==="tmd"){const rp=S&&S.roadPts&&S.roadPts[p.axe];if(rp)return rp}
+  return (S&&S.quartiers||[]).find(x=>x.name===p.secteur)||null;
+}
+function concerned(p,cat){
+  const all=cat==="ecole"?allEtabs():((S&&S.places)||[]).filter(x=>x.cat===cat&&x.named);
+  const r=LOCAL_R[p.risk],h=r?hazardPoint(p):null,dh=x=>h&&x.lat!=null?dist(h.lat,h.lon,x.lat,x.lon):null;
+  let l=all.filter(x=>!excluded(p,x.name)&&(x.d==null||x.d<=8));
+  if(h)l=l.filter(x=>dh(x)!=null&&dh(x)<=r);
+  return l.sort((a,b)=>(h?dh(a)-dh(b):(a.d??0)-(b.d??0)));
+}
+const zoneWord=p=>LOCAL_R[p.risk]&&hazardPoint(p)?"de la zone exposée":"de la commune";
+// Établissements visés par les messages du scénario : celui choisi en premier, puis les autres.
+function etabsScen(p){
+  let l=concerned(p,"ecole");
+  const A=allEtabs(),pl=((S&&S.places)||[]).find(x=>x.name===p.etab);
+  const chosen=A.find(x=>x.name===p.etab)||(pl&&A.find(x=>x.lat!=null&&dist(x.lat,x.lon,pl.lat,pl.lon)<.12));
+  if(chosen&&!excluded(p,chosen.name))l=[chosen].concat(l.filter(x=>x.name!==chosen.name));
+  return l.length?l:[{name:p.etab||DEFAULTS.etab,eleves:null,lone:true}];
+}
+function elevesOf(e){if(e.eleves)return e.eleves;const m=((S&&S.ecoles)||[]).filter(x=>x.lat!=null&&e.lat!=null).find(x=>dist(e.lat,e.lon,x.lat,x.lon)<.35);return m?m.eleves:null}
+function etabVars(e){
+  const f=art(e.name,"etab")||{},n=elevesOf(e);
+  return {le_etab:f.le,Le_etab:f.Le,du_etab:f.du,au_etab:f.au,n_eleves_txt:n?nf(n)+" élèves":"ses élèves",n_eleves_nos:n?"nos "+nf(n)+" élèves":"les élèves"};
+}
+const listNames=(l,max=5)=>l.length<=max?l.map(x=>x.name).join(", "):l.slice(0,max-1).map(x=>x.name).join(", ")+" et "+(l.length-max+1)+" autres";
+function etabsHyp(p){
+  const E=etabsScen(p),n=E.length,one=etabVars(E[0]);
+  if(n<2){const L=one.Le_etab;return {H_etab_accueil:L+" accueille "+one.n_eleves_txt+" et leurs personnels",H_etab_public:L+" accueille du public au moment de l'alerte",H_etab_perimetre:L+" se trouve dans le périmètre de confinement",H_etab_ppms:L+" déclenche son plan de mise en sûreté",H_etab_ferme:L+" doit fermer",H_etab_panache:L+" se trouve sous le panache",H_etab_ferme_nat:L+" ferme sur décision nationale",H_etab_cours:"Les cours sont maintenus "+one.au_etab+" malgré la chaleur"}}
+  const el=E.map(elevesOf),tot=el.reduce((a,x)=>a+(x||0),0),part=el.some(x=>!x);
+  const ev=tot?(part?"au moins ":"")+nf(tot)+" élèves":"leurs élèves",g="les "+n+" établissements d'enseignement "+zoneWord(p)+" ("+listNames(E)+")",G=cap(g);
+  return {H_etab_accueil:G+" accueillent "+ev+" et leurs personnels",H_etab_public:G+" accueillent du public au moment de l'alerte",H_etab_perimetre:G+" se trouvent dans le périmètre de confinement",H_etab_ppms:G+" déclenchent leur plan de mise en sûreté",H_etab_ferme:G+" doivent fermer",H_etab_panache:G+" se trouvent sous le panache",H_etab_ferme_nat:G+" ferment sur décision nationale",H_etab_cours:"Les cours sont maintenus dans "+g+" malgré la chaleur"};
+}
+// Lieux recevant du public concernés, par catégorie (hors établissements d'enseignement).
+function erpConcerned(p){
+  const cats=LOCAL_R[p.risk]&&hazardPoint(p)?ERP_CATS:[...new Set((RISKS[p.risk].cats||[]).concat(["salle","ehpad"]))].filter(c=>ERP_CATS.includes(c));
+  return cats.filter(c=>c!=="ecole").map(c=>({cat:c,l:concerned(p,c)})).filter(o=>o.l.length);
+}
+function lieuxInjects(p,dur,keep){
+  const out=[],at=f=>Math.round(dur*f/5)*5,a=actors(p),zw=zoneWord(p);
+  const E=etabsScen(p).filter(x=>!x.lone),erp=erpConcerned(p).flatMap(o=>o.l).filter(x=>x.cat!=="mairie");
+  if(LOCAL_R[p.risk]&&hazardPoint(p)&&erp.length>=2){const o=keep.has("SAUV")?"SAUV":keep.has("POP")?"POP":null;
+    if(o)out.push({t:at(.22),obj:o,from:"COS",to:"PCC",via:"Radio",msg:"Quels lieux recevant du public se trouvent dans la zone exposée ? Il faut tous les prévenir et y appliquer la consigne.",exp:`Recensement et alerte des ${erp.length} lieux recevant du public de la zone (${listNames(erp,6)}), consigne transmise à chacun, suivi tracé.`})}
+  if(E.length>=2&&ETAB_RISKS.includes(p.risk)){const o=keep.has("LIAI")?"LIAI":keep.has("SAUV")?"SAUV":null;
+    if(o)out.push({t:at(.38),obj:o,from:a.l_educ.replace(/^(la|le) /,"").replace(/^l'/,""),to:"PCC",via:"Téléphone",msg:`Les familles nous appellent. Quelle est la situation de chacun des ${E.length} établissements d'enseignement ${zw} ?`,exp:`Point établissement par établissement (${listNames(E,6)}) : élèves présents, mesure appliquée, contact de la direction ; transmission à l'Éducation nationale.`})}
+  return out;
+}
 const isSchool=p=>/école|ecole|collège|college|lycée|lycee|groupe scolaire|maternelle|élémentaire|elementaire/i.test(p.etab);
 const statutOK=s=>!!s&&!/^risque non/i.test(s)&&/existant|concern/i.test(s);
 function terrain(p){
@@ -1311,9 +1373,10 @@ function vars(p){
   Object.assign(v,actors(p),terrain(p),ficheVars(p));
   ["etab","heberg","erp","hopital","gare","aero"].forEach(k=>{const f=art(p[k]||DEFAULTS[k],k);if(f){v["le_"+k]=f.le;v["Le_"+k]=f.Le;v["du_"+k]=f.du;v["au_"+k]=f.au}});
   const a=axeForms(p.axe||DEFAULTS.axe);if(a){v.la_axe=a.le;v.La_axe=a.Le;v.de_axe=a.du}
+  Object.assign(v,etabVars(etabsScen(p)[0]),etabsHyp(p));
   return v;
 }
-const fill=(t,p)=>{const v=vars(p);return String(t).replace(/\{(\w+)\}/g,(m,k)=>v[k]!=null&&(v[k]!==""||k==="alerte_liste")?v[k]:m)};
+const fill=(t,p,ov)=>{const v=ov?{...vars(p),...ov}:vars(p);return String(t).replace(/\{(\w+)\}/g,(m,k)=>v[k]!=null&&(v[k]!==""||k==="alerte_liste")?v[k]:m)};
 const hplus=m=>"H+"+Math.floor(m/60)+":"+String(m%60).padStart(2,"0");
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 const nf=n=>Number(n).toLocaleString("fr-FR");
@@ -1369,7 +1432,7 @@ async function loadRisks(insee){
 /* ---------- Lieux de la commune (OpenStreetMap) ---------- */
 const CATS = {
   mairie:{label:"Mairie", def:"Mairie", t:g=>g.amenity==="townhall"},
-  ecole:{label:"Établissements scolaires", def:"Établissement scolaire", t:g=>/^(school|kindergarten|college)$/.test(g.amenity)},
+  ecole:{label:"Établissements d'enseignement", def:"Établissement d'enseignement", t:g=>/^(school|kindergarten|college|university)$/.test(g.amenity)},
   sante:{label:"Établissements de santé", def:"Établissement de santé", t:g=>/^(hospital|clinic)$/.test(g.amenity)},
   ehpad:{label:"EHPAD et résidences", def:"Résidence pour personnes âgées", t:g=>g.social_facility==="nursing_home"||g.amenity==="nursing_home"},
   secours:{label:"Secours et sécurité", def:"Centre de secours", t:g=>/^(fire_station|police)$/.test(g.amenity)},
@@ -1379,6 +1442,8 @@ const CATS = {
   place:{label:"Places, parcs et lieux de rassemblement", def:"Place", t:g=>g.place==="square"||(g.highway==="pedestrian"&&/^(place|parvis|esplanade|square|mail)\b/i.test(g.name||""))||(g.leisure==="park"&&!!g.name)},
   sport:{label:"Équipements sportifs", def:"Équipement sportif", t:g=>/^(stadium|sports_centre|sports_hall)$/.test(g.leisure)},
   culte:{label:"Lieux de culte", def:"Lieu de culte", t:g=>g.amenity==="place_of_worship"},
+  culture:{label:"Bibliothèques, musées et salles de spectacle", def:"Équipement culturel", t:g=>/^(library|theatre|cinema|arts_centre)$/.test(g.amenity)||g.tourism==="museum"},
+  justice:{label:"Tribunaux et services publics", def:"Tribunal", t:g=>/^(courthouse|post_office)$/.test(g.amenity)},
   energie:{label:"Postes électriques", def:"Poste électrique", t:g=>g.power==="substation"},
   eau:{label:"Eau potable et assainissement", def:"Ouvrage d'eau", t:g=>/^(water_works|water_tower|wastewater_plant)$/.test(g.man_made)},
   industrie:{label:"Sites industriels", def:"Site industriel", t:g=>g.man_made==="works"||(g.landuse==="industrial"&&!!g.name)},
@@ -1401,7 +1466,7 @@ function overpassQuery(p){
   const far=r=>f?'(around:'+r+','+f.lat+','+f.lon+')':'(area.c)';
   const shops=Number(p.pop)<10000?'supermarket|mall|department_store|convenience|general|bakery':'supermarket|mall|department_store';
   return '[out:json][timeout:30];'+A+'('+
-    'nwr'+Z+'["amenity"~"^(townhall|school|kindergarten|college|hospital|clinic|fire_station|police|pharmacy|community_centre|marketplace|place_of_worship|nursing_home)$"];'+
+    'nwr'+Z+'["amenity"~"^(townhall|school|kindergarten|college|university|hospital|clinic|fire_station|police|pharmacy|community_centre|marketplace|place_of_worship|nursing_home|library|theatre|cinema|arts_centre|courthouse|post_office)$"];nwr'+Z+'["tourism"="museum"];'+
     'nwr'+Z+'["social_facility"="nursing_home"];nwr'+Z+'["shop"~"^('+shops+')$"];'+
     'nwr'+Z+'["leisure"~"^(stadium|sports_centre|sports_hall)$"];nwr'+Z+'["power"="substation"];'+
     'nwr'+Z+'["man_made"~"^(water_works|water_tower|wastewater_plant|works)$"];nwr'+Z+'["landuse"="industrial"]["name"];'+
@@ -1506,8 +1571,8 @@ async function loadEcoles(ok=()=>true){
     const L=(j.results||j.records||[]).map(r=>r.fields||r).filter(r=>!/ferm/i.test(String(r.etat||""))).map(r=>{
       const name=String(r.nom_etablissement||r.appellation_officielle||"").trim().replace(/^Ecole/,"École").replace(/^College/,"Collège").replace(/^Lycee/,"Lycée");
       const lat=num(r.latitude),lon=num(r.longitude);
-      return {name,type:String(r.type_etablissement||""),eleves:num(r.nombre_d_eleves),lat,lon,d:lat!=null&&zc?Math.round(dist(zc.lat,zc.lon,lat,lon)*10)/10:null};
-    }).filter(r=>r.name&&/école|collège|lycée/i.test(r.type+" "+r.name));
+      return {name,type:String(r.type_etablissement||""),statut:String(r.statut_public_prive||""),eleves:num(r.nombre_d_eleves),lat,lon,d:lat!=null&&zc?Math.round(dist(zc.lat,zc.lon,lat,lon)*10)/10:null};
+    }).filter(r=>r.name&&/école|ecole|collège|college|lycée|lycee|erea/i.test(r.type+" "+r.name));
     S.ecoles=L;
     if(!p.etabUser&&!isSchool(p)&&L.length){const b=L.slice().sort((a,b)=>(a.d??0)-(b.d??0))[0];p.etab=b.name;const el=$("#etab");if(el)el.value=p.etab}
   }catch(e){}
@@ -1549,7 +1614,15 @@ function autoAssign(opt={}){
   PLACE_KEYS.forEach(k=>{const el=$("#"+k);if(el)el.value=p[k]||""});
   const n=$("#lieuxNote");if(n)n.textContent="Lieux proposés à partir de la carte"+(isBig(p)?" (zone d'exercice)":"")+". Vous pouvez les modifier ou en choisir d'autres dans les suggestions.";
 }
+function renderErp(){
+  const box=$("#erpBox");if(!box)return;const p=S.p;
+  const groups=ERP_CATS.map(c=>({c,l:c==="ecole"?allEtabs():(S.places||[]).filter(x=>x.cat===c&&x.named&&(x.d==null||x.d<=8))})).filter(o=>o.l.length);
+  box.hidden=!groups.length;
+  $("#erpList").innerHTML=groups.map(o=>{const off=o.l.filter(x=>excluded(p,x.name)).length;return `<details class="erpg"><summary>${esc(CATS[o.c].label)} <span class="note">${o.l.length-off} sur ${o.l.length}</span></summary><ul class="checks">${o.l.slice(0,60).map(x=>`<li><label><input type="checkbox" data-erp="${esc(x.name)}"${excluded(p,x.name)?"":" checked"}> ${esc(x.name)}${x.eleves?` <span class="note">· ${nf(x.eleves)} élèves${x.statut?" · "+esc(x.statut.toLowerCase()):""}</span>`:""}</label></li>`).join("")}</ul></details>`}).join("");
+}
+$("#erpList").addEventListener("change",e=>{const n=e.target.dataset.erp;if(n==null)return;const a=S.p.exclus=(S.p.exclus||[]).filter(x=>x!==n);if(!e.target.checked)a.push(n);save();renderErp();const i=[...document.querySelectorAll("#erpList [data-erp]")].find(x=>x.dataset.erp===n);if(i){i.closest("details").open=true;i.focus()}toast("Régénérez le dossier pour appliquer ce choix.")});
 function renderDatalists(){
+  renderErp();
   const pl=S.places||[];
   const opts=cat=>pl.filter(x=>x.cat===cat&&x.named).slice(0,40).map(x=>`<option value="${esc(x.name)}">${x.d!=null?x.d+" km":""}</option>`).join("");
   $("#datalists").innerHTML=["ecole","salle","commerce","sante","gare","aero","place"].map(c=>`<datalist id="dl-${c}">${opts(c)}</datalist>`).join("")+
@@ -1746,7 +1819,7 @@ function closeSugg(){$("#sugg").hidden=true;$("#commune").setAttribute("aria-exp
 $("#sugg").addEventListener("mousedown",e=>{const li=e.target.closest("li");if(li){e.preventDefault();pick(suggItems[+li.dataset.i])}});
 function pick(c){
   closeSugg();
-  Object.assign(S.p,{commune:c.nom,insee:c.code,pop:c.population||"",dept:c.departement?c.departement.nom+" ("+c.departement.code+")":"",region:c.region?c.region.nom:"",epci:c.epci?c.epci.nom:"",part:{},fiche:{},lat:c.centre?c.centre.coordinates[1]:null,lon:c.centre?c.centre.coordinates[0]:null});
+  Object.assign(S.p,{commune:c.nom,insee:c.code,pop:c.population||"",dept:c.departement?c.departement.nom+" ("+c.departement.code+")":"",region:c.region?c.region.nom:"",epci:c.epci?c.epci.nom:"",part:{},fiche:{},exclus:[],lat:c.centre?c.centre.coordinates[1]:null,lon:c.centre?c.centre.coordinates[0]:null});
   PLACE_KEYS.forEach(k=>S.p[k]=GENERIC[k]||DEFAULTS[k]);S.p.focus=null;S.p.fdo="auto";S.p.icpeUser=false;S.p.etabUser=false;S.p.secteurAuto=true;clearGeo();geoRisks=null;S.ctx=null;writeForm();
   $("#commune").value=c.nom;S.isExample=false;renderId();save();render();
   S.annu=[];renderAnnu();renderPart();renderFiche();loadRisks(c.code).then(()=>{if(geoRisks&&geoRisks.status==="ok"&&geoRisks.insee===c.code)toast("Risques de "+c.nom+" chargés depuis Géorisques.")});
@@ -1763,18 +1836,20 @@ function buildInjects(p){
     {t:25,obj:"LIAI",from:a.Pref,to:"Maire",via:"Téléphone",msg:"Combien de membres de votre cellule de crise avez-vous joints ? Lesquels restent injoignables ?",exp:"Compte rendu chiffré : membres joints, messages laissés, injoignables, délai."},
     {t:30,obj:"FIN",from:"Directeur d'exercice",to:"Tous",via:"Message",msg:"FIN D'EXERCICE. Rassemblement pour le débriefing.",exp:"Arrêt du jeu, débriefing à chaud."}]}
   const lib=LIB[p.risk],dur=Number(p.duree),k=dur/180,keep=new Set(p.objs);
-  const out=lib.injects.filter(i=>i[1]==="FIN"||i[1]==="ALERTE"||keep.has(i[1])).map(i=>({
-    t:i[1]==="FIN"?dur-2:Math.round(i[0]*k/5)*5,obj:i[1],from:fill(i[2],p),to:fill(i[3],p),via:i[4],msg:fill(i[5],p),exp:fill(i[6],p)
-  }));
-  out.push(...ficheInjects(p,dur,keep));
+  // Les messages qui visent un établissement d'enseignement sont répartis entre tous les établissements concernés.
+  const E=etabsScen(p);let ne=0;const ov=i=>/\{(du|le|Le|au)_etab\}|\{n_eleves_(txt|nos)\}/.test(i[2]+i[5]+i[6])?etabVars(E[ne++%E.length]):null;
+  const out=lib.injects.filter(i=>i[1]==="FIN"||i[1]==="ALERTE"||keep.has(i[1])).map(i=>{const o=ov(i);return {
+    t:i[1]==="FIN"?dur-2:Math.round(i[0]*k/5)*5,obj:i[1],from:fill(i[2],p,o),to:fill(i[3],p,o),via:i[4],msg:fill(i[5],p,o),exp:fill(i[6],p,o)
+  }});
+  out.push(...ficheInjects(p,dur,keep),...lieuxInjects(p,dur,keep));
   comboOf(p).forEach((c,n)=>{
     const L2=LIB[c].injects.filter(x=>x[1]!=="FIN");
     const sel=[L2[0]].concat(L2.slice(1).filter(x=>keep.has(x[1])).slice(0,3));
     const start=Math.round(dur*(n===0?.33:.55)/5)*5, span=dur*.35;
     sel.forEach((x,j)=>{
       const t=Math.min(dur-5,j===0?start:start+Math.max(5,Math.round(x[0]/180*span/5)*5));
-      const exp=fill(x[6],p);
-      out.push({t,obj:x[1],sec:c,from:fill(x[2],p),to:fill(x[3],p),via:x[4],msg:(j===0?"[Nouvel événement] ":"")+fill(x[5],p),exp:j===0?"Intégrer ce nouvel événement à la conduite en cours : "+exp.charAt(0).toLowerCase()+exp.slice(1):exp});
+      const o=ov(x),exp=fill(x[6],p,o);
+      out.push({t,obj:x[1],sec:c,from:fill(x[2],p,o),to:fill(x[3],p,o),via:x[4],msg:(j===0?"[Nouvel événement] ":"")+fill(x[5],p,o),exp:j===0?"Intégrer ce nouvel événement à la conduite en cours : "+exp.charAt(0).toLowerCase()+exp.slice(1):exp});
     });
   });
   return out.sort((a,b)=>a.t-b.t);
@@ -1855,9 +1930,9 @@ function checks(p){
       const m=d.getMonth(),j=d.getDay();
       if(all.includes("canicule")&&(m<5||m>8))w.push(`Une canicule en ${MOIS[m]} est peu vraisemblable. Changez la date ou le risque.`);
       if(all.includes("tempete")&&m>=4&&m<=8)w.push(`Le scénario annonce de la neige : peu vraisemblable en ${MOIS[m]}.`);
-      const school=/école|collège|lycée|groupe scolaire|maternelle|élémentaire/i.test(p.etab);
+      const school=/école|collège|lycée|groupe scolaire|maternelle|élémentaire/i.test(p.etab)||allEtabs().length>0;
       const uses=["inondation","feu","tmd","seisme","industriel","canicule","bombe","masse","barrage","nucleaire","mvt"].some(k=>all.includes(k));
-      if(school&&uses&&(j===0||j===6))w.push(`L'exercice tombe un ${JOURS[j]} : l'établissement scolaire (${p.etab}) sera fermé, alors que le scénario y place des élèves.`);
+      if(school&&uses&&(j===0||j===6))w.push(`L'exercice tombe un ${JOURS[j]} : les établissements d'enseignement seront fermés, alors que le scénario y place des élèves.`);
       if(all.includes("masse")||all.includes("terrorisme")){}
       if(all.includes("cyber")&&j!==1)w.push(`Le scénario cyber commence « un lundi matin » ; l'exercice est un ${JOURS[j]}. Adaptez le contexte ou la date.`);
     }
@@ -1866,8 +1941,8 @@ function checks(p){
   {const nt=(S.annu||[]).filter(c=>!c.tel).length;if(nt)w.push(`${nt} contact${nt>1?"s":""} de l'annuaire sans numéro de téléphone.`)}
   if(ficheFill(p)<3)w.push("La fiche « Moyens de la commune » est peu renseignée : les messages restent génériques. Complétez-la pour un exercice fidèle à vos moyens réels.");
   {const cap=fn(p,"cap"),k=scale(p);if(cap!=null&&EVAC_RISKS.includes(p.risk)&&k.evac>cap)w.push(`Le lieu d'accueil (${nf(cap)} places) ne suffit pas pour les ${nf(k.evac)} évacués du scénario : un message de saturation est ajouté au chronogramme.`)}
-  if(!isSchool(p)&&["inondation","tmd","industriel","seisme","canicule","sanitaire","bombe","masse"].some(k=>all.includes(k)))w.push(`L'établissement sensible retenu (${p.etab}) n'est pas une école, alors que le scénario parle d'élèves et de parents. Choisissez une école, ou adaptez les messages concernés.`);
-  if(p.heureH){const h=+p.heureH.split(":")[0];const school=/école|collège|lycée|groupe scolaire|maternelle|élémentaire/i.test(p.etab);
+  if(!isSchool(p)&&!allEtabs().length&&["inondation","tmd","industriel","seisme","canicule","sanitaire","bombe","masse"].some(k=>all.includes(k)))w.push(`L'établissement sensible retenu (${p.etab}) n'est pas une école, alors que le scénario parle d'élèves et de parents. Choisissez une école, ou adaptez les messages concernés.`);
+  if(p.heureH){const h=+p.heureH.split(":")[0];const school=/école|collège|lycée|groupe scolaire|maternelle|élémentaire/i.test(p.etab)||allEtabs().length>0;
     if(school&&(h<8||h>=17)&&["inondation","tmd","industriel","seisme"].some(k=>all.includes(k)))w.push(`H est fixé à ${p.heureH} : les élèves ne seront plus à l'école. Avancez l'heure ou adaptez les hypothèses.`)}
   return w;
 }
@@ -1893,14 +1968,24 @@ function vScenario(){
       <div class="fact"><b>${nf(k.pop)}</b><span>habitants : effectifs du scénario calibrés en conséquence</span></div>
       <div class="fact"><b>${nf(k.evac)}</b><span>personnes à évacuer · ${nf(k.reg)} inscrits au registre des personnes vulnérables</span></div>
       <div class="fact"><b>${a.pol?"Police nationale":"Gendarmerie"}</b><span>forces de l'ordre · ${esc(a.secLabel)}</span></div>
-    </div><p class="note">Partenaires joués : ${esc((()=>{const t=partners(p),a=actors(p);return [t.pref,a.secLabel,t.ars,t.epci==="intercommunalité"?"":t.epci,t.elec,t.presse].filter(Boolean).join(" · ")})())}.${(()=>{const e=etabInfo(p);return e&&e.eleves?" "+esc(p.etab)+" : "+nf(e.eleves)+" élèves (annuaire de l'Éducation nationale).":""})()}</p>${isBig(p)?`<p class="note">Commune de plus de ${nf(ZONE_POP)} habitants : le jeu se concentre sur une zone d'exercice de ${String(ZONE_R/1000).replace(".",",")} km de rayon${p.focus&&p.focus.name?" autour de "+esc(p.focus.name):""}, déplaçable depuis l'onglet Carte.</p>`:""}</div>`})()}
+    </div><p class="note">Partenaires joués : ${esc((()=>{const t=partners(p),a=actors(p);return [t.pref,a.secLabel,t.ars,t.epci==="intercommunalité"?"":t.epci,t.elec,t.presse].filter(Boolean).join(" · ")})())}.${(()=>{const E=etabsScen(p),n=E.length===1&&elevesOf(E[0]);return n?" "+esc(E[0].name)+" : "+nf(n)+" élèves (annuaire de l'Éducation nationale).":""})()}</p>${isBig(p)?`<p class="note">Commune de plus de ${nf(ZONE_POP)} habitants : le jeu se concentre sur une zone d'exercice de ${String(ZONE_R/1000).replace(".",",")} km de rayon${p.focus&&p.focus.name?" autour de "+esc(p.focus.name):""}, déplaçable depuis l'onglet Carte.</p>`:""}</div>`})()}
     ${hist}
-    ${(()=>{const st=riskSites(p.risk,6);return st.length?`<div class="sec"><h4>Sites concernés dans la commune</h4><div class="sites">${st.map(x=>`<div class="site c-${x.cat}"><i></i><div><b>${esc(x.name)}</b><span>${esc(CATS[x.cat].label)}${x.d!=null?" · "+String(x.d).replace(".",",")+" km":""}</span></div></div>`).join("")}</div></div>`:""})()}
+    ${lieuxSection(p)}
+    ${(()=>{const st=riskSites(p.risk,6).filter(x=>!ERP_CATS.includes(x.cat));return st.length?`<div class="sec"><h4>Autres sites concernés</h4><div class="sites">${st.map(x=>`<div class="site c-${x.cat}"><i></i><div><b>${esc(x.name)}</b><span>${esc(CATS[x.cat].label)}${x.d!=null?" · "+String(x.d).replace(".",",")+" km":""}</span></div></div>`).join("")}</div></div>`:""})()}
     <div class="sec"><h4>Déroulement</h4><div class="phases">${ph}</div></div>
     <div class="sec"><h4>Hypothèses de jeu</h4><ul>${L.hypotheses.map(h=>`<li>${esc(fill(h,p))}</li>`).concat(ficheHyp(p).map(h=>`<li>${esc(h)}</li>`)).join("")}</ul></div>
     ${L.note?`<div class="callout">${info}<span>${esc(L.note)}${L.noteRef?` <a class="ref" href="${L.noteRef[1]}" target="_blank" rel="noopener">${esc(L.noteRef[0])}</a>`:""}</span></div>`:""}
     <div class="callout warn">${info}<span>Document réservé à l'équipe d'animation. Les joueurs ne reçoivent que la situation initiale.</span></div>
   </div>`;
+}
+function lieuxSection(p){
+  if(!S.places)return "";
+  const E=etabsScen(p).filter(x=>!x.lone),g=erpConcerned(p),zw=zoneWord(p);
+  if(!E.length&&!g.length)return "";
+  const row=(lab,l,f)=>`<li><b>${esc(lab)}</b> (${l.length}) : ${esc(l.slice(0,12).map(f||(x=>x.name)).join(", "))}${l.length>12?" et "+(l.length-12)+" autres":""}</li>`;
+  const el=E.map(elevesOf),tot=el.reduce((a,x)=>a+(x||0),0);
+  return `<div class="sec"><h4>Établissements et lieux publics concernés</h4><ul>${E.length?row("Établissements d'enseignement",E,x=>{const n=elevesOf(x);return x.name+(n?" ("+nf(n)+" élèves)":"")}):""}${g.map(o=>row(CATS[o.cat].label,o.l)).join("")}</ul>
+    <p class="note">Recensement ${zw} : établissements publics et privés de tous niveaux (annuaire de l'Éducation nationale${E.length&&tot?", "+nf(tot)+" élèves au total":""}) et lieux recevant du public (OpenStreetMap). Les messages destinés aux établissements sont répartis entre eux. Décochez un lieu dans « Lieux utilisés dans le scénario » pour l'écarter.</p></div>`;
 }
 const tagOf=o=>`<span class="tag o-${o}">${esc(o==="FIN"?"FINEX":OBJS[o].short)}</span>`;
 function vChrono(){
@@ -2127,8 +2212,9 @@ function vObs(){
 }
 /* ---------- Rapport et historique ---------- */
 const HKEY="commune-prete-historique";
-function hLoad(){try{return JSON.parse(localStorage.getItem(HKEY))||[]}catch(e){return []}}
-function hSave(h){try{localStorage.setItem(HKEY,JSON.stringify(h))}catch(e){}}
+let HMEM=null; // historique gardé en mémoire quand le navigateur refuse le stockage local
+function hLoad(){if(HMEM)return HMEM;try{return JSON.parse(localStorage.getItem(HKEY))||[]}catch(e){return []}}
+function hSave(h){try{localStorage.setItem(HKEY,JSON.stringify(h));HMEM=null;return true}catch(e){HMEM=h;return false}}
 const sameCommune=(x,p)=>p.insee?x.insee===p.insee:x.commune===p.commune;
 function hCommune(){return hLoad().filter(x=>sameCommune(x,S.p)).sort((a,b)=>String(b.date).localeCompare(String(a.date)))}
 function scoreAll(){let a=0,pa=0,k=0,n=0;S.p.objs.forEach(o=>{const t=tally(o);a+=t.a;pa+=t.p;k+=t.k;n+=t.n});const c=a+pa+k;return {a,p:pa,k,n,c,taux:c?Math.round((a+pa/2)/c*100):null}}
@@ -2143,14 +2229,14 @@ function archive(){
     actions:S.retex.actions.filter(x=>x.a&&x.a!=="Nouvelle action").map(x=>({a:x.a,pilote:x.pilote,ech:x.ech,done:false}))};
   const i=h.findIndex(x=>x.id===e.id);
   if(i>=0){e.actions=e.actions.map(a=>{const o=(h[i].actions||[]).find(y=>y.a===a.a);return o?{...a,done:o.done}:a});h[i]=e}else h.push(e);
-  S.archId=e.id;hSave(h);save();
+  S.archId=e.id;const ok=hSave(h);save();return ok;
 }
 function nextDue(list){if(!list.length)return null;const d=new Date(list[0].date+"T12:00:00");if(isNaN(d))return null;d.setFullYear(d.getFullYear()+5);return d}
 function reportHTML(){
   const p=S.p,f=FORMATS[p.format],sc=scoreAll(),D=delays(),av=avgDelay(),a=actors(p);
   const row=(c)=>`<tr>${c.map(x=>`<td>${x}</td>`).join("")}</tr>`;
   const lab={ok:"Atteint",part:"Partiel",ko:"Non atteint"};
-  const prev=hCommune().filter(x=>x.id!==S.archId);
+  const prev=hCommune().filter(x=>x.id!==S.archId);let sn=5;
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport de fin d'exercice — ${esc(p.commune)}</title><style>${printCss("Rapport de fin d'exercice")}h2{font-size:13pt;margin:16pt 0 6pt;border-bottom:1px solid #c6cfd9;padding-bottom:3pt;break-after:avoid;page-break-after:avoid}</style></head><body>
   <p class="mark">EXERCICE · EXERCICE · EXERCICE</p>
   ${S.isExample?`<div class="callout warn"><b>Exemple sur une commune fictive.</b> Recherchez votre commune dans Commune Prête pour obtenir son propre rapport.</div>`:""}
@@ -2168,15 +2254,24 @@ function reportHTML(){
   <h2>4. Axes d'amélioration</h2><p>${esc(S.retex.axes||"—").replace(/\n/g,"<br>")}</p>
   <h2>5. Plan d'actions correctives</h2>
   <table><tr><th>Action</th><th>Pilote</th><th>Échéance</th></tr>${S.retex.actions.map(x=>row([esc(x.a),esc(x.pilote),esc(x.ech)])).join("")}</table>
-  ${(()=>{const st=callStats();if(!st||!st.n)return "";const a=S.annu||[],L=S.live.calls||{};return `<h2>Test de l'annuaire de crise</h2><p>${st.ok} membres joints sur ${st.n} (${Math.round(st.ok/st.n*100)} %)${st.half!=null?", la moitié en "+st.half+" min":""}${st.last!=null?", le dernier à H+"+st.last+" min":""}.</p><table><tr><th>Nom</th><th>Fonction</th><th>Résultat</th><th>Heure</th></tr>${a.map((c,i)=>row([esc(c.nom),esc(c.fonction),L[i]?CALL_ST.find(x=>x[0]===L[i].st)[1]:"Non appelé",L[i]?fmtShort(L[i].at):"—"])).join("")}</table>`})()}
-  ${D.length?`<h2>6. Délais de réaction mesurés</h2><table><tr><th>Heure</th><th>Émetteur</th><th>Message</th><th>Délai</th></tr>${D.map(o=>row([hplus(o.i.t),esc(o.i.from),esc(o.i.msg),o.d!=null?Math.round(o.d-o.s)+" min":"aucune réaction"+(o.r!=null?" (relancé)":"")])).join("")}</table>`:""}
-  <h2>${D.length?7:6}. Grille d'observation détaillée</h2>
+  ${(()=>{const st=callStats();if(!st||!st.n)return "";const a=S.annu||[],L=S.live.calls||{};return `<h2>${++sn}. Test de l'annuaire de crise</h2><p>${st.ok} membres joints sur ${st.n} (${Math.round(st.ok/st.n*100)} %)${st.half!=null?", la moitié en "+st.half+" min":""}${st.last!=null?", le dernier à H+"+st.last+" min":""}.</p><table><tr><th>Nom</th><th>Fonction</th><th>Résultat</th><th>Heure</th></tr>${a.map((c,i)=>row([esc(c.nom),esc(c.fonction),L[i]?CALL_ST.find(x=>x[0]===L[i].st)[1]:"Non appelé",L[i]?fmtShort(L[i].at):"—"])).join("")}</table>`})()}
+  ${D.length?`<h2>${++sn}. Délais de réaction mesurés</h2><table><tr><th>Heure</th><th>Émetteur</th><th>Message</th><th>Délai</th></tr>${D.map(o=>row([hplus(o.i.t),esc(o.i.from),esc(o.i.msg),o.d!=null?Math.round(o.d-o.s)+" min":"aucune réaction"+(o.r!=null?" (relancé)":"")])).join("")}</table>`:""}
+  <h2>${++sn}. Grille d'observation détaillée</h2>
   ${p.objs.map(o=>`<div class="blk"><h4>${esc(OBJS[o].label)}</h4><table><thead><tr><th>Critère</th><th>Cotation</th><th>Constaté</th></tr></thead>${crit(o).map((c,j)=>row([esc(c),lab[S.cot[o+"-"+j]]||"—",esc((S.obsv||{})[o+"-"+j]||"")])).join("")}</table></div>`).join("")}
   ${S.live&&S.live.log.length?`<h2>Annexe : main courante</h2><table><tr><th>Heure de jeu</th><th>Heure réelle</th><th>Événement</th></tr>${S.live.log.map(x=>row([fmtEl(x.at).slice(0,-3),new Date(x.wall).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),esc(x.txt)])).join("")}</table>`:""}
   <p class="muted" style="margin-top:18pt">Rapport établi avec Commune Prête. Exercice réalisé au titre des articles D731-9 à D731-13 du code de la sécurité intérieure ; transmis pour information à ${esc(a.Pref.replace(/^Préfecture/,"la préfecture"))}.</p>
   </body></html>`;
 }
-function dl(name,mime,content){try{const b=new Blob([content],{type:mime}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);return true}catch(e){return false}}
+// Dans la copie Claude, le lecteur bloque les liens de téléchargement : on passe par sa fonction d'enregistrement,
+// qui n'accepte pas l'extension .doc (le document Word est alors enregistré en .html, que Word ouvre aussi).
+let DLNS;
+function dlNs(){if(DLNS!==undefined)return Promise.resolve(DLNS);const c=window.claude;return (c&&typeof c.use==="function"?Promise.resolve(c.use("downloads")).catch(()=>null):Promise.resolve(null)).then(n=>DLNS=n||null)}
+async function dl(name,mime,content){
+  const ns=await dlNs();
+  if(ns){const fn=name.replace(/\.doc$/,".html");try{await ns.save({filename:fn,data:content});return fn===name?"ok":"html"}catch(e){return e&&e.code==="declined"?"declined":"fail"}}
+  try{const b=new Blob([content],{type:mime}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);return "ok"}catch(e){return "fail"}
+}
+const dlMsg=(r,ok)=>r==="ok"?ok:r==="html"?ok.replace(/\.$/,"")+" au format HTML : ouvrez-le avec Word.":r==="declined"?"Téléchargement annulé.":"Téléchargement bloqué par le navigateur.";
 const fileBase=()=>"exercice-"+String(S.p.commune).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w]+/g,"-").toLowerCase()+"-"+isoDate();
 function printReport(){printHTML(reportHTML())}
 function printHTML(html){
@@ -2281,13 +2376,13 @@ function cardsHTML(){return `<!doctype html><html lang="fr"><head><meta charset=
 document.addEventListener("click",e=>{
   if(!S||document.body.classList.contains("obsmode"))return;
   const id=e.target.id;
-  if(id==="dosDoc"){const ok=dl(fileBase().replace(/^exercice/,"dossier")+".doc","application/msword","﻿"+dossierHTML());toast(ok?"Dossier Word téléchargé.":"Téléchargement bloqué par le navigateur.");return}
+  if(id==="dosDoc"){dl(fileBase().replace(/^exercice/,"dossier")+".doc","application/msword","﻿"+dossierHTML()).then(r=>toast(dlMsg(r,"Dossier Word téléchargé.")));return}
   if(id==="dosPdf"){printHTML(dossierHTML());toast("Choisissez « Enregistrer au format PDF » dans la fenêtre d'impression.");return}
   if(id==="cardsPrint"){printHTML(cardsHTML());toast("Fiches joueurs : deux par page, à découper.");return}
-  if(id==="repDoc"){const ok=dl(fileBase()+".doc","application/msword","﻿"+reportHTML());toast(ok?"Rapport Word téléchargé.":"Téléchargement bloqué par le navigateur.");return}
+  if(id==="repDoc"){dl(fileBase()+".doc","application/msword","﻿"+reportHTML()).then(r=>toast(dlMsg(r,"Rapport Word téléchargé.")));return}
   if(id==="repPdf"){printReport();toast("Choisissez « Enregistrer au format PDF » dans la fenêtre d'impression.");return}
-  if(id==="archBtn"){if(!pendingArch){pendingArch=true;render();return}pendingArch=false;archive();render();toast("Exercice archivé dans l'historique de la commune.");return}
-  if(id==="histExport"){const ok=dl("historique-commune-prete.json","application/json",JSON.stringify(hLoad(),null,1));toast(ok?"Historique exporté.":"Téléchargement bloqué par le navigateur.");return}
+  if(id==="archBtn"){if(!pendingArch){pendingArch=true;render();return}pendingArch=false;const ok=archive();render();toast(ok?"Exercice archivé dans l'historique de la commune.":"Ce navigateur ne conserve pas les données : l'archive sera perdue à la fermeture de la page. Cliquez sur « Sauvegarder l'historique » pour la garder.");return}
+  if(id==="histExport"){dl("historique-commune-prete.json","application/json",JSON.stringify(hLoad(),null,1)).then(r=>toast(dlMsg(r,"Historique exporté.")));return}
   const hd=e.target.closest("[data-hact]");if(hd){const [hid,ai]=hd.dataset.hact.split("|"),h=hLoad(),x=h.find(y=>y.id===hid);if(x&&x.actions[+ai]){x.actions[+ai].done=hd.checked;hSave(h);render()}return}
 });
 document.addEventListener("change",e=>{
@@ -2495,6 +2590,7 @@ if("serviceWorker" in navigator&&location.protocol==="https:"&&/github\.io$/.tes
 addEventListener("offline",()=>toast("Hors ligne : l'outil continue de fonctionner. Les bases publiques reviendront avec le réseau."));
 addEventListener("online",()=>toast("Connexion rétablie."));
 /* ---------- Démarrage ---------- */
+dlNs();
 if(location.hash.indexOf("#obs=")===0){initObs()}else{
 S=load();
 if(!(S&&S.p&&LIB[S.p.risk]&&Array.isArray(S.injects))){

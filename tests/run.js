@@ -8,8 +8,8 @@ let failures = 0, passes = 0;
 const ok = (cond, label) => { if (cond) { passes++; console.log("  ✓ " + label) } else { failures++; console.log("  ✗ " + label) } };
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
-function open(name, hash = "", storage) {
-  const F = FIX[name], errs = [], clip = { text: "" }, blobs = [];
+function open(name, hash = "", storage, opts = {}) {
+  const F = FIX[name], errs = [], clip = { text: "" }, blobs = [], saves = [];
   const vc = new VirtualConsole();
   vc.on("jsdomError", e => { const m = String(e.message || e); if (!/Not implemented: (window\.print|window\.focus|navigation|HTMLCanvas)/.test(m)) errs.push(m) });
   const R = o => Promise.resolve({ ok: true, json: () => Promise.resolve(o) });
@@ -17,6 +17,8 @@ function open(name, hash = "", storage) {
     runScripts: "dangerously", pretendToBeVisual: true, url: "https://exemple.test/" + hash, virtualConsole: vc,
     beforeParse(w) {
       if (storage) for (const [k, v] of Object.entries(storage)) w.localStorage.setItem(k, v);
+      if (opts.noStorage) Object.defineProperty(w, "localStorage", { get() { throw new Error("SecurityError") } });
+      if (opts.claude) w.claude = { use: n => Promise.resolve(n === "downloads" ? { save: r => { saves.push(r); return Promise.resolve({ status: "saved" }) } } : null) };
       w.fetch = (u, o) => { u = String(u);
         if (u.includes("communes?nom")) return R([F.commune]);
         if (u.includes("geometry=contour")) return R({ type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] } });
@@ -32,7 +34,7 @@ function open(name, hash = "", storage) {
     } });
   const w = dom.window;
   w.HTMLAnchorElement.prototype.click = function () {};
-  return { w, d: w.document, q: s => w.document.querySelector(s), errs, clip, blobs, close: () => w.close() };
+  return { w, d: w.document, q: s => w.document.querySelector(s), errs, clip, blobs, saves, close: () => w.close() };
 }
 async function pickCommune(t, name) {
   t.q("#commune").value = FIX[name].commune.nom.slice(0, 3); t.q("#commune").dispatchEvent(new t.w.Event("input"));
@@ -116,6 +118,23 @@ const view = t => t.q("#view").textContent;
     t.close();
   }
 
+  console.log("\nÉTABLISSEMENTS ET LIEUX PUBLICS");
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg");
+    const s = t.q("#r-canicule"); s.checked = true; s.dispatchEvent(new t.w.Event("change", { bubbles: true })); gen(t); click(t, '[data-tab="scenario"]');
+    ok(/Établissements d'enseignement \(3\)/.test(view(t)) && /École privée Sainte-Marie/.test(view(t)) && /Collège Victor Hugo/.test(view(t)), "tous les établissements, publics et privés, pris en compte");
+    ok(/Les cours sont maintenus dans les 3 établissements d'enseignement de la commune/.test(view(t)) && /788 élèves au total/.test(view(t)), "hypothèse au pluriel et effectif total");
+    ok(/Médiathèque Jean-Jaurès/.test(t.q("#erpList").textContent) && /Jardin du Lac/.test(t.q("#erpList").textContent), "lieux publics recensés (bibliothèques, parcs…)");
+    click(t, '[data-tab="chrono"]'); ok(/situation de chacun des 3 établissements/.test(view(t)), "point de situation demandé pour chaque établissement");
+    const box = [...t.d.querySelectorAll("#erpList [data-erp]")].find(x => x.dataset.erp === "École privée Sainte-Marie");
+    box.checked = false; box.dispatchEvent(new t.w.Event("change", { bubbles: true })); gen(t); click(t, '[data-tab="scenario"]');
+    ok(/Établissements d'enseignement \(2\)/.test(view(t)) && !/Sainte-Marie/.test(view(t)), "établissement décoché écarté du scénario");
+    const s2 = t.q("#r-inondation"); s2.checked = true; s2.dispatchEvent(new t.w.Event("change", { bubbles: true })); gen(t); click(t, '[data-tab="chrono"]');
+    ok(/lieux recevant du public de la zone/.test(view(t)) && /Médiathèque Jean-Jaurès/.test(view(t)), "lieux recevant du public de la zone exposée à prévenir");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+  { const t = open("hameau"); await wait(300); await pickCommune(t, "hameau"); gen(t); click(t, '[data-tab="scenario"]');
+    ok(!/Établissements d'enseignement \(/.test(view(t)), "commune sans établissement : pas de liste vide"); click(t, '[data-tab="chrono"]');
+    ok(!/situation de chacun/.test(view(t)), "commune sans établissement : pas de message aux établissements"); t.close(); }
+
   console.log("\nCONDUITE, OBSERVATION, RETEX, EXPORTS");
   const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); gen(t);
   click(t, '[data-tab="conduite"]'); click(t, "#lstart");
@@ -144,6 +163,21 @@ const view = t => t.q("#view").textContent;
   ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : ""));
   t.close();
 
+  console.log("\nSTOCKAGE ET COPIE CLAUDE");
+  { const t = open("bourg", "", null, { noStorage: true }); await wait(300); await pickCommune(t, "bourg"); gen(t);
+    click(t, '[data-tab="retex"]'); click(t, "#archBtn"); click(t, "#archBtn");
+    ok(/ne conserve pas les données/.test(t.q("#toast").textContent), "archivage sans stockage local signalé");
+    ok(/Historique des exercices/.test(view(t)) && /Inondation/.test(view(t)), "exercice gardé en mémoire et exportable");
+    click(t, "#repDoc"); await wait(50);
+    const r = await new Promise(res => { const f = new t.w.FileReader(); f.onload = () => res(f.result); f.readAsText(t.blobs.pop()) });
+    ok(/<h2>6\. Grille d'observation détaillée/.test(r), "sections du rapport numérotées dans l'ordre");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+  { const t = open("bourg", "", null, { claude: true }); await wait(300); click(t, '[data-tab="retex"]'); click(t, "#repDoc"); await wait(80);
+    ok(t.saves.length === 1 && /\.html$/.test(t.saves[0].filename) && /Rapport de fin d'exercice/.test(t.saves[0].data), "rapport enregistré dans la copie Claude (format HTML)");
+    ok(/format HTML/.test(t.q("#toast").textContent), "format du fichier annoncé");
+    click(t, "#histExport"); await wait(80);
+    ok(t.saves.length === 2 && t.saves[1].filename === "historique-commune-prete.json", "historique exporté dans la copie Claude"); t.close(); }
+
   console.log("\nANNUAIRE ET EXERCICE D'ALERTE");
   const a = open("hameau"); await wait(300); await pickCommune(a, "hameau");
   a.q("#annuPaste").value = "Nom\tFonction\tTéléphone\nJean Martin\tMaire\t06 11 22 33 44\nSophie Durand\tPremière adjointe\t06 22 33 44 55\nLuc Bernard\tSecrétaire de mairie\t05 61 00 00 00\nAnne Petit\tAgent technique\t";
@@ -160,6 +194,7 @@ const view = t => t.q("#view").textContent;
   click(a, "#repDoc"); await wait(50);
   const rep = await new Promise(r => { const f = new a.w.FileReader(); f.onload = () => r(f.result); f.readAsText(a.blobs.pop()) });
   ok(/Test de l'annuaire de crise/.test(rep) && /Anne Petit/.test(rep), "test d'annuaire dans le rapport");
+  ok(/<h2>6\. Test de l'annuaire de crise/.test(rep) && /<h2>7\. Grille/.test(rep), "section du test d'annuaire numérotée");
   ok(!a.errs.length, "aucune erreur JavaScript" + (a.errs.length ? " : " + a.errs[0] : ""));
   a.close();
 

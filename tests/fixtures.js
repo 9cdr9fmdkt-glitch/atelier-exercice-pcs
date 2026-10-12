@@ -30,11 +30,16 @@ const C = {
       { type: "node", id: 21, lat: 43.08, lon: 1.86, tags: { place: "hamlet", name: "Le Pont" } },
       { type: "way", id: 40, center: { lat: 43.085, lon: 1.87 }, tags: { waterway: "river", name: "L'Hers-Vif" } },
       { type: "way", id: 50, center: { lat: 42.95, lon: 1.95 }, tags: { waterway: "dam", name: "Barrage de Montbel" } },
-      { type: "way", id: 30, center: { lat: 43.09, lon: 1.86 }, tags: { highway: "primary", ref: "D 119" } }],
+      { type: "way", id: 30, center: { lat: 43.09, lon: 1.86 }, tags: { highway: "primary", ref: "D 119" } },
+      { type: "node", id: 8, lat: 43.0886, lon: 1.8744, tags: { amenity: "kindergarten", name: "Maternelle des Remparts" } },
+      { type: "node", id: 9, lat: 43.0875, lon: 1.8705, tags: { amenity: "library", name: "Médiathèque Jean-Jaurès" } },
+      { type: "way", id: 10, center: { lat: 43.0893, lon: 1.8768 }, tags: { leisure: "park", name: "Jardin du Lac" } }],
     // Format Géorisques constaté le 12 octobre 2026 : plus de libelleNaf, seulement codeNaf et des indicateurs (carriere, eolienne…).
     icpe: [{ raisonSociale: "COOPERATIVE AGRICOLE ARTERRIS", regime: "Autorisation", statutSeveso: "Seveso seuil bas", etatActivite: "En exploitation avec titre", latitude: 43.095, longitude: 1.85, codeNaf: "46", carriere: false, eolienne: false, industrie: true },
       { raisonSociale: "Durand Martine", regime: "Non ICPE", statutSeveso: null, etatActivite: null, latitude: 43.0881, longitude: 1.8741, codeNaf: "56", carriere: false, eolienne: false, industrie: false }],
-    ecoles: [{ nom_etablissement: "Ecole primaire publique Les Remparts", type_etablissement: "Ecole", nombre_d_eleves: 212, latitude: 43.0885, longitude: 1.8742 }],
+    ecoles: [{ nom_etablissement: "Ecole primaire publique Les Remparts", type_etablissement: "Ecole", statut_public_prive: "Public", nombre_d_eleves: 212, latitude: 43.0885, longitude: 1.8742 },
+      { nom_etablissement: "Collège Victor Hugo", type_etablissement: "Collège", statut_public_prive: "Public", nombre_d_eleves: 480, latitude: 43.0905, longitude: 1.872 },
+      { nom_etablissement: "Ecole privée Sainte-Marie", type_etablissement: "Ecole", statut_public_prive: "Privé", nombre_d_eleves: 96, latitude: 43.0868, longitude: 1.8761 }],
     flood: lat => Math.abs(lat - 43.08) < 0.001 }
 };
 module.exports = C;
