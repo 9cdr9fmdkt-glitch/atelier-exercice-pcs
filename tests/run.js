@@ -360,11 +360,12 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
   { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); await wait(400);
     t.q("#annuPaste").value = "Nom\tFonction\tTéléphone\nJean Martin\tMaire\t06 11 22 33 44"; click(t, "#annuImport");
     click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="3"]');
-    const a = t.q('[data-pf="alerte.astreinte"]'); a.value = "Astreinte élus : 06 98 76 54 32"; a.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    const a = t.q('[data-pf="alerte.astreinte"]'); a.value = "Astreinte élus"; a.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    const g = t.q('[data-pf="alerte.reglement"]'); g.value = "Le secrétariat appelle Jean Martin au 06 98 76 54 32"; g.dispatchEvent(new t.w.Event("change", { bubbles: true }));
     click(t, '#pcsTabs [data-ptab="documents"]'); click(t, "#pcsDoc"); click(t, "#pcsPub"); click(t, "#pcsArr"); await wait(80);
     const [full, pub, arr] = await Promise.all(t.blobs.slice(-3).map(b => new Promise(r => { const f = new t.w.FileReader(); f.onload = () => r(f.result); f.readAsText(b) })));
     ok(/Plan communal de sauvegarde/.test(full) && /Jean Martin/.test(full) && /Fiche réflexe/.test(full), "PCS complet avec annuaire et fiches");
-    ok(!/Jean Martin/.test(pub) && !/06 11 22 33 44|06 98 76 54 32/.test(pub) && /numéro non publié/.test(pub), "version publique sans nom ni numéro");
+    ok(!/Jean Martin/.test(pub) && !/06 11 22 33 44|06 98 76 54 32/.test(pub) && !/Jean Martin/.test(pub) && /\[numéro non publié\]/.test(pub) && /\[nom non publié\]/.test(pub), "version publique sans nom ni numéro, remplacés par des mentions");
     ok(!/EXERCICE · EXERCICE/.test(full + pub + arr) && !/undefined|\{\w+\}/.test(full + pub + arr), "documents du PCS sans mention d'exercice ni valeur vide");
     click(t, '#pcsTabs [data-ptab="verifier"]'); click(t, '[data-gv="a5"][data-v="ko"]'); click(t, '#pcsTabs [data-ptab="documents"]'); click(t, "#pcsVer"); await wait(80);
     const ver = await new Promise(r => { const f = new t.w.FileReader(); f.onload = () => r(f.result); f.readAsText(t.blobs[t.blobs.length - 1]) });

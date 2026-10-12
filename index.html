@@ -2899,7 +2899,7 @@ function rubApercu(id,opts){
     else o.push(P("L'annuaire de crise est tenu à jour en mairie ; il n'est pas diffusé."));
     o.push(P(av("alerte.moyens").length?"Moyens d'alerte de la population : "+pEt(av("alerte.moyens"))+".":`Moyens d'alerte de la population : ${TODO}.`));
     if(!pub)o.push(P(`Réception de l'alerte 24 h/24 : ${t("alerte.astreinte")}.`));
-    else o.push(P("Réception de l'alerte 24 h/24 : [numéro non publié]."));
+    else if(pFilled(pcsVal("alerte.astreinte"))&&pcsVal("alerte.astreinte")!=="")o.push(P("Réception de l'alerte 24 h/24 organisée (coordonnées non publiées)."));
     o.push(P(`Règlement d'emploi des moyens d'alerte : ${t("alerte.reglement")}. DICRIM : ${d("alerte.dicrim")}, joint en annexe du PCS.`));
   }else if(id===4){
     if(!pub)o.push(P("Cellules du poste de commandement communal :")+U(av("pcc.cellules")));
@@ -3117,8 +3117,10 @@ function pcsHTML(opts){
   let html=pcsDoc(pub?"Plan communal de sauvegarde, version publique":"Plan communal de sauvegarde",body,"Plan communal de sauvegarde de "+p.commune+(pub?" · Version publique":""));
   if(pub){
     html=html.replace(NOPHONE,"[numéro non publié]");
-    (S.annu||[]).forEach(c=>{const n=String(c.nom||"").trim();if(n.length<3)return;
-      [n,esc(n)].forEach(v=>{html=html.split(v).join("[nom non publié]")})});
+    const i0=html.indexOf("<body>")+6;let head=html.slice(0,i0),bd=html.slice(i0);
+    (S.annu||[]).forEach(c=>{const n=String(c.nom||"").trim();if(n.split(/\s+/).length<2)return;
+      [n,esc(n)].forEach(v=>{bd=bd.split(v).join("[nom non publié]")})});
+    html=head+bd;
   }
   return html;
 }
@@ -3137,7 +3139,7 @@ function arreteHTML(){
   <h4>ARRÊTE</h4>
   <p><b>Article 1.</b> Le plan communal de sauvegarde de la commune de ${esc(p.commune)}, annexé au présent arrêté, est approuvé.</p>
   <p><b>Article 2.</b> La version publique du plan est consultable en mairie, aux jours et heures d'ouverture au public.</p>
-  <p><b>Article 3.</b> Le présent arrêté et le plan sont transmis au préfet et au président ${ep}.</p>
+  <p><b>Article 3.</b> Le présent arrêté et le plan sont transmis au préfet et au président ${esc(ep)}.</p>
   <p><b>Article 4.</b> Le plan est révisé au plus tard dans un délai de cinq ans à compter de la date du présent arrêté, et mis à jour autant que nécessaire.</p>
   <p class="sig">Fait à ${esc(p.commune)}, le ${appr}.</p>
   <p>Le maire,<br><br><br>[nom et signature]</p>
