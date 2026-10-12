@@ -1234,14 +1234,26 @@ const ALERTES=[["sirene","Sirène"],["automate","Automate d'appel ou SMS"],["por
 const CONVS=[["transport","Transporteur (cars)"],["asso","Association de secours"],["ravit","Commerce (ravitaillement)"],["heberg","Hôtels ou camping"]];
 const FICHE_NUM=[["elus","Élus mobilisables"],["agents","Agents communaux"],["tech","Dont techniques"],["reserve","Réservistes communaux"],["cap","Places d'accueil"],["lits","Lits de camp"],["veh","Véhicules communaux"]];
 const fv=(p,k)=>{const f=p.fiche||{},v=f[k];return v===""||v==null?null:v};
+/* Lien PCS : lieu du PCC et capacité saisie du lieu d'accueil retenu (aucune écriture : lecture seule) */
+function pcsForExercise(){
+  const r={pcc:null,capAccueil:null};
+  try{
+    if(!(S&&S.p&&S.p.insee))return r;
+    const l=pcsGet("pcc.lieu");if(typeof l==="string"&&l.trim())r.pcc=l.trim();
+    const h=S.p.heberg;if(h){const c=parseInt((pcsGet("moyens.cap."+h)||"").toString().replace(/\s/g,""),10);if(isFinite(c)&&c>=0)r.capAccueil=c}
+  }catch(e){}
+  return r;
+}
 const fn=(p,k)=>{const v=fv(p,k);const n=parseInt(v,10);return isFinite(n)&&n>=0?n:null};
+// capacité d'accueil : la fiche Moyens reste prioritaire, à défaut celle saisie dans le PCS pour le lieu d'accueil retenu
+const capEff=p=>{const c=fn(p,"cap");return c!=null?c:pcsForExercise().capAccueil};
 function ficheVars(p){
   const v={},al=(fv(p,"alerte")||[]).map(k=>(ALERTES.find(a=>a[0]===k)||[,""])[1]).filter(Boolean).map(t=>t.charAt(0).toLowerCase()+t.slice(1));
   v.alerte_liste=al.length?" ("+al.join(", ")+")":"";
   const ge=fv(p,"ge");
   v.ge_txt=ge==="oui"?"alimenté par le groupe électrogène communal":ge==="non"?"après obtention d'un groupe électrogène (location, réquisition ou appui de l'intercommunalité)":"équipé d'un groupe électrogène";
   const tech=fn(p,"tech");if(tech!=null&&tech>0)v.Agents_abs=tech===1?"L'unique agent technique est absent":(Math.max(1,Math.round(tech/3))===1?"Un agent technique sur ":Math.max(1,Math.round(tech/3))+" agents techniques sur ")+tech+(Math.max(1,Math.round(tech/3))===1?" est absent":" sont absents");
-  const cap=fn(p,"cap");if(cap!=null){const k=scale(p);v.n_accueil=nf(Math.min(k.accueil,cap))}
+  const cap=capEff(p);if(cap!=null){const k=scale(p);v.n_accueil=nf(Math.min(k.accueil,cap))}
   return v;
 }
 function ficheFill(p){const f=p.fiche||{};let n=0;["alerte","elus","agents","tech","reserve","cap","ge","pics","conv"].forEach(k=>{const v=f[k];if(Array.isArray(v)?v.length:(v!==""&&v!=null))n++});return n}
@@ -1257,7 +1269,7 @@ function ficheHyp(p){
 }
 const ALERT_RISKS=["inondation","feu","tmd","industriel","tempete","canicule","barrage","nucleaire"],EVAC_RISKS=["inondation","feu","industriel","aerien","ferroviaire","bombe","seisme","mvt","barrage"];
 function ficheInjects(p,dur,keep){
-  const out=[],al=fv(p,"alerte")||[],k=scale(p),cap=fn(p,"cap"),res=fn(p,"reserve"),at=f=>Math.round(dur*f/5)*5;
+  const out=[],al=fv(p,"alerte")||[],k=scale(p),cap=capEff(p),res=fn(p,"reserve"),at=f=>Math.round(dur*f/5)*5;
   if(keep.has("POP")&&ALERT_RISKS.includes(p.risk)){
     if(al.includes("automate"))out.push({t:at(.28),obj:"POP",from:"Agent communal",to:"PCC",via:"Sur place",msg:"L'automate d'appel n'a joint que 60 % des numéros : beaucoup d'habitants n'y sont pas inscrits ou ne décrochent pas.",exp:"Compléter l'alerte par porte-à-porte ou haut-parleur sur les secteurs non joints, tracer les foyers prévenus."});
     if(al.includes("sirene"))out.push({t:at(.2),obj:"POP",from:"Habitant",to:"Accueil mairie",via:"Téléphone",msg:"La sirène sonne. Qu'est-ce que je dois faire ?",exp:"Consigne claire et identique pour tous les appelants, message diffusé sur les autres canaux."});
@@ -1918,6 +1930,7 @@ function vCadrage(){
     <dl class="kv">
       <dt>Commune</dt><dd>${esc(p.commune)}${p.pop?" · "+nf(p.pop)+" habitants":""}${p.dept?" · "+esc(p.dept):""}</dd>
       ${(()=>{const l=hCommune().filter(x=>x.id!==S.archId),d=nextDue(l);return l.length?`<dt>Dernier exercice</dt><dd>${esc(fmtDate(l[0].date))} · ${esc(l[0].titre)}${d?" · prochain avant le "+d.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"}):""}</dd>`:""})()}
+      ${(()=>{const l=pcsForExercise().pcc;return l?`<dt>Poste de commandement communal</dt><dd>${esc(l)}</dd>`:""})()}
       <dt>Risque joué</dt><dd>${esc(RISKS[p.risk].label)}${comboOf(p).length?" · en cascade : "+esc(comboOf(p).map(c=>RISKS[c].label.toLowerCase()).join(", ")):""}</dd>
       <dt>Format</dt><dd>${esc(f.label)}</dd>
       <dt>Date</dt><dd>${esc(cap(fmtDate(p.date)))}</dd>
@@ -1972,7 +1985,7 @@ function checks(p){
   if(isAlerte(p)&&!(S.annu||[]).length)w.push("Exercice d'alerte : importez l'annuaire de crise pour suivre les appels.");
   {const nt=(S.annu||[]).filter(c=>!c.tel).length;if(nt)w.push(`${nt} contact${nt>1?"s":""} de l'annuaire sans numéro de téléphone.`)}
   if(ficheFill(p)<3)w.push("La fiche « Moyens de la commune » est peu renseignée : les messages restent génériques. Complétez-la pour un exercice fidèle à vos moyens réels.");
-  {const cap=fn(p,"cap"),k=scale(p);if(cap!=null&&EVAC_RISKS.includes(p.risk)&&k.evac>cap)w.push(`Le lieu d'accueil (${nf(cap)} places) ne suffit pas pour les ${nf(k.evac)} évacués du scénario : un message de saturation est ajouté au chronogramme.`)}
+  {const cap=capEff(p),k=scale(p);if(cap!=null&&EVAC_RISKS.includes(p.risk)&&k.evac>cap)w.push(`Le lieu d'accueil (${nf(cap)} places) ne suffit pas pour les ${nf(k.evac)} évacués du scénario : un message de saturation est ajouté au chronogramme.`)}
   if(!isSchool(p)&&!allEtabs().length&&["inondation","tmd","industriel","seisme","canicule","sanitaire","bombe","masse"].some(k=>all.includes(k)))w.push(`L'établissement sensible retenu (${p.etab}) n'est pas une école, alors que le scénario parle d'élèves et de parents. Choisissez une école, ou adaptez les messages concernés.`);
   if(p.heureH){const h=+p.heureH.split(":")[0];const school=/école|collège|lycée|groupe scolaire|maternelle|élémentaire/i.test(p.etab)||allEtabs().length>0;
     if(school&&(h<8||h>=17)&&["inondation","tmd","industriel","seisme"].some(k=>all.includes(k)))w.push(`H est fixé à ${p.heureH} : les élèves ne seront plus à l'école. Avancez l'heure ou adaptez les hypothèses.`)}
@@ -2927,7 +2940,7 @@ function rubApercu(id,opts){
     o.push(fichesHTML()||P("Aucune fiche n'a pu être générée."));
   }else if(id===9){
     o.push(P(A["maint.exercice"]?`Dernier exercice : ${esc(A["maint.exercice"].v)}. Prochain exercice au plus tard : ${esc((A["maint.echeance"]||{v:"à fixer"}).v)}.`:`Aucun exercice n'est enregistré dans l'historique : ${TODO}.`));
-    if(av("maint.actions").length)o.push(P("Actions correctives non soldées :")+U(av("maint.actions")));
+    if(av("maint.actions").length)o.push(P("Mises à jour issues des exercices :")+U(av("maint.actions")));
     o.push(P(`Dernière mise à jour de l'annuaire : ${d("maint.annuaireDate")}. Information du public : ${t("maint.infoPublic")}.`));
   }
   return o.join("");
@@ -2986,7 +2999,7 @@ function pcsField(c,i,r){
 }
 // valeurs pré-remplies de la rubrique (hors champs de saisie), chacune avec sa source
 function pcsFactsHTML(r){
-  const A=pcsAuto(),sec=PPATH[r.id]+".",ks=Object.keys(A).filter(k=>k.indexOf(sec)===0&&PCS_LAB[k]&&!r.champs.some(c=>sec+c.k===k));
+  const A=pcsAuto(),sec=PPATH[r.id]+".",ks=Object.keys(A).filter(k=>k.indexOf(sec)===0&&PCS_LAB[k]&&k!=="maint.actions"&&!r.champs.some(c=>sec+c.k===k));
   if(!r.champs.length&&!ks.length)return "";
   if(!ks.length&&r.id===7&&pcsLists().plansTiers.length)return "";
   if(!ks.length)return `<p class="note">Aucune donnée n'a pu être pré-remplie pour cette rubrique : les champs ci-dessous sont à compléter.</p>`;

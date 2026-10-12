@@ -373,6 +373,30 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(/ARRÊTÉ MUNICIPAL/.test(arr) && /Préfecture de l'Ariège|préfet de l'Ariège/.test(arr) && /Pays de Mirepoix/.test(arr), "arrêté et courrier de transmission");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); await wait(400); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="4"]');
+    const l = t.q('[data-pf="pcc.lieu"]'); l.value = "Salle du conseil, mairie"; l.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    click(t, '#espaceSeg [data-esp="exercices"]'); click(t, '[data-tab="cadrage"]');
+    ok(/Poste de commandement communal/.test(view(t)) && /Salle du conseil, mairie/.test(view(t)), "lieu du PCC repris dans la convention d'exercice");
+    gen(t); click(t, '[data-tab="retex"]'); click(t, "#archBtn"); click(t, "#archBtn");
+    click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="9"]');
+    ok(/Mises à jour issues des exercices/.test(t.q("#pcsView").textContent) && /Mettre à jour l'annuaire de crise du PCS/.test(t.q("#pcsView").textContent), "actions correctives du RETEX dans le PCS");
+    ok((t.q("#pcsView").textContent.match(/Mettre à jour l'annuaire de crise du PCS/g) || []).length === 1, "actions correctives listées une seule fois");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+  { const t = open("bourg"); await wait(300);
+    ok(!/Poste de commandement communal/.test((click(t, '[data-tab="cadrage"]'), view(t))) && !t.w.localStorage.getItem("commune-prete-pcs"), "sans PCS : pas de ligne PCC, rien d'enregistré par l'espace Exercices");
+    t.close(); }
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); await wait(400);
+    const heb = t.q("#heberg").value;
+    click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="5"]');
+    const c = t.q('[data-pf="moyens.cap.' + heb + '"]');
+    ok(!!heb && !!c, "capacité du lieu d'accueil saisissable dans le PCS");
+    if (c) { c.value = "5"; c.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+      click(t, '#espaceSeg [data-esp="exercices"]');
+      const r = t.q("#r-inondation"); r.checked = true; r.dispatchEvent(new t.w.Event("change", { bubbles: true })); gen(t);
+      click(t, '[data-tab="chrono"]');
+      ok(/Nous sommes complets avec 5 personnes/.test(view(t)), "capacité du PCS utilisée pour le message de saturation (fiche vide)"); }
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);
   ok([...v.d.querySelectorAll(".tgrp")].map(x => x.textContent).join("/") === "Préparer/Conduire/Évaluer", "onglets regroupés en trois temps");
