@@ -866,7 +866,14 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(/2025-126/.test(view(t)) && /D731-14/.test(view(t)), "réglementation : décret de 2025 et correspondant incendie et secours");
     t.close(); }
   { const A = fs.readFileSync(path.join(__dirname, "..", "aide.html"), "utf8");
-    ok(/id="rediger-et-verifier-le-pcs"/.test(A) && (A.match(/href="#rediger-et-verifier-le-pcs"/g) || []).length === 2, "aide : partie PCS et entrée aux deux sommaires"); }
+    ok(/id="rediger-et-verifier-le-pcs"/.test(A) && (A.match(/href="#rediger-et-verifier-le-pcs"/g) || []).length === 2, "aide : partie PCS et entrée aux deux sommaires");
+    const dem = A.match(/<section id="demarrer-en-trois-etapes"><h2>Démarrer en trois étapes<\/h2>([\s\S]*?)<\/section>/);
+    ok(dem && (A.match(/<a href="#demarrer-en-trois-etapes">Démarrer en trois étapes<\/a>/g) || []).length === 2
+      && /<nav class="toc"[^]*?href="#demarrer-en-trois-etapes"[^]*?<\/nav>/.test(A) && /<details class="toc-m">[^]*?href="#demarrer-en-trois-etapes"[^]*?<\/details>/.test(A),
+      "aide : section « Démarrer en trois étapes » et entrée aux deux sommaires");
+    ok(dem && /Voir l’exemple/.test(dem[1]) && /Générer le dossier/.test(dem[1]) && /Changer/.test(dem[1]) && /hors ligne/i.test(dem[1]), "aide : démarrage guidé décrit (exemple, génération, changement de commune, hors ligne)");
+    ok(!/Rechercher ma commune/.test(A) && !/cinq étapes/.test(A) && /Réglages avancés/.test(A) && /Autres risques/.test(A) && /Non conservé par ce navigateur/.test(A) && /Rubrique suivante/.test(A),
+      "aide : passages mis à jour (recherche, panneau, réglages avancés, mention Enregistré, étape suivante)"); }
 
   console.log(`\n${passes} réussis, ${failures} en échec`);
   process.exit(failures ? 1 : 0);

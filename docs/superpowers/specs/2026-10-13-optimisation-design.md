@@ -1,5 +1,7 @@
 # Optimisation : simplicité d'usage — conception
 
+Statut : réalisée sur la branche optimisation.
+
 Date : 13 octobre 2026. Statut : conception validée en conversation avec Jordan, à relire avant le plan de réalisation.
 
 ## 1. Objet
@@ -38,10 +40,10 @@ Gênes retenues par Jordan : **prise en main**, **navigation**, **saisie**. La r
 
 Une carte centrée, sobre, avec un repère « Étape 1 sur 3 », un bouton principal et un bouton « Retour ».
 
-1. **Votre commune.** Champ de recherche identique à l'actuel (suggestions geo.api.gouv.fr, clavier, accessibilité). Hors ligne : nom, population et département saisis à la main. Le choix déclenche les chargements habituels (Géorisques, carte, établissements) en arrière-plan.
+1. **Votre commune.** Champ de recherche identique à l'actuel (suggestions geo.api.gouv.fr, clavier, accessibilité). Hors ligne : nom, population et département saisis à la main dans cet écran (les champs de saisie manuelle y ont été déplacés depuis le panneau), puis « Continuer ». Le choix déclenche les chargements habituels (Géorisques, carte, établissements) en arrière-plan.
 2. **Que voulez-vous faire ?** Deux grands choix :
    - « Préparer un exercice de crise » → écran 3 ;
-   - « Rédiger ou vérifier le plan communal de sauvegarde » → ouvre l'espace PCS, rubrique 1 (Généralités), et ferme le parcours.
+   - « Rédiger ou vérifier le plan communal de sauvegarde » → ouvre l'espace PCS, première rubrique (0. Généralités et approbation), et ferme le parcours. Ce choix est désactivé (`aria-disabled`, avec une note) pour une commune sans code INSEE, saisie à la main hors ligne : l'espace PCS, rangé par code INSEE, lui est indisponible.
 3. **Votre exercice.**
    - Risque : les risques recensés par Géorisques pour la commune, le premier présélectionné (même règle qu'aujourd'hui) ; pendant le chargement, un message d'attente ; sans réponse, la liste complète.
    - Format : sélecteur actuel (Sur table, Cadre, Avec terrain, Alerte), « Cadre » par défaut.
@@ -58,18 +60,18 @@ Si une commune réelle est déjà choisie, l'écran 1 indique que les réglages 
 
 - À droite du sélecteur « Exercices | PCS » : nom de la commune et bouton « Changer » (ouvre le démarrage guidé, écran 1). Sur téléphone, le nom se tronque.
 - Exemple fictif : « Exemple fictif » et bouton « Choisir ma commune ».
-- Le champ de recherche disparaît du panneau Exercices : l'étape 1 du panneau ne garde que la fiche d'identité (code INSEE, population, département) et, hors ligne, les champs de saisie manuelle.
+- Le champ de recherche disparaît du panneau Exercices : l'étape 1 du panneau ne garde que la fiche d'identité (code INSEE, population, département). Les champs de saisie manuelle hors ligne sont dans l'écran 1 du démarrage guidé, plus dans le panneau.
 - Effet : la recherche de commune devient possible depuis l'espace PCS (point reporté le 12/10).
 
 ### 5.2 Étape suivante
 
 - En bas de chaque pièce de l'espace Exercices : « Suivant : <nom de l'onglet suivant> » ; rien sur la dernière (Réglementation).
-- En bas de chaque rubrique de l'espace PCS : « Rubrique suivante : <n>. <titre> » ; sur la dernière, « Vérifier le PCS ».
+- En bas de chaque rubrique de l'espace PCS : « Rubrique suivante : <n>. <titre> » ; sur la dernière, « Vérifier le PCS ». Sans commune (lecture seule), la dernière rubrique (9) n'a pas de bouton suivant, l'onglet Vérifier étant indisponible.
 - Ces boutons n'apparaissent pas à l'impression ni dans les documents produits.
 
 ### 5.3 Rubriques PCS sans commune
 
-Sans commune choisie, l'espace PCS affiche le sommaire et, pour chaque rubrique, « Ce que la loi exige » et la référence, avec un bouton « Choisir ma commune » à la place des champs. Les onglets Vérifier et Documents restent réservés à une commune choisie (point reporté le 12/10).
+Sans commune choisie, l'espace PCS affiche le sommaire et, pour chaque rubrique, « Ce que la loi exige » et la référence, avec un bouton « Choisir ma commune » à la place des champs. Les onglets Vérifier et Documents restent réservés à une commune choisie (point reporté le 12/10). Une commune sans code INSEE (saisie manuelle hors ligne) n'a pas accès à l'espace PCS : le choix correspondant est désactivé à l'écran 2 du démarrage guidé.
 
 ## 6. Saisie
 
@@ -84,7 +86,7 @@ Repliés sous un seul « Réglages avancés » : effets en cascade, objectifs é
 
 ### 6.2 Aucune donnée demandée deux fois
 
-- La fiche « Moyens de la commune » et l'annuaire de crise sont les mêmes données (`S.p.fiche`, `S.annu`) dans les deux espaces. Ils deviennent **modifiables depuis l'espace PCS** : rubrique 3 (annuaire et moyens d'alerte), rubrique 5 (moyens), rubrique 6 (réserve), au moyen d'un bouton « Modifier » qui ouvre les mêmes champs que dans le panneau Exercices.
+- La fiche « Moyens de la commune » et l'annuaire de crise sont les mêmes données (`S.p.fiche`, `S.annu`) dans les deux espaces. Ils deviennent **modifiables depuis l'espace PCS** : rubrique 0 (plan intercommunal, PICS), rubrique 3 (annuaire et moyens d'alerte), rubrique 5 (moyens), rubrique 6 (réserve), au moyen d'un repli « Modifier » qui ouvre les mêmes champs que dans le panneau Exercices.
 - Les valeurs pré-remplies restent signalées par leur source (« carte », « Géorisques », « fiche Moyens », « annuaire »).
 - La capacité d'accueil reste saisie par lieu dans le PCS ; la règle actuelle de priorité (fiche Moyens d'abord, à défaut PCS) est conservée.
 
