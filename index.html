@@ -3327,9 +3327,10 @@ function renderRediger(){
 const PCS_MODIF={0:["Modifier le plan intercommunal (PICS)",["pics"]],3:["Modifier l'annuaire et les moyens d'alerte",["alerte"],true],5:["Modifier les moyens de la commune",["elus","agents","tech","veh","cap","lits","ge","conv"]],6:["Modifier le nombre de réservistes",["reserve"]]};
 function pcsModifier(id){
   const m=PCS_MODIF[id];if(!m)return "";
-  return `<details class="more" data-modif="${id}"><summary>${esc(m[0])}</summary><div class="inner"><p class="note">Ces informations sont communes avec le panneau de préparation des exercices.</p>${m[2]?annuHTML("pannu"):""}${ficheFieldsHTML(m[1],"pfi")}</div></details>`;
+  return `<details class="more" data-modif="${id}" data-insee="${esc(S.p.insee)}"><summary>${esc(m[0])}</summary><div class="inner"><p class="note">Ces informations sont communes avec le panneau de préparation des exercices.</p>${m[2]?annuHTML("pannu"):""}${ficheFieldsHTML(m[1],"pfi")}</div></details>`;
 }
-function modifState(){const m=document.querySelector("#pcsBody details[data-modif]");return m&&m.open?{id:m.dataset.modif,paste:(m.querySelector('[data-annu="paste"]')||{}).value||""}:null}
+// repli « Modifier » ouvert et texte collé : repris seulement pour la même commune
+function modifState(){const m=document.querySelector("#pcsBody details[data-modif]");return m&&m.open&&m.dataset.insee===S.p.insee?{id:m.dataset.modif,paste:(m.querySelector('[data-annu="paste"]')||{}).value||""}:null}
 // met à jour l'aperçu et les données pré-remplies sans toucher aux champs (la saisie en cours ne doit pas être perdue)
 function updateApercu(){
   const ap=$("#pcsApercu");if(!ap)return;const r=PCS_RUB[PCSUI.rub]||PCS_RUB[0];

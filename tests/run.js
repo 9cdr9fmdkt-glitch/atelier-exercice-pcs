@@ -852,6 +852,14 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(!!t.q("#pcsChoisir") && !t.q("#pcsBody details.more") && !t.q("#pcsBody [data-pf]") && !t.q("#pcsBody [data-fi],#pcsBody [data-fic],#pcsBody [data-annu]") && t.q("#ptab-verifier").getAttribute("aria-disabled") === "true" && !/Mirepoix|Jean Martin/.test(t.q("#pcsView").textContent), "commune saisie à la main : PCS en lecture seule, sans donnée de Mirepoix");
     ok((JSON.parse(t.w.localStorage.getItem("commune-prete-pcs"))["09194"] || {}).gen.referent === "Adjoint au maire", "PCS de Mirepoix conservé");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+  { // texte collé mais non importé dans la rubrique 3, puis changement de commune : il ne doit pas réapparaître pour l'autre commune
+    const t = openMulti(); await wait(300); await chooseCommune(t, "bourg"); await wait(300);
+    click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="3"]');
+    t.q("#pcsBody details[data-modif]").open = true; t.q("#pannuPaste").value = "Nom\nJean Secret";
+    await chooseCommune(t, "hameau"); await wait(300); click(t, '#espaceSeg [data-esp="pcs"]');
+    const m = t.q("#pcsBody details[data-modif]");
+    ok(/Rouze/.test(t.q("#communeBar").textContent) && m && !m.open && t.q("#pannuPaste").value === "" && !/Jean Secret/.test(t.q("#pcsView").innerHTML), "changement de commune : le texte collé dans la rubrique 3 n'est pas repris pour la nouvelle commune");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
   console.log("\nRÉGLEMENTATION ET MODE D'EMPLOI");
   { const t = open("bourg", "", null, { guideVu: true }); await wait(300); click(t, '[data-tab="regl"]');
