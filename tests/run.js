@@ -676,6 +676,9 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(t.q("#autresRisques").open && t.d.activeElement === t.q("#autresRisques summary"), "liste ouverte par l'utilisateur : reste ouverte, focus sur son résumé");
     t.q("#autresRisques").open = false; await rerender();
     ok(!t.q("#autresRisques").open && JSON.parse(t.w.localStorage.getItem("atelier-pcs-v2")).p.risk === "inondation", "liste refermée par l'utilisateur : reste fermée");
+    t.q("#autresRisques").open = true; { const s = t.q("#r-seisme"); s.checked = true; s.dispatchEvent(new t.w.Event("change", { bubbles: true })) }
+    t.q("#autresRisques").open = false; t.q("#gen").focus(); await rerender();
+    ok(!t.q("#autresRisques").open && t.q("#r-seisme").checked, "risque choisi dans « Autres risques » puis liste refermée : un nouveau rendu ne la rouvre pas");
     click(t, "#communeChange"); click(t, "#gNext1"); click(t, "#gChoixEx");
     { const s = t.q("#gr-feu"); s.checked = true; s.dispatchEvent(new t.w.Event("change", { bubbles: true })) } click(t, "#gGen");
     ok(t.q("#r-feu").checked && t.q("#autresRisques").open, "risque non recensé choisi : « Autres risques » ouvert automatiquement");
