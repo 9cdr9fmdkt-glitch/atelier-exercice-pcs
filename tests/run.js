@@ -493,6 +493,44 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(!/dont techniques/.test(t.q("#pcsApercu").textContent), "aperçu des moyens : pas de « 3 dont techniques »");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
+  console.log("\nCOMMUNE DANS LA BARRE ET MENTION « ENREGISTRÉ »");
+  { const t = open("bourg"); await wait(300);
+    const bar = () => t.q("#communeBar"), nom = () => t.q("#communeBar .cb-nom").textContent.trim(), btn = () => t.q("#cbAct").textContent.trim();
+    ok(!!bar() && !bar().hidden && nom() === "Exemple fictif" && btn() === "Choisir ma commune", "barre : « Exemple fictif » et « Choisir ma commune » au départ");
+    ok(t.q(".tools-r").firstElementChild === bar() && bar().nextElementSibling === t.q("#espaceSeg"), "barre : bloc commune placé avant le sélecteur d'espace");
+    ok(t.q("#saveState").getAttribute("aria-live") === "polite" && t.q("#saveState").textContent.trim() === "", "mention vide au démarrage, annoncée poliment");
+    click(t, '#espaceSeg [data-esp="pcs"]'); click(t, "#communeChange");
+    ok(!t.d.body.classList.contains("esp-pcs") && t.d.activeElement && t.d.activeElement.id === "commune", "« Choisir ma commune » depuis l'espace PCS : retour aux exercices, curseur sur le champ commune");
+    await pickCommune(t, "bourg");
+    ok(nom() === "Mirepoix" && btn() === "Changer", "barre : « Mirepoix » et « Changer » après le choix");
+    click(t, '#espaceSeg [data-esp="pcs"]');
+    ok(!bar().hidden && nom() === "Mirepoix" && btn() === "Changer", "barre : commune affichée dans l'espace PCS");
+    click(t, "#panelBtn"); click(t, "#communeChange");
+    ok(!t.d.body.classList.contains("esp-pcs") && !t.d.body.classList.contains("panel-off") && t.d.activeElement && t.d.activeElement.id === "commune", "« Changer » : panneau réaffiché, curseur sur le champ commune");
+    t.q("#saveState").textContent = "";
+    click(t, '[data-tab="scenario"]'); click(t, '[data-tab="cadrage"]');
+    ok(t.q("#saveState").textContent.trim() === "", "simple rendu ou changement d'onglet : pas de mention");
+    const f = t.q('[data-fi="' + t.q("#ficheFields [data-fi]").dataset.fi + '"]'); f.value = "3"; f.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    ok(/Enregistré/.test(t.q("#saveState").textContent), "saisie dans la fiche Moyens : « Enregistré »");
+    t.q("#saveState").textContent = "";
+    click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="0"]'); setF(t, "gen.referent", "Adjoint");
+    ok(/Enregistré/.test(t.q("#saveState").textContent), "saisie dans le PCS : « Enregistré »");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+  { const t = open("bourg", "", null, { noStorage: true }); await wait(300); await pickCommune(t, "bourg");
+    ok(t.q("#communeBar .cb-nom").textContent.trim() === "Mirepoix", "sans stockage : commune affichée");
+    const f = t.q("#ficheFields [data-fi]"); f.value = "2"; f.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    ok(/Non conservé par ce navigateur/.test(t.q("#saveState").textContent) && !/Enregistré/.test(t.q("#saveState").textContent), "sans stockage : « Non conservé par ce navigateur »");
+    await wait(2600); ok(/Non conservé par ce navigateur/.test(t.q("#saveState").textContent), "sans stockage : mention durable");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); gen(t);
+    click(t, '[data-tab="obs"]'); click(t, "#obsLinkBtn"); await wait(50); const link = t.clip.text;
+    const o = open("bourg", link.slice(link.indexOf("#"))); await wait(300);
+    const cb = o.q("#communeBar");
+    ok(o.d.body.classList.contains("obsmode") && (!cb || cb.hidden) && !/Exemple fictif|Mirepoix|Changer/.test(o.q(".appbar").textContent), "mode observateur : ni commune ni bouton dans la barre");
+    o.q("#oname").value = "Obs"; o.q("#oname").dispatchEvent(new o.w.Event("input", { bubbles: true }));
+    ok(!o.q("#saveState") || o.q("#saveState").textContent.trim() === "", "mode observateur : pas de mention « Enregistré »");
+    o.close(); t.close(); }
+
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);
   ok([...v.d.querySelectorAll(".tgrp")].map(x => x.textContent).join("/") === "Préparer/Conduire/Évaluer", "onglets regroupés en trois temps");

@@ -85,11 +85,22 @@ a{color:var(--primary);text-underline-offset:2px}
 .appbar .tools-r{display:flex;gap:2px;padding-left:10px;border-left:1px solid var(--line)}
 .pcsbar{padding:10px clamp(18px,4vw,48px) 0}
 .espace{margin-right:8px;min-width:150px}
+.appbar .tools-r{min-width:0}
+.cbar{display:flex;align-items:center;gap:6px;margin-right:8px;min-width:0;flex:0 1 auto;position:relative}
+.cbar .btn{min-width:0;max-width:100%;gap:10px;padding-inline:8px;justify-content:flex-start}
+.cb-nom{font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;min-width:0}
+.cbar.ex .cb-nom{font-weight:600;color:var(--muted)}
+.cb-act{white-space:nowrap;flex:none}
+.cb-etat{white-space:nowrap;opacity:0;transition:opacity .4s;font-size:12.5px}
+.cb-etat:empty{display:none}
+.cb-etat.on{opacity:1}
+.cb-etat.ko{color:var(--warn);font-weight:600}
+body.obsmode #communeBar{display:none}
 .espace button{min-height:32px;padding:5px 10px;font-weight:600}
 .config[hidden],.bar[hidden],.head[hidden],#view[hidden],#pcsView[hidden]{display:none}
 body.esp-pcs .hello{display:none}
 body.obsmode #espaceSeg{display:none}
-@media (max-width:620px){.espace{min-width:0;margin-right:4px}.espace button{padding:5px 7px;font-size:13px}}
+@media (max-width:620px){.espace{min-width:0;margin-right:4px}.espace button{padding:5px 7px;font-size:13px}.cbar{margin-right:2px;flex-shrink:1}.appbar .espace{flex:none;grid-auto-columns:auto}.appbar .logo{flex:0 4 auto}.cbar .btn{padding-inline:6px;font-size:13px}.cb-nom{max-width:12ch;text-decoration:underline dotted;text-underline-offset:3px}.cb-act{display:none}.cbar.ex .cb-nom{display:none}.cbar.ex .cb-act{display:block;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;text-decoration:underline dotted;text-underline-offset:3px}.cb-etat{position:absolute;right:0;top:calc(100% + 8px);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:2px 8px;box-shadow:var(--shadow)}}
 .iconbtn.help{width:auto;padding:0 10px;gap:6px;display:inline-flex;align-items:center;text-decoration:none;font-size:14px;font-weight:600}
 @media (max-width:620px){.iconbtn.help span{display:none}.iconbtn.help{width:36px;padding:0;justify-content:center}}
 
@@ -472,6 +483,7 @@ body.obsmode .nowb{min-height:42px}
       <span class="pill"><span class="dot ok"></span>Réglementation vérifiée le 12 oct. 2026</span>
     </div>
     <div class="tools-r">
+      <div class="cbar ex" id="communeBar"><button class="btn sm ghost" type="button" id="communeChange" aria-label="Choisir ma commune"><span class="cb-nom" id="cbNom">Exemple fictif</span><span class="cb-act" id="cbAct">Choisir ma commune</span></button><span class="note cb-etat" id="saveState" role="status" aria-live="polite"></span></div>
       <div class="seg espace" id="espaceSeg" role="group" aria-label="Espace"><button type="button" data-esp="exercices">Exercices</button><button type="button" data-esp="pcs">PCS</button></div>
       <a class="iconbtn help" id="helpLink" href="aide.html" title="Mode d'emploi" aria-label="Mode d'emploi"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6.9 7a2.2 2.2 0 0 1 4.3.6c0 1.5-2.2 1.8-2.2 3.1M9 13.2v.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Aide</span></a>
       <button class="iconbtn" type="button" id="themeBtn" title="Thème : automatique" aria-label="Changer le thème (automatique)"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 2.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
@@ -1154,7 +1166,18 @@ const ACTIONS0=()=>[{a:"Mettre à jour l'annuaire de crise du PCS",pilote:"Secr�
 const KEY="atelier-pcs-v2";
 let S=null, live=null, geoRisks=null, pendingRegen=false;
 function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r)}catch(e){}return null}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){return false}}
+/* Mention « Enregistré » à côté de la commune : appelée seulement depuis les gestionnaires de saisie de l'utilisateur, jamais au rendu. */
+let savedT=null;
+function saved(ok){
+  const m=document.getElementById("saveState");if(!m||document.body.classList.contains("obsmode"))return ok;
+  clearTimeout(savedT);savedT=null;
+  if(!ok){m.className="note cb-etat on ko";m.innerHTML='Non conservé par ce navigateur<span class="sr"> : sauvegardez l\'historique et téléchargez les documents pour garder votre travail.</span>';m.title="Ce navigateur ne conserve pas les données : sauvegardez l'historique et téléchargez les documents pour garder votre travail.";return ok}
+  m.className="note cb-etat on";m.removeAttribute("title");m.textContent="Enregistré";
+  savedT=setTimeout(()=>{m.classList.remove("on");savedT=setTimeout(()=>{m.textContent="";savedT=null},450)},2000);
+  return ok;
+}
+function saveU(){return saved(save())}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const GEN={maternelle:"f",universite:"f",faculte:"f",erea:"m",ecole:"f",college:"m",lycee:"m",groupe:"m",creche:"f",institut:"m",centre:"m",etablissement:"m",salle:"f",foyer:"m",maison:"f",espace:"m",halle:"f",hall:"m",gymnase:"m",stade:"m",complexe:"m",hopital:"m",clinique:"f",polyclinique:"f",chu:"m",ch:"m",ehpad:"m",residence:"f",gare:"f",halte:"f",aerodrome:"m",aeroport:"m",base:"f",supermarche:"m",hypermarche:"m",magasin:"m",marche:"m",mairie:"f",hotel:"m",piscine:"f",cinema:"m",eglise:"f",mediatheque:"f",bibliotheque:"f",quartier:"m",hameau:"m",lotissement:"m",zone:"f",route:"f",avenue:"f",rue:"f",place:"f",village:"m",bourg:"m",camping:"m",parc:"m",ecole_:"f",esplanade:"f",parvis:"m",square:"m",jardin:"m",cours:"m",allee:"f",faubourg:"m",cite:"f",lieu:"m",plaine:"f",promenade:"f",port:"m",quai:"m",boulevard:"m",champ:"m",pre:"m",foirail:"m",mail:"m",parking:"m",ile:"f",butte:"f",colline:"f",commerce:"m",epicerie:"f",boulangerie:"f",superette:"f",cafe:"m",restaurant:"m",auberge:"f",arrondissement:"m",secteur:"m",centreville:"m",domaine:"m",terrain:"m",theatre:"m",salle_:"f",kiosque:"m",foire:"f",barrage:"m",centrale:"f",retenue:"f",communaute:"f",metropole:"f",syndicat:"m",massif:"m",foret:"f",bois:"m",riviere:"f",ruisseau:"m",canal:"m",fleuve:"m",gave:"m",torrent:"m",site:"m",societe:"f",usine:"f",entrepot:"m",cooperative:"f",depot:"m",lac:"m",etang:"m"};
@@ -1669,7 +1692,7 @@ function renderErp(){
   box.hidden=!groups.length;
   $("#erpList").innerHTML=groups.map(o=>{const off=o.l.filter(x=>excluded(p,x.name)).length;return `<details class="erpg"><summary>${esc(CATS[o.c].label)} <span class="note">${o.l.length-off} sur ${o.l.length}</span></summary><ul class="checks">${o.l.slice(0,60).map(x=>`<li><label><input type="checkbox" data-erp="${esc(x.name)}"${excluded(p,x.name)?"":" checked"}> ${esc(x.name)}${x.eleves?` <span class="note">· ${nf(x.eleves)} élèves${x.statut?" · "+esc(x.statut.toLowerCase()):""}</span>`:""}</label></li>`).join("")}</ul></details>`}).join("");
 }
-$("#erpList").addEventListener("change",e=>{const n=e.target.dataset.erp;if(n==null)return;const a=S.p.exclus=(S.p.exclus||[]).filter(x=>x!==n);if(!e.target.checked)a.push(n);save();renderErp();const i=[...document.querySelectorAll("#erpList [data-erp]")].find(x=>x.dataset.erp===n);if(i){i.closest("details").open=true;i.focus()}toast("Régénérez le dossier pour appliquer ce choix.")});
+$("#erpList").addEventListener("change",e=>{const n=e.target.dataset.erp;if(n==null)return;const a=S.p.exclus=(S.p.exclus||[]).filter(x=>x!==n);if(!e.target.checked)a.push(n);saveU();renderErp();const i=[...document.querySelectorAll("#erpList [data-erp]")].find(x=>x.dataset.erp===n);if(i){i.closest("details").open=true;i.focus()}toast("Régénérez le dossier pour appliquer ce choix.")});
 function renderDatalists(){
   renderErp();
   const pl=S.places||[];
@@ -1739,10 +1762,10 @@ function drawMap(){
 document.addEventListener("click",e=>{
   if(e.target.id==="placesRetry"){loadPlaces();return}
   const fz=e.target.closest("[data-focus]");
-  if(fz){const [la,lo]=fz.dataset.focus.split(",").map(Number);S.p.focus={lat:la,lon:lo};save();if(map)map.closePopup();toast("Zone d'exercice déplacée. Chargement des lieux…");loadPlaces();return}
+  if(fz){const [la,lo]=fz.dataset.focus.split(",").map(Number);S.p.focus={lat:la,lon:lo};saveU();if(map)map.closePopup();toast("Zone d'exercice déplacée. Chargement des lieux…");loadPlaces();return}
   const b=e.target.closest("[data-assign]");if(!b)return;
   const r=b.dataset.assign;S.p[r]=b.dataset.name;if(r==="icpe")S.p.icpeUser=true;if(r==="secteur")S.p.secteurAuto=false;const el=$("#"+r);if(el)el.value=b.dataset.name;
-  save();if(map)map.closePopup();toast(cap(ROLE_LABEL[r])+" : "+b.dataset.name+". Régénérez le dossier pour l'appliquer.");
+  saveU();if(map)map.closePopup();toast(cap(ROLE_LABEL[r])+" : "+b.dataset.name+". Régénérez le dossier pour l'appliquer.");
 });
 
 /* ---------- Configuration ---------- */
@@ -1805,9 +1828,9 @@ function renderAnnu(){
   const a=S.annu||[];$("#annuCount").textContent=a.length?a.length+" contact"+(a.length>1?"s":""):"";
   $("#annuList").innerHTML=a.slice(0,8).map(c=>`<li>${esc(c.nom)} <span class="note">· ${esc(c.fonction||"fonction ?")} · ${esc(c.tel||"pas de numéro")}</span></li>`).join("")+(a.length>8?`<li class="note">et ${a.length-8} autres</li>`:"");
 }
-$("#annuImport").addEventListener("click",()=>{const a=parseAnnu($("#annuPaste").value);if(!a.length){toast("Aucun contact reconnu. Collez au moins un nom.");return}S.annu=a;S.annuAt=new Date().toISOString().slice(0,10);$("#annuPaste").value="";renderAnnu();save();if(S.tab==="roles"||S.tab==="conduite")render();toast(a.length+" contacts importés.")});
+$("#annuImport").addEventListener("click",()=>{const a=parseAnnu($("#annuPaste").value);if(!a.length){toast("Aucun contact reconnu. Collez au moins un nom.");return}S.annu=a;S.annuAt=new Date().toISOString().slice(0,10);$("#annuPaste").value="";renderAnnu();saveU();if(S.tab==="roles"||S.tab==="conduite")render();toast(a.length+" contacts importés.")});
 $("#annuFile").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(!f)return;f.text().then(t=>{$("#annuPaste").value=t;$("#annuImport").click()});e.target.value=""});
-$("#annuClear").addEventListener("click",()=>{S.annu=[];S.annuAt=null;renderAnnu();save();if(S.tab==="roles"||S.tab==="conduite")render();toast("Annuaire vidé.")});
+$("#annuClear").addEventListener("click",()=>{S.annu=[];S.annuAt=null;renderAnnu();saveU();if(S.tab==="roles"||S.tab==="conduite")render();toast("Annuaire vidé.")});
 function renderFiche(){
   const f=S.p.fiche||{},num=([k,l])=>`<div class="field"><label for="fi-${k}">${esc(l)}</label><input type="number" min="0" inputmode="numeric" id="fi-${k}" data-fi="${k}" value="${esc(f[k]??"")}"></div>`;
   const sel=(k,l)=>`<div class="field"><label for="fi-${k}">${esc(l)}</label><select id="fi-${k}" data-fi="${k}"><option value="">Non renseigné</option><option value="oui"${f[k]==="oui"?" selected":""}>Oui</option><option value="non"${f[k]==="non"?" selected":""}>Non</option></select></div>`;
@@ -1819,13 +1842,13 @@ function renderFiche(){
     chips("conv","Conventions signées",CONVS);
   $("#ficheCount").textContent=ficheFill(S.p)+" sur 9";
 }
-$("#ficheFields").addEventListener("change",e=>{const k=e.target.dataset.fi;if(!k)return;S.p.fiche=S.p.fiche||{};S.p.fiche[k]=e.target.value.trim();$("#ficheCount").textContent=ficheFill(S.p)+" sur 9";save()});
-$("#ficheFields").addEventListener("click",e=>{const b=e.target.closest("[data-fic]");if(!b)return;const k=b.dataset.fic,v=b.dataset.v;S.p.fiche=S.p.fiche||{};const a=S.p.fiche[k]=S.p.fiche[k]||[];const i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);b.setAttribute("aria-pressed",a.includes(v));$("#ficheCount").textContent=ficheFill(S.p)+" sur 9";save()});
+$("#ficheFields").addEventListener("change",e=>{const k=e.target.dataset.fi;if(!k)return;S.p.fiche=S.p.fiche||{};S.p.fiche[k]=e.target.value.trim();$("#ficheCount").textContent=ficheFill(S.p)+" sur 9";saveU()});
+$("#ficheFields").addEventListener("click",e=>{const b=e.target.closest("[data-fic]");if(!b)return;const k=b.dataset.fic,v=b.dataset.v;S.p.fiche=S.p.fiche||{};const a=S.p.fiche[k]=S.p.fiche[k]||[];const i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);b.setAttribute("aria-pressed",a.includes(v));$("#ficheCount").textContent=ficheFill(S.p)+" sur 9";saveU()});
 function renderPart(){
   const pt=partners(S.p);
   $("#partFields").innerHTML=PART_KEYS.map(([k,l])=>`<div class="field"><label for="pt-${k}">${esc(l)}</label><input type="text" id="pt-${k}" data-part="${k}" value="${esc((S.p.part||{})[k]||"")}" placeholder="${esc(pt.def[k])}"></div>`).join("");
 }
-$("#partFields").addEventListener("change",e=>{const k=e.target.dataset.part;if(!k)return;S.p.part=S.p.part||{};S.p.part[k]=e.target.value.trim();save()});
+$("#partFields").addEventListener("change",e=>{const k=e.target.dataset.part;if(!k)return;S.p.part=S.p.part||{};S.p.part[k]=e.target.value.trim();saveU()});
 function writeForm(){
   const p=S.p;renderPart();renderFiche();renderAnnu();
   $("#commune").value=p.commune;$("#pop").value=p.pop||"";$("#dept").value=p.dept||"";
@@ -1871,7 +1894,7 @@ function pick(c){
   closeSugg();
   Object.assign(S.p,{commune:c.nom,insee:c.code,pop:c.population||"",dept:c.departement?c.departement.nom+" ("+c.departement.code+")":"",region:c.region?c.region.nom:"",epci:c.epci?c.epci.nom:"",part:{},fiche:{},exclus:[],lat:c.centre?c.centre.coordinates[1]:null,lon:c.centre?c.centre.coordinates[0]:null});
   PLACE_KEYS.forEach(k=>S.p[k]=GENERIC[k]||DEFAULTS[k]);S.p.focus=null;S.p.fdo="auto";S.p.icpeUser=false;S.p.etabUser=false;S.p.secteurAuto=true;clearGeo();geoRisks=null;S.ctx=null;writeForm();
-  $("#commune").value=c.nom;S.isExample=false;renderId();save();render();
+  $("#commune").value=c.nom;S.isExample=false;renderId();save();render();renderCommuneBar();
   S.annu=[];S.annuAt=null;renderAnnu();renderPart();renderFiche();loadRisks(c.code).then(()=>{if(geoRisks&&geoRisks.status==="ok"&&geoRisks.insee===c.code)toast("Risques de "+c.nom+" chargés depuis Géorisques.")});
   loadPlaces();
 }
@@ -1920,7 +1943,7 @@ function generate(){
   const e=geoRisks&&geoRisks.status==="ok"?geoRisks.items.find(x=>x.key===p.risk):null;
   S.ctx=e&&(e.labels.length||e.catnat)?{catnat:e.catnat,last:e.last?e.last.toISOString():null,labels:e.labels,at:geoRisks.at.toISOString()}:null;
   S.injects=buildInjects(p);S.cot={};S.edited=false;S.retex={forts:"",axes:"",actions:ACTIONS0()};
-  save();render();
+  saveU();render();
 }
 
 /* ---------- Rendu ---------- */
@@ -2125,16 +2148,16 @@ setInterval(()=>{
 document.addEventListener("click",e=>{
   if(!S||document.body.classList.contains("obsmode"))return;
   const t=e.target,l=S.live?LV():null,id=t.id;
-  if(id==="lstart"){const L=LV();if(!L.acc)mcAdd("Début de l'exercice (STARTEX)","sys");else mcAdd("Reprise du jeu","sys");L.start=Date.now();L.run=true;save();render();return}
-  if(id==="lpause"){const L=LV();L.acc=elMs();L.run=false;mcAdd("Pause","sys");save();render();return}
-  if(id==="lreset"){if(!pendingReset){pendingReset=true;render();return}pendingReset=false;S.live=null;save();render();toast("Horloge et main courante remises à zéro.");return}
-  if(id==="lmcadd"){const i=$("#lmc");const v=i.value.trim();if(v){mcAdd(v);render();setTimeout(()=>{const n=$("#lmc");if(n)n.focus()},0)}return}
+  if(id==="lstart"){const L=LV();if(!L.acc)mcAdd("Début de l'exercice (STARTEX)","sys");else mcAdd("Reprise du jeu","sys");L.start=Date.now();L.run=true;saveU();render();return}
+  if(id==="lpause"){const L=LV();L.acc=elMs();L.run=false;mcAdd("Pause","sys");saveU();render();return}
+  if(id==="lreset"){if(!pendingReset){pendingReset=true;render();return}pendingReset=false;S.live=null;saveU();render();toast("Horloge et main courante remises à zéro.");return}
+  if(id==="lmcadd"){const i=$("#lmc");const v=i.value.trim();if(v){mcAdd(v);saveU();render();setTimeout(()=>{const n=$("#lmc");if(n)n.focus()},0)}return}
   if(id==="lmccopy"){copy(mcText()||"Main courante vide.","Main courante copiée.");return}
   const cb=t.closest&&t.closest("[data-call]");if(cb){const L=LV(),i=+cb.dataset.call,v=cb.dataset.v,c=(S.annu||[])[i];L.calls=L.calls||{};
-    if(L.calls[i]&&L.calls[i].st===v){delete L.calls[i]}else{if(!L.run&&!L.acc){L.start=Date.now();L.run=true;mcAdd("Début de l'exercice (STARTEX)","sys")}L.calls[i]={st:v,at:elMin()};mcAdd(`Appel ${c?c.nom:""} : ${CALL_ST.find(x=>x[0]===v)[1].toLowerCase()}`,"inj")}save();render();return}
-  const sb=t.closest&&t.closest("[data-lsent]");if(sb){const L=LV(),n=+sb.dataset.lsent,i=S.injects[n];L.sent[n]=elMin();mcAdd(`Envoyé : ${i.from} → ${i.to} (${hplus(i.t)}) — ${i.msg.slice(0,90)}${i.msg.length>90?"…":""}`,"inj");if(i.obj==="FIN"){L.acc=elMs();L.run=false;mcAdd("Fin de l'exercice (ENDEX)","sys")}save();render();return}
-  const db=t.closest&&t.closest("[data-ldone]");if(db){const L=LV(),n=+db.dataset.ldone,i=S.injects[n];L.done[n]=elMin();mcAdd(`Réaction constatée (${Math.round(L.done[n]-L.sent[n])} min après l'envoi) : ${i.exp.slice(0,90)}${i.exp.length>90?"…":""}`,"inj");save();render();return}
-  const rb=t.closest&&t.closest("[data-lrel]");if(rb){const L=LV(),n=+rb.dataset.lrel;L.rel[n]=elMin();mcAdd("Relance envoyée : "+relanceMsg(S.injects[n]),"inj");save();render();return}
+    if(L.calls[i]&&L.calls[i].st===v){delete L.calls[i]}else{if(!L.run&&!L.acc){L.start=Date.now();L.run=true;mcAdd("Début de l'exercice (STARTEX)","sys")}L.calls[i]={st:v,at:elMin()};mcAdd(`Appel ${c?c.nom:""} : ${CALL_ST.find(x=>x[0]===v)[1].toLowerCase()}`,"inj")}saveU();render();return}
+  const sb=t.closest&&t.closest("[data-lsent]");if(sb){const L=LV(),n=+sb.dataset.lsent,i=S.injects[n];L.sent[n]=elMin();mcAdd(`Envoyé : ${i.from} → ${i.to} (${hplus(i.t)}) — ${i.msg.slice(0,90)}${i.msg.length>90?"…":""}`,"inj");if(i.obj==="FIN"){L.acc=elMs();L.run=false;mcAdd("Fin de l'exercice (ENDEX)","sys")}saveU();render();return}
+  const db=t.closest&&t.closest("[data-ldone]");if(db){const L=LV(),n=+db.dataset.ldone,i=S.injects[n];L.done[n]=elMin();mcAdd(`Réaction constatée (${Math.round(L.done[n]-L.sent[n])} min après l'envoi) : ${i.exp.slice(0,90)}${i.exp.length>90?"…":""}`,"inj");saveU();render();return}
+  const rb=t.closest&&t.closest("[data-lrel]");if(rb){const L=LV(),n=+rb.dataset.lrel;L.rel[n]=elMin();mcAdd("Relance envoyée : "+relanceMsg(S.injects[n]),"inj");saveU();render();return}
 });
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="lmc"){e.preventDefault();const b=$("#lmcadd");if(b)b.click()}});
 function delays(){
@@ -2433,13 +2456,13 @@ document.addEventListener("click",e=>{
   if(id==="cardsPrint"){printHTML(cardsHTML());toast("Fiches joueurs : deux par page, à découper.");return}
   if(id==="repDoc"){dl(fileBase()+".doc","application/msword","﻿"+reportHTML()).then(r=>toast(dlMsg(r,"Rapport Word téléchargé.")));return}
   if(id==="repPdf"){printReport();toast("Choisissez « Enregistrer au format PDF » dans la fenêtre d'impression.");return}
-  if(id==="archBtn"){if(!pendingArch){pendingArch=true;render();return}pendingArch=false;const ok=archive();render();toast(ok?"Exercice archivé dans l'historique de la commune.":"Ce navigateur ne conserve pas les données : l'archive sera perdue à la fermeture de la page. Cliquez sur « Sauvegarder l'historique » pour la garder.");return}
+  if(id==="archBtn"){if(!pendingArch){pendingArch=true;render();return}pendingArch=false;const ok=archive();saved(ok);render();toast(ok?"Exercice archivé dans l'historique de la commune.":"Ce navigateur ne conserve pas les données : l'archive sera perdue à la fermeture de la page. Cliquez sur « Sauvegarder l'historique » pour la garder.");return}
   if(id==="histExport"){dl("historique-commune-prete.json","application/json",JSON.stringify(hLoad(),null,1)).then(r=>toast(dlMsg(r,"Historique exporté.")));return}
-  const hd=e.target.closest("[data-hact]");if(hd){const [hid,ai]=hd.dataset.hact.split("|"),h=hLoad(),x=h.find(y=>y.id===hid);if(x&&x.actions[+ai]){x.actions[+ai].done=hd.checked;hSave(h);render()}return}
+  const hd=e.target.closest("[data-hact]");if(hd){const [hid,ai]=hd.dataset.hact.split("|"),h=hLoad(),x=h.find(y=>y.id===hid);if(x&&x.actions[+ai]){x.actions[+ai].done=hd.checked;saved(hSave(h));render()}return}
 });
 document.addEventListener("change",e=>{
   if(e.target.id!=="histImport")return;const f=e.target.files&&e.target.files[0];if(!f)return;
-  f.text().then(t=>{const imp=JSON.parse(t);if(!Array.isArray(imp))throw 0;const h=hLoad();imp.forEach(x=>{if(x&&x.id&&!h.some(y=>y.id===x.id))h.push(x)});hSave(h);render();toast("Historique importé.")}).catch(()=>toast("Fichier d'historique illisible."));
+  f.text().then(t=>{const imp=JSON.parse(t);if(!Array.isArray(imp))throw 0;const h=hLoad();imp.forEach(x=>{if(x&&x.id&&!h.some(y=>y.id===x.id))h.push(x)});saved(hSave(h));render();toast("Historique importé.")}).catch(()=>toast("Fichier d'historique illisible."));
 });
 function vHist(){
   const list=hCommune(),due=nextDue(list),open=[];
@@ -2517,7 +2540,23 @@ function render(){
   $("#view").innerHTML=`<article class="card doc">${VIEWS[S.tab]()}</article>`;
   if(S.tab==="carte")drawMap();
   $("#hello").hidden=!S.isExample;
+  renderCommuneBar();
 }
+/* Commune dans la barre du haut, commune aux deux espaces */
+function renderCommuneBar(){
+  const n=$("#cbNom"),a=$("#cbAct"),b=$("#communeChange");if(!n||!a||!b||!S)return;
+  const ex=S.isExample||!S.p.insee&&!S.p.commune,nom=ex?"Exemple fictif":S.p.commune;
+  n.textContent=nom;a.textContent=ex?"Choisir ma commune":"Changer";
+  b.parentNode.classList.toggle("ex",ex);
+  b.title=ex?"Exemple fictif : choisir ma commune":nom+" : changer de commune";
+  b.setAttribute("aria-label",ex?"Exemple fictif. Choisir ma commune":"Commune : "+nom+". Changer de commune");
+}
+// En attendant le démarrage guidé : réaffiche l'espace Exercices et le panneau, puis place le curseur sur la recherche de commune.
+$("#communeChange").addEventListener("click",()=>{
+  if(AFF.panelOff){AFF.panelOff=false;saveAff();applyAff()}
+  if(AFF.espace==="pcs")setEspace("exercices");
+  const c=$("#commune");if(c){if(c.scrollIntoView)c.scrollIntoView({block:"center"});c.focus();c.select()}
+});
 
 function tabsFit(scroll){
   const t=$("#tabs");if(!t)return;const o=t.scrollWidth>t.clientWidth+2;t.classList.toggle("ovf",o);
@@ -2528,12 +2567,12 @@ addEventListener("resize",()=>tabsFit(false));
 $("#tabs").addEventListener("scroll",()=>tabsFit(false),{passive:true});
 $("#helloBtn").addEventListener("click",()=>{if(AFF.panelOff){AFF.panelOff=false;saveAff();applyAff()}const c=$("#commune");c.scrollIntoView({block:"center",behavior:"smooth"});c.focus();c.select()});
 /* ---------- Événements ---------- */
-$("#segFormat").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.p.format=b.dataset.v;renderSegs();save()});
-$("#segDuree").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.p.duree=b.dataset.v;renderSegs();save()});
-$("#objs").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(!b)return;const o=b.dataset.o,i=S.p.objs.indexOf(o);if(i>=0){if(S.p.objs.length===1){toast("Gardez au moins un objectif.");return}S.p.objs.splice(i,1)}else S.p.objs.push(o);S.p.objs.sort((a,b)=>OKEYS.indexOf(a)-OKEYS.indexOf(b));renderSegs();save()});
-$("#risks").addEventListener("change",e=>{if(e.target.name==="risk"){S.p.risk=e.target.value;renderCombo();save();if(S.tab==="carte")render()}});
-$("#combo").addEventListener("click",e=>{const b=e.target.closest("[data-combo]");if(!b)return;const c=b.dataset.combo,a=S.p.combo||[];const i=a.indexOf(c);if(i>=0)a.splice(i,1);else{if(a.length>=2){toast("Deux événements en cascade au maximum.");return}a.push(c)}S.p.combo=a;renderCombo();save()});
-$("#comboAdd").addEventListener("change",e=>{const c=e.target.value;if(!c)return;const a=S.p.combo||[];if(a.length>=2){toast("Deux événements en cascade au maximum.");renderCombo();return}a.push(c);S.p.combo=a;renderCombo();save()});
+$("#segFormat").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.p.format=b.dataset.v;renderSegs();saveU()});
+$("#segDuree").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.p.duree=b.dataset.v;renderSegs();saveU()});
+$("#objs").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(!b)return;const o=b.dataset.o,i=S.p.objs.indexOf(o);if(i>=0){if(S.p.objs.length===1){toast("Gardez au moins un objectif.");return}S.p.objs.splice(i,1)}else S.p.objs.push(o);S.p.objs.sort((a,b)=>OKEYS.indexOf(a)-OKEYS.indexOf(b));renderSegs();saveU()});
+$("#risks").addEventListener("change",e=>{if(e.target.name==="risk"){S.p.risk=e.target.value;renderCombo();saveU();if(S.tab==="carte")render()}});
+$("#combo").addEventListener("click",e=>{const b=e.target.closest("[data-combo]");if(!b)return;const c=b.dataset.combo,a=S.p.combo||[];const i=a.indexOf(c);if(i>=0)a.splice(i,1);else{if(a.length>=2){toast("Deux événements en cascade au maximum.");return}a.push(c)}S.p.combo=a;renderCombo();saveU()});
+$("#comboAdd").addEventListener("change",e=>{const c=e.target.value;if(!c)return;const a=S.p.combo||[];if(a.length>=2){toast("Deux événements en cascade au maximum.");renderCombo();return}a.push(c);S.p.combo=a;renderCombo();saveU()});
 $("#gen").addEventListener("click",()=>{
   if(S.edited&&!pendingRegen){pendingRegen=true;$("#genLabel").textContent="Confirmer : remplacer le chronogramme modifié";return}
   pendingRegen=false;$("#genLabel").textContent="Générer le dossier";S.archId=null;S.live=null;generate();toast("Dossier généré.");
@@ -2543,37 +2582,37 @@ $("#tabs").addEventListener("click",e=>{const b=e.target.closest("[data-tab]");i
 $("#tabs").addEventListener("keydown",e=>{if(e.key!=="ArrowRight"&&e.key!=="ArrowLeft")return;const i=TABS.findIndex(t=>t[0]===S.tab);S.tab=TABS[(i+(e.key==="ArrowRight"?1:-1)+TABS.length)%TABS.length][0];save();render();$("#tab-"+S.tab).focus()});
 $("#tools").addEventListener("click",e=>{
   const v=e.target.closest("[data-view]");if(v){S.view=v.dataset.view==="table"?"table":"tl";save();render();return}
-  if(e.target.id==="addInj"){const last=S.injects.filter(i=>i.obj!=="FIN").pop();S.injects.push({t:last?last.t+5:0,obj:"EVAL",from:"Émetteur",to:"PCC",via:"Téléphone",msg:"Nouveau message",exp:"Réaction attendue"});S.injects.sort((a,b)=>a.t-b.t);S.edited=true;save();render()}
+  if(e.target.id==="addInj"){const last=S.injects.filter(i=>i.obj!=="FIN").pop();S.injects.push({t:last?last.t+5:0,obj:"EVAL",from:"Émetteur",to:"PCC",via:"Téléphone",msg:"Nouveau message",exp:"Réaction attendue"});S.injects.sort((a,b)=>a.t-b.t);S.edited=true;saveU();render()}
   if(e.target.id==="copyTsv"){const c=s=>String(s).replace(/[\t\n]/g," ");copy([["Heure","Horaire","Objectif","Émetteur","Destinataire","Vecteur","Message","Réaction attendue"].join("\t")].concat(S.injects.map(i=>[hplus(i.t),clock(i.t),i.obj==="FIN"?"FINEX":OBJS[i.obj].short,i.from,i.to,i.via,i.msg,i.exp].map(c).join("\t"))).join("\n"),"Chronogramme copié. Collez-le dans un tableur.")}
   if(e.target.id==="copyAll")copy(asText(),"Dossier copié. Collez-le dans un traitement de texte.");
 });
 $("#view").addEventListener("focusout",e=>{
   const ce=e.target.closest("[contenteditable]");if(!ce)return;
   const it=ce.closest("[data-i]"),ac=ce.closest("[data-a]");
-  if(it&&ce.dataset.f){S.injects[+it.dataset.i][ce.dataset.f]=ce.textContent.trim();S.edited=true;save()}
-  if(ac&&ce.dataset.af){S.retex.actions[+ac.dataset.a][ce.dataset.af]=ce.textContent.trim();save()}
+  if(it&&ce.dataset.f){S.injects[+it.dataset.i][ce.dataset.f]=ce.textContent.trim();S.edited=true;saveU()}
+  if(ac&&ce.dataset.af){S.retex.actions[+ac.dataset.a][ce.dataset.af]=ce.textContent.trim();saveU()}
 });
-$("#view").addEventListener("change",e=>{const t=e.target;if(t.classList.contains("tmin")){const n=+t.closest("[data-i]").dataset.i;S.injects[n].t=Math.max(0,parseInt(t.value||0,10));S.injects.sort((a,b)=>a.t-b.t);S.edited=true;save();render()}});
-$("#view").addEventListener("input",e=>{const t=e.target;if(t.dataset.r){S.retex[t.dataset.r]=t.value;save()}if(t.dataset.obsv){S.obsv=S.obsv||{};S.obsv[t.dataset.obsv]=t.value;save()}});
+$("#view").addEventListener("change",e=>{const t=e.target;if(t.classList.contains("tmin")){const n=+t.closest("[data-i]").dataset.i;S.injects[n].t=Math.max(0,parseInt(t.value||0,10));S.injects.sort((a,b)=>a.t-b.t);S.edited=true;saveU();render()}});
+$("#view").addEventListener("input",e=>{const t=e.target;if(t.dataset.r){S.retex[t.dataset.r]=t.value;saveU()}if(t.dataset.obsv){S.obsv=S.obsv||{};S.obsv[t.dataset.obsv]=t.value;saveU()}});
 $("#view").addEventListener("click",e=>{
   const cc=e.target.closest("[data-cat]");if(cc){const k=cc.dataset.cat;hiddenCats.has(k)?hiddenCats.delete(k):hiddenCats.add(k);cc.setAttribute("aria-pressed",!hiddenCats.has(k));drawMap();return}
-  const d=e.target.closest("[data-del]");if(d){S.injects.splice(+d.dataset.del,1);S.edited=true;save();render();return}
-  const nw=e.target.closest("[data-now]");if(nw){const id=nw.dataset.now,inp=nw.parentNode.querySelector("input");const v=nowStamp()+(inp.value?" · "+inp.value:"");inp.value=v;S.obsv=S.obsv||{};S.obsv[id]=v;save();return}
+  const d=e.target.closest("[data-del]");if(d){S.injects.splice(+d.dataset.del,1);S.edited=true;saveU();render();return}
+  const nw=e.target.closest("[data-now]");if(nw){const id=nw.dataset.now,inp=nw.parentNode.querySelector("input");const v=nowStamp()+(inp.value?" · "+inp.value:"");inp.value=v;S.obsv=S.obsv||{};S.obsv[id]=v;saveU();return}
   if(e.target.id==="obsLinkBtn"){copy(obsLink(),"Lien observateurs copié. Envoyez-le aux observateurs.");return}
   if(e.target.id==="obsImportBtn"){const raw=($("#obsImport").value||"").trim();const m=raw.match(/COMMUNE-PRETE-OBS:([\w-]+)/);if(!m){toast("Code non reconnu.");return}
-    try{const d=b64d(m[1]);let n=0;S.cot=S.cot||{};S.obsv=S.obsv||{};Object.entries(d.cot||{}).forEach(([k,v])=>{if(v&&!S.cot[k]){S.cot[k]=v;n++}});Object.entries(d.obsv||{}).forEach(([k,v])=>{if(v){S.obsv[k]=(S.obsv[k]?S.obsv[k]+" | ":"")+(d.n||"Observateur")+" : "+v;n++}});save();render();toast(n+" éléments importés de "+(d.n||"l'observateur")+".")}catch(err){toast("Code illisible.")}return}
+    try{const d=b64d(m[1]);let n=0;S.cot=S.cot||{};S.obsv=S.obsv||{};Object.entries(d.cot||{}).forEach(([k,v])=>{if(v&&!S.cot[k]){S.cot[k]=v;n++}});Object.entries(d.obsv||{}).forEach(([k,v])=>{if(v){S.obsv[k]=(S.obsv[k]?S.obsv[k]+" | ":"")+(d.n||"Observateur")+" : "+v;n++}});saveU();render();toast(n+" éléments importés de "+(d.n||"l'observateur")+".")}catch(err){toast("Code illisible.")}return}
   const ct=e.target.closest("[data-copytpl]");if(ct){const m=MODELES[+ct.dataset.copytpl];if(m)copy(m.x,m.t+" copié.");return}
-  const ad=e.target.closest("[data-adel]");if(ad){S.retex.actions.splice(+ad.dataset.adel,1);save();render();return}
-  const c=e.target.closest("[data-cot]");if(c){const id=c.dataset.cot;S.cot[id]=S.cot[id]===c.dataset.v?"":c.dataset.v;save();render();return}
-  if(e.target.id==="addAct"){S.retex.actions.push({a:"Nouvelle action",pilote:"À désigner",ech:"À fixer"});save();render()}
+  const ad=e.target.closest("[data-adel]");if(ad){S.retex.actions.splice(+ad.dataset.adel,1);saveU();render();return}
+  const c=e.target.closest("[data-cot]");if(c){const id=c.dataset.cot;S.cot[id]=S.cot[id]===c.dataset.v?"":c.dataset.v;saveU();render();return}
+  if(e.target.id==="addAct"){S.retex.actions.push({a:"Nouvelle action",pilote:"À désigner",ech:"À fixer"});saveU();render()}
 });
-[...PLACE_KEYS,"fdo","heureH","date","pop","dept"].forEach(id=>$("#"+id).addEventListener("change",()=>{readForm();save()}));
-$("#icpe").addEventListener("change",()=>{S.p.icpeUser=true;save()});
-$("#etab").addEventListener("change",()=>{S.p.etabUser=true;save()});
+[...PLACE_KEYS,"fdo","heureH","date","pop","dept"].forEach(id=>$("#"+id).addEventListener("change",()=>{readForm();saveU()}));
+$("#icpe").addEventListener("change",()=>{S.p.icpeUser=true;saveU()});
+$("#etab").addEventListener("change",()=>{S.p.etabUser=true;saveU()});
 $("#secteur").addEventListener("change",()=>{
-  S.p.secteurAuto=false;save();
+  S.p.secteurAuto=false;saveU();
   const q=(S.quartiers||[]).find(x=>x.name===S.p.secteur);
-  if(q&&isBig(S.p)&&live){S.p.focus={lat:q.lat,lon:q.lon,name:q.name};save();toast("Zone d'exercice recentrée sur "+q.name+".");loadPlaces({keepSecteur:true})}
+  if(q&&isBig(S.p)&&live){S.p.focus={lat:q.lat,lon:q.lon,name:q.name};saveU();toast("Zone d'exercice recentrée sur "+q.name+".");loadPlaces({keepSecteur:true})}
 });
 
 function asText(){
@@ -2600,6 +2639,7 @@ let tt;function toast(m){const el=$("#toast");el.textContent=m;el.classList.add(
 function initObs(){
   let d;try{d=b64d(location.hash.slice(5))}catch(e){d=null}
   document.body.classList.add("obsmode");
+  const cb=$("#communeBar");if(cb)cb.remove(); // ni commune ni mention « Enregistré » chez l'observateur
   const sh=document.querySelector(".shell");
   if(!d){sh.innerHTML='<main class="work"><article class="card doc"><div class="docbody"><h3>Lien observateur illisible</h3><p>Demandez un nouveau lien au directeur d\'exercice.</p></div></article></main>';return}
   const KEYO="commune-prete-obs-"+b64e([d.c,d.t]).slice(0,40);
@@ -3214,7 +3254,7 @@ function pcsDocClick(id){
 }
 function renderPCS(){
   const v=$("#pcsView");if(!v||!S)return;
-  renderPcsPanel();
+  renderPcsPanel();renderCommuneBar();
   if(!S.p.insee||S.isExample){
     v.innerHTML=`<article class="card doc"><div class="docbody"><h3>Plan communal de sauvegarde</h3><p>Recherchez votre commune dans l'espace Exercices pour construire son plan communal de sauvegarde.</p><div><button class="btn primary" type="button" id="pcsGoEx">Rechercher ma commune</button></div></div></article>`;
     return;
@@ -3229,36 +3269,37 @@ $("#pcsPanel").addEventListener("click",e=>{
   PCSUI.rub=+b.dataset.rub;PCSUI.tab="rediger";renderPCS();
   const n=document.querySelector('#pcsRub [data-rub="'+PCSUI.rub+'"]');if(n)n.focus();
 });
-function pcsSaved(){if(!pSave()&&!PWARNED){PWARNED=true;toast("Ce navigateur ne conserve pas les données : utilisez les documents de l'onglet Documents pour garder votre travail.")}}
+function pcsSaved(){const ok=pSave();if(!ok&&!PWARNED){PWARNED=true;toast("Ce navigateur ne conserve pas les données : utilisez les documents de l'onglet Documents pour garder votre travail.")}return ok}
+function pcsSavedU(){return saved(pcsSaved())}
 $("#pcsView").addEventListener("change",e=>{
   if(!S||!S.p.insee||S.isExample)return;
   const tr=e.target.closest("[data-trans]"),fi=e.target.closest("[data-fiche]");
   if(tr){const cur=pcsGet("fiches.transverses"),a=(Array.isArray(cur)?cur:[]).filter(k=>k!==tr.dataset.trans);if(tr.checked)a.push(tr.dataset.trans);
-    pcsSet("fiches.transverses",a);pcsSaved();const l=$("#pcsFiches");if(l)l.innerHTML=fichesListeHTML();updatePcsPanel();updateApercu();return}
+    pcsSet("fiches.transverses",a);pcsSavedU();const l=$("#pcsFiches");if(l)l.innerHTML=fichesListeHTML();updatePcsPanel();updateApercu();return}
   if(fi){const f=fichesReflexes().find(x=>x.id===fi.dataset.fiche),v=fi.value;
-    pcsSet("fiches."+fi.dataset.fiche,v.trim()===""||(f&&v.trim()===ficheTexte(f).trim())?"":v);pcsSaved();
+    pcsSet("fiches."+fi.dataset.fiche,v.trim()===""||(f&&v.trim()===ficheTexte(f).trim())?"":v);pcsSavedU();
     const dt=fi.closest("details"),mod=pcsGet("fiches."+fi.dataset.fiche)!=="",rb=dt&&dt.querySelector("[data-fiche-reset]"),sm=dt&&dt.querySelector("summary");
     if(rb)rb.disabled=!mod;if(sm){const tg=sm.querySelector(".tg");if(mod&&!tg)sm.insertAdjacentHTML("beforeend",` <span class="tg src">modifiée</span>`);else if(!mod&&tg)tg.remove()}
     updatePcsPanel();updateApercu();return}
   const f=e.target.closest("[data-pf]");if(!f||!S||!S.p.insee||S.isExample)return;
   let v=f.value;if(f.type==="number"&&v!==""){const n=Number(v);v=isFinite(n)?Math.max(0,n):"";if(v!==""&&Number(f.value)!==v)f.value=v}
-  pcsSet(f.dataset.pf,v);pcsSaved();
+  pcsSet(f.dataset.pf,v);pcsSavedU();
   updatePcsPanel();updateApercu();
 });
 $("#pcsView").addEventListener("click",e=>{
   if(S&&S.p.insee&&!S.isExample&&e.target.id&&pcsDocClick(e.target.id))return;
   if(e.target.closest("#pcsGoEx")){if(AFF.panelOff){AFF.panelOff=false;saveAff();applyAff()}setEspace("exercices");const c=$("#commune");if(c)c.focus();return}
   const rs=e.target.closest("[data-fiche-reset]");
-  if(rs){pcsSet("fiches."+rs.dataset.ficheReset,"");pcsSaved();const l=$("#pcsFiches");if(l){const op=[...l.querySelectorAll("details")].map(d=>d.open);l.innerHTML=fichesListeHTML();l.querySelectorAll("details").forEach((d,i)=>{d.open=!!op[i]})}updateApercu();return}
+  if(rs){pcsSet("fiches."+rs.dataset.ficheReset,"");pcsSavedU();const l=$("#pcsFiches");if(l){const op=[...l.querySelectorAll("details")].map(d=>d.open);l.innerHTML=fichesListeHTML();l.querySelectorAll("details").forEach((d,i)=>{d.open=!!op[i]})}updateApercu();return}
   const gv=e.target.closest("[data-gv]");
-  if(gv&&S&&S.p.insee&&!S.isExample){const c=pcsCur().verif.cot,id=gv.dataset.gv;if(c[id]===gv.dataset.v)delete c[id];else c[id]=gv.dataset.v;pcsSaved();
+  if(gv&&S&&S.p.insee&&!S.isExample){const c=pcsCur().verif.cot,id=gv.dataset.gv;if(c[id]===gv.dataset.v)delete c[id];else c[id]=gv.dataset.v;pcsSavedU();
     gv.parentNode.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",c[id]===x.dataset.v));updateVerif();return}
   const gc=e.target.closest("[data-gcomp]");
   if(gc){const g=PCS_GRILLE.find(x=>x.id===gc.dataset.gcomp);if(g){PCSUI.rub=g.rub;PCSUI.tab="rediger";renderPCS();const n=document.querySelector('#pcsRub [data-rub="'+g.rub+'"]');if(n)n.focus()}return}
   const vd=e.target.closest("[data-vadel]");
-  if(vd){const i=+vd.dataset.vadel;pcsCur().verif.actions.splice(i,1);pcsSaved();const p=$("#verifPlan");if(p)p.innerHTML=verifActionsHTML();
+  if(vd){const i=+vd.dataset.vadel;pcsCur().verif.actions.splice(i,1);pcsSavedU();const p=$("#verifPlan");if(p)p.innerHTML=verifActionsHTML();
     const nx=p&&p.querySelectorAll("[data-vadel]")[i],cible=nx||$("#addVAct");if(cible)cible.focus();return}
-  if(e.target.id==="addVAct"){pcsCur().verif.actions.push({id:"m"+Date.now(),a:"Nouvelle action",pilote:"À désigner",ech:"À fixer"});pcsSaved();const p=$("#verifPlan");if(p)p.innerHTML=verifActionsHTML();return}
+  if(e.target.id==="addVAct"){pcsCur().verif.actions.push({id:"m"+Date.now(),a:"Nouvelle action",pilote:"À désigner",ech:"À fixer"});pcsSavedU();const p=$("#verifPlan");if(p)p.innerHTML=verifActionsHTML();return}
   const b=e.target.closest("[data-ptab]");if(b){PCSUI.tab=b.dataset.ptab;renderPCS();const n=$("#ptab-"+PCSUI.tab);if(n)n.focus()}
 });
 addEventListener("storage",e=>{ // autre onglet : relire les données plutôt que garder la copie en mémoire
@@ -3272,7 +3313,7 @@ addEventListener("storage",e=>{ // autre onglet : relire les données plutôt qu
 });
 $("#pcsView").addEventListener("focusout",e=>{
   const ce=e.target.closest("[data-vaf]");if(!ce||!S||!S.p.insee||S.isExample)return;
-  const tr=ce.closest("[data-va]"),a=tr&&pcsCur().verif.actions[+tr.dataset.va];if(a){a[ce.dataset.vaf]=ce.textContent.trim();pcsSaved()}
+  const tr=ce.closest("[data-va]"),a=tr&&pcsCur().verif.actions[+tr.dataset.va];if(a){a[ce.dataset.vaf]=ce.textContent.trim();pcsSavedU()}
 });
 $("#pcsView").addEventListener("keydown",e=>{
   if(!e.target.closest("#pcsTabs")||(e.key!=="ArrowRight"&&e.key!=="ArrowLeft"))return;
