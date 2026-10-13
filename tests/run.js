@@ -237,6 +237,24 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : ""));
     t.close();
   }
+  { // Risque choisi par l'utilisateur : ni une réponse tardive de Géorisques ni le rechargement de la page ne le remplacent.
+    const t = openMulti({ slowRisk: { "09194": 1200 }, risques: ["Inondation", "Séisme"] }); await wait(300);
+    if (!guideStep1(t)) click(t, "#communeChange");
+    t.q("#commune").value = "Mire"; t.q("#commune").dispatchEvent(new t.w.Event("input")); await wait(320);
+    t.q("#sugg li").dispatchEvent(new t.w.MouseEvent("mousedown", { bubbles: true })); await wait(100);
+    click(t, "#gChoixEx"); const s = t.q("#gr-seisme"); s.checked = true; s.dispatchEvent(new t.w.Event("change", { bubbles: true })); click(t, "#gGen");
+    await wait(1600);
+    const st = () => JSON.parse(t.w.localStorage.getItem("atelier-pcs-v2"));
+    ok(st().p.risk === "seisme" && t.q("input[name=risk]:checked").value === "seisme", "réponse tardive de Géorisques : le risque choisi (séisme) est conservé");
+    const saved = {}; for (let i = 0; i < t.w.localStorage.length; i++) { const k = t.w.localStorage.key(i); saved[k] = t.w.localStorage.getItem(k) }
+    t.close();
+    const u = openMulti({ risques: ["Inondation", "Séisme"] }, saved); await wait(900);
+    click(u, '[data-tab="retex"]'); click(u, "#archBtn"); click(u, "#archBtn");
+    const h = JSON.parse(u.w.localStorage.getItem("commune-prete-historique") || "[]");
+    ok(JSON.parse(u.w.localStorage.getItem("atelier-pcs-v2")).p.risk === "seisme" && u.q("input[name=risk]:checked").value === "seisme" && h.length && h[h.length - 1].titre === "Séisme",
+      "rechargement : risque choisi conservé, archive conforme au dossier");
+    ok(!t.errs.length && !u.errs.length, "aucune erreur JavaScript" + (u.errs.length ? " : " + u.errs[0] : "")); u.close();
+  }
   { // 3. Dossier enregistré dans le navigateur avec les lieux d'une autre commune : ils sont écartés au démarrage.
     const t0 = openMulti(); await wait(300); await chooseCommune(t0, "bourg"); const st = JSON.parse(t0.w.localStorage.getItem("atelier-pcs-v2")); t0.close();
     st.p.insee = "09253"; st.p.commune = "Rouze";

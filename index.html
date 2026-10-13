@@ -1249,7 +1249,7 @@ const PLACE_KEYS=["secteur","evt","etab","heberg","erp","hopital","gare","aero",
 const ACTIONS0=()=>[{a:"Mettre à jour l'annuaire de crise du PCS",pilote:"Secrétariat de mairie",ech:"1 mois"},{a:"Compléter le recensement des personnes vulnérables",pilote:"Élu référent CCAS",ech:"3 mois"}];
 
 const KEY="atelier-pcs-v2";
-let S=null, live=null, geoRisks=null, pendingRegen=false;
+let S=null, live=null, geoRisks=null, pendingRegen=false, riskAuto=false; // riskAuto : la réponse de Géorisques peut présélectionner le risque (commune tout juste choisie, risque pas encore retenu)
 const GUIDE={on:false,step:1,init:false,fresh:false,risk:null,riskUser:false,format:"cadre",confirm:false}; // démarrage guidé (état d'affichage, non enregistré)
 function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r)}catch(e){}return null}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){return false}}
@@ -1570,7 +1570,7 @@ async function loadRisks(insee){
     cat.forEach(a=>{const e=slot(a.libelle_risque_jo||a.libelle_risque||"");e.catnat++;const dt=parseDate(a.date_debut_evt);if(dt&&(!e.last||dt>e.last))e.last=dt});
     geoRisks={status:"ok",at:new Date(),insee,items:Object.values(prof).sort((a,b)=>(b.key!=="autre")-(a.key!=="autre")||b.catnat-a.catnat)};
     const first=geoRisks.items.find(x=>x.key!=="autre");
-    if(first)S.p.risk=first.key;
+    if(first&&riskAuto)S.p.risk=first.key;
     save();
   }catch(e){if(stale())return;geoRisks={status:"error",insee}}
   renderRisks();pcsRefresh();
@@ -2035,7 +2035,7 @@ function showSugg(){
 function closeSugg(){$("#sugg").hidden=true;$("#commune").setAttribute("aria-expanded","false");$("#commune").removeAttribute("aria-activedescendant")}
 $("#sugg").addEventListener("mousedown",e=>{const li=e.target.closest("li");if(li){e.preventDefault();pick(suggItems[+li.dataset.i])}});
 function pick(c){
-  closeSugg();
+  closeSugg();riskAuto=true;
   Object.assign(S.p,{commune:c.nom,insee:c.code,pop:c.population||"",dept:c.departement?c.departement.nom+" ("+c.departement.code+")":"",region:c.region?c.region.nom:"",epci:c.epci?c.epci.nom:"",part:{},fiche:{},exclus:[],lat:c.centre?c.centre.coordinates[1]:null,lon:c.centre?c.centre.coordinates[0]:null});
   PLACE_KEYS.forEach(k=>S.p[k]=GENERIC[k]||DEFAULTS[k]);S.p.focus=null;S.p.fdo="auto";S.p.icpeUser=false;S.p.etabUser=false;S.p.secteurAuto=true;clearGeo();geoRisks=null;S.ctx=null;writeForm();
   $("#commune").value=c.nom;S.isExample=false;renderId();save();render();renderCommuneBar();
@@ -2087,7 +2087,7 @@ function generate(){
   const p=readForm();
   const e=geoRisks&&geoRisks.status==="ok"?geoRisks.items.find(x=>x.key===p.risk):null;
   S.ctx=e&&(e.labels.length||e.catnat)?{catnat:e.catnat,last:e.last?e.last.toISOString():null,labels:e.labels,at:geoRisks.at.toISOString()}:null;
-  S.injects=buildInjects(p);S.cot={};S.edited=false;S.retex={forts:"",axes:"",actions:ACTIONS0()};
+  riskAuto=false;S.injects=buildInjects(p);S.cot={};S.edited=false;S.retex={forts:"",axes:"",actions:ACTIONS0()};
   saveU();render();
 }
 
@@ -2813,7 +2813,7 @@ $("#tabs").addEventListener("scroll",()=>tabsFit(false),{passive:true});
 $("#segFormat").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.p.format=b.dataset.v;renderSegs();saveU()});
 $("#segDuree").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.p.duree=b.dataset.v;renderSegs();saveU()});
 $("#objs").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(!b)return;const o=b.dataset.o,i=S.p.objs.indexOf(o);if(i>=0){if(S.p.objs.length===1){toast("Gardez au moins un objectif.");return}S.p.objs.splice(i,1)}else S.p.objs.push(o);S.p.objs.sort((a,b)=>OKEYS.indexOf(a)-OKEYS.indexOf(b));renderSegs();saveU()});
-$("#risks").addEventListener("change",e=>{if(e.target.name==="risk"){S.p.risk=e.target.value;const ar=$("#autresRisques");if(ar)ar.dataset.risk=S.p.risk;renderCombo();saveU();if(S.tab==="carte")render()}});
+$("#risks").addEventListener("change",e=>{if(e.target.name==="risk"){S.p.risk=e.target.value;riskAuto=false;const ar=$("#autresRisques");if(ar)ar.dataset.risk=S.p.risk;renderCombo();saveU();if(S.tab==="carte")render()}});
 $("#combo").addEventListener("click",e=>{const b=e.target.closest("[data-combo]");if(!b)return;const c=b.dataset.combo,a=S.p.combo||[];const i=a.indexOf(c);if(i>=0)a.splice(i,1);else{if(a.length>=2){toast("Deux événements en cascade au maximum.");return}a.push(c)}S.p.combo=a;renderCombo();saveU()});
 $("#comboAdd").addEventListener("change",e=>{const c=e.target.value;if(!c)return;const a=S.p.combo||[];if(a.length>=2){toast("Deux événements en cascade au maximum.");renderCombo();return}a.push(c);S.p.combo=a;renderCombo();saveU()});
 $("#gen").addEventListener("click",()=>{
