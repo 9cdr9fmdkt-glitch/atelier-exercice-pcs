@@ -17,9 +17,11 @@ function open(name, hash = "", storage, opts = {}) {
     runScripts: "dangerously", pretendToBeVisual: true, url: "https://exemple.test/" + hash, virtualConsole: vc,
     beforeParse(w) {
       if (storage) for (const [k, v] of Object.entries(storage)) w.localStorage.setItem(k, v);
+      // guideVu : démarrage guidé déjà vu (ancien comportement : dossier d'exemple affiché d'emblée)
+      if (opts.guideVu) { let a = {}; try { a = JSON.parse(w.localStorage.getItem("commune-prete-affichage")) || {} } catch (e) {} a.guide = true; w.localStorage.setItem("commune-prete-affichage", JSON.stringify(a)) }
       if (opts.noStorage) Object.defineProperty(w, "localStorage", { get() { throw new Error("SecurityError") } });
       if (opts.claude) w.claude = { use: n => Promise.resolve(n === "downloads" ? { save: r => { saves.push(r); return Promise.resolve({ status: "saved" }) } } : null) };
-      w.fetch = (u, o) => { u = String(u);
+      w.fetch = (u, o) => { u = String(u); if (opts.offline) return Promise.reject(new Error("hors ligne"));
         if (u.includes("communes?nom")) return R([F.commune]);
         if (u.includes("geometry=contour")) return R({ type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] } });
         if (u.includes("overpass")) return R({ elements: F.osm });
@@ -36,9 +38,15 @@ function open(name, hash = "", storage, opts = {}) {
   w.HTMLAnchorElement.prototype.click = function () {};
   return { w, d: w.document, q: s => w.document.querySelector(s), errs, clip, blobs, saves, close: () => w.close() };
 }
+// La recherche de commune est dans le démarrage guidé : l'ouvrir si besoin (bouton de la barre), choisir,
+// puis suivre « Préparer un exercice de crise » et « Générer le dossier », qui ferme le parcours.
+const guideStep1 = t => !t.q("#guide").hidden && !t.q('#guide [data-gstep="1"]').hidden;
+function guideFinish(t) { click(t, "#gChoixEx"); click(t, "#gGen"); if (/Confirmer/.test(t.q("#gGen").textContent)) click(t, "#gGen") }
 async function pickCommune(t, name) {
+  if (!guideStep1(t)) t.q("#communeChange").dispatchEvent(new t.w.MouseEvent("click", { bubbles: true }));
   t.q("#commune").value = FIX[name].commune.nom.slice(0, 3); t.q("#commune").dispatchEvent(new t.w.Event("input"));
   await wait(350); t.q("#sugg li").dispatchEvent(new t.w.MouseEvent("mousedown", { bubbles: true })); await wait(700);
+  guideFinish(t);
 }
 
 // Navigateur simulé où plusieurs communes coexistent : chaque réponse dépend du code INSEE demandé.
@@ -76,9 +84,11 @@ function openMulti(opts = {}, storage) {
   return { w, d: w.document, q: s => w.document.querySelector(s), errs, blobs, close: () => w.close() };
 }
 async function chooseCommune(t, name, ms = 700) {
+  if (!guideStep1(t)) t.q("#communeChange").dispatchEvent(new t.w.MouseEvent("click", { bubbles: true }));
   t.q("#commune").value = FIX[name].commune.nom.slice(0, 4); t.q("#commune").dispatchEvent(new t.w.Event("input"));
   await wait(320); const li = [...t.d.querySelectorAll("#sugg li")].find(l => l.textContent.startsWith(FIX[name].commune.nom));
   li.dispatchEvent(new t.w.MouseEvent("mousedown", { bubbles: true })); await wait(ms);
+  guideFinish(t);
 }
 // Tout ce que l'utilisateur peut lire de la commune : lieux saisis, carte, scénario, chronogramme.
 function everything(t) {
@@ -176,7 +186,7 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     const r = await new Promise(res => { const f = new t.w.FileReader(); f.onload = () => res(f.result); f.readAsText(t.blobs.pop()) });
     ok(/<h2>6\. Grille d'observation détaillée/.test(r), "sections du rapport numérotées dans l'ordre");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
-  { const t = open("bourg", "", null, { claude: true }); await wait(300); click(t, '[data-tab="retex"]'); click(t, "#repDoc"); await wait(80);
+  { const t = open("bourg", "", null, { claude: true, guideVu: true }); await wait(300); click(t, '[data-tab="retex"]'); click(t, "#repDoc"); await wait(80);
     ok(t.saves.length === 1 && /\.html$/.test(t.saves[0].filename) && /Rapport de fin d'exercice/.test(t.saves[0].data), "rapport enregistré dans la copie Claude (format HTML)");
     ok(/format HTML/.test(t.q("#toast").textContent), "format du fichier annoncé");
     click(t, "#histExport"); await wait(80);
@@ -250,7 +260,7 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(/nouvel essai automatique/.test(t.q("#lieuxNote").textContent), "nouvel essai automatique annoncé après un échec"); t.close(); }
 
   console.log("\nESPACE PCS");
-  { const t = open("bourg"); await wait(300);
+  { const t = open("bourg", "", null, { guideVu: true }); await wait(300);
     ok(t.q('#espaceSeg [data-esp="exercices"]').getAttribute("aria-pressed") === "true", "espace Exercices par défaut");
     click(t, '#espaceSeg [data-esp="pcs"]');
     ok(t.d.body.classList.contains("esp-pcs") && !t.q("#pcsPanel").hidden && t.q("#config").hidden, "espace PCS affiché, panneau des exercices masqué");
@@ -382,7 +392,7 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(/Mises à jour issues des exercices/.test(t.q("#pcsView").textContent) && /Mettre à jour l'annuaire de crise du PCS/.test(t.q("#pcsView").textContent), "actions correctives du RETEX dans le PCS");
     ok((t.q("#pcsView").textContent.match(/Mettre à jour l'annuaire de crise du PCS/g) || []).length === 1, "actions correctives listées une seule fois");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
-  { const t = open("bourg"); await wait(300);
+  { const t = open("bourg", "", null, { guideVu: true }); await wait(300);
     ok(!/Poste de commandement communal/.test((click(t, '[data-tab="cadrage"]'), view(t))) && !t.w.localStorage.getItem("commune-prete-pcs"), "sans PCS : pas de ligne PCC, rien d'enregistré par l'espace Exercices");
     t.close(); }
   { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); await wait(400);
@@ -474,7 +484,7 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(JSON.parse(t.w.localStorage.getItem("commune-prete-pcs"))["09194"].gen.dateApprob === "2022-02-02", "saisie suivante : la modification de l'autre onglet n'est pas écrasée");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
-  { const t = open("bourg"); await wait(300);
+  { const t = open("bourg", "", null, { guideVu: true }); await wait(300);
     click(t, "#panelBtn"); click(t, '#espaceSeg [data-esp="pcs"]');
     ok(t.d.body.classList.contains("panel-off"), "panneau des exercices masqué avant la recherche");
     click(t, "#pcsGoEx");
@@ -500,13 +510,14 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(t.q(".tools-r").firstElementChild === bar() && bar().nextElementSibling === t.q("#espaceSeg"), "barre : bloc commune placé avant le sélecteur d'espace");
     ok(t.q("#saveState").getAttribute("aria-live") === "polite" && t.q("#saveState").textContent.trim() === "", "mention vide au démarrage, annoncée poliment");
     click(t, '#espaceSeg [data-esp="pcs"]'); click(t, "#communeChange");
-    ok(!t.d.body.classList.contains("esp-pcs") && t.d.activeElement && t.d.activeElement.id === "commune", "« Choisir ma commune » depuis l'espace PCS : retour aux exercices, curseur sur le champ commune");
+    ok(guideStep1(t) && t.q("#pcsView").hidden && t.d.activeElement && t.d.activeElement.id === "commune", "« Choisir ma commune » depuis l'espace PCS : démarrage guidé à l'écran 1, curseur sur le champ commune");
     await pickCommune(t, "bourg");
     ok(nom() === "Mirepoix" && btn() === "Changer", "barre : « Mirepoix » et « Changer » après le choix");
     click(t, '#espaceSeg [data-esp="pcs"]');
     ok(!bar().hidden && nom() === "Mirepoix" && btn() === "Changer", "barre : commune affichée dans l'espace PCS");
     click(t, "#panelBtn"); click(t, "#communeChange");
-    ok(!t.d.body.classList.contains("esp-pcs") && !t.d.body.classList.contains("panel-off") && t.d.activeElement && t.d.activeElement.id === "commune", "« Changer » : panneau réaffiché, curseur sur le champ commune");
+    ok(guideStep1(t) && !t.d.body.classList.contains("panel-off") && t.d.activeElement && t.d.activeElement.id === "commune", "« Changer » : démarrage guidé à l'écran 1, panneau réaffiché, curseur sur le champ commune");
+    click(t, "#gBack1"); click(t, '#espaceSeg [data-esp="exercices"]');
     t.q("#saveState").textContent = "";
     click(t, '[data-tab="scenario"]'); click(t, '[data-tab="cadrage"]');
     ok(t.q("#saveState").textContent.trim() === "", "simple rendu ou changement d'onglet : pas de mention");
@@ -535,8 +546,101 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(/\.cb-etat\{position:absolute;left:0;[^}]*max-width:calc\(100vw - 32px\)/.test(m), "téléphone : mention d'état ancrée à gauche, sans sortir de l'écran");
   }
 
+  console.log("\nDÉMARRAGE GUIDÉ");
+  { const t = open("bourg"); await wait(300);
+    const g = t.q("#guide"), step = n => !t.q('#guide [data-gstep="' + n + '"]').hidden, mark = () => t.q("#gMark").textContent.trim();
+    ok(!!g && !g.hidden && step(1) && !step(2) && !step(3), "premier lancement : démarrage guidé affiché, écran 1");
+    ok(t.q("#view").hidden && t.q(".bar").hidden && t.q("#config").hidden && t.q("#pcsPanel").hidden, "premier lancement : dossier d'exemple et panneau masqués");
+    ok(g.classList.contains("card") && g.parentNode === t.q("main.work") && !t.q("#guide [role=dialog]"), "carte dans l'espace de travail, sans fenêtre modale");
+    ok(mark() === "Étape 1 sur 3" && t.d.activeElement && t.d.activeElement.id === "commune", "repère « Étape 1 sur 3 », curseur sur la recherche");
+    ok(t.q('#guide [data-gstep="1"] #commune') && t.q('#guide [data-gstep="1"] #sugg') && t.q('#guide [data-gstep="1"] #manualId') && !t.q("#config #commune"), "recherche et saisie manuelle déplacées dans l'écran 1");
+    ok(!t.q("#hello") && !/\.hello\b|helloBtn/.test(SRC), "bandeau « Ceci est un exemple » supprimé avec ses styles");
+    ok(!t.q("#gExample").hidden && t.q("#gBack1").hidden && t.q("#gWarn").hidden, "exemple fictif : lien « Voir l'exemple », ni retour ni avertissement");
+    click(t, "#gExample");
+    ok(g.hidden && !t.q("#view").hidden && !t.q("#config").hidden && /Exemple fictif/.test(t.q("#communeBar").textContent), "« Voir l'exemple » ferme le parcours et laisse l'exemple");
+    const aff = JSON.parse(t.w.localStorage.getItem("commune-prete-affichage"));
+    ok(aff.guide === true, "parcours noté comme vu (champ guide)");
+    const keep = {}; for (let i = 0; i < t.w.localStorage.length; i++) { const k = t.w.localStorage.key(i); keep[k] = t.w.localStorage.getItem(k) }
+    ok(!t.w.localStorage.getItem("atelier-pcs-v2") || JSON.parse(t.w.localStorage.getItem("atelier-pcs-v2")).isExample !== false, "aucune donnée d'exercice modifiée par le parcours");
+    t.close();
+    const r = open("bourg", "", keep); await wait(300);
+    ok(r.q("#guide").hidden && !r.q("#view").hidden, "au rechargement : le parcours n'est plus imposé");
+    click(r, "#communeChange");
+    ok(!r.q("#guide").hidden && !r.q('#guide [data-gstep="1"]').hidden && r.d.activeElement.id === "commune", "« Choisir ma commune » rouvre l'écran 1");
+    ok(!r.errs.length, "aucune erreur JavaScript" + (r.errs.length ? " : " + r.errs[0] : "")); r.close(); }
+
+  { const t = open("bourg"); await wait(300);
+    const step = n => !t.q('#guide [data-gstep="' + n + '"]').hidden, mark = () => t.q("#gMark").textContent.trim();
+    t.q("#commune").value = "Mir"; t.q("#commune").dispatchEvent(new t.w.Event("input")); await wait(350);
+    ok(t.q("#commune").getAttribute("role") === "combobox" && t.q("#commune").getAttribute("aria-expanded") === "true" && !t.q("#sugg").hidden, "écran 1 : liste de suggestions en combobox");
+    t.q("#commune").dispatchEvent(new t.w.KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+    ok(t.q("#commune").getAttribute("aria-activedescendant") === "sg-0", "écran 1 : flèche bas sur la première suggestion");
+    t.q("#commune").dispatchEvent(new t.w.KeyboardEvent("keydown", { key: "Enter", bubbles: true })); await wait(700);
+    ok(step(2) && !step(1) && mark() === "Étape 2 sur 3" && t.d.activeElement && t.d.activeElement.id === "gT2", "choix au clavier : écran 2, focus sur son titre");
+    ok(/Mirepoix/.test(t.q("#communeBar").textContent) && t.q("#guide").hidden === false, "commune affichée dans la barre pendant le parcours");
+    ok(/Préparer un exercice de crise/.test(t.q("#gChoixEx").textContent) && /Rédiger ou vérifier le plan communal de sauvegarde/.test(t.q("#gChoixPcs").textContent), "écran 2 : deux choix");
+    click(t, "#gBack2"); ok(step(1) && t.d.activeElement.id === "commune", "« Retour » de l'écran 2 vers l'écran 1");
+    ok(t.q("#gExample").hidden && !t.q("#gBack1").hidden, "commune choisie : plus de lien « Voir l'exemple », bouton « Retour »");
+    click(t, "#gNext1"); ok(step(2), "écran 1 : « Continuer » avec la commune déjà choisie");
+    click(t, "#gChoixEx");
+    ok(step(3) && mark() === "Étape 3 sur 3" && t.d.activeElement && t.d.activeElement.id === "gT3", "« Préparer un exercice » : écran 3, focus sur son titre");
+    const chk = t.q("#gRisks input:checked");
+    ok(chk && chk.value === "inondation" && chk.name === "grisk" && /Recensé/.test(t.q("#gRisks").textContent), "risque recensé par Géorisques présélectionné");
+    ok(t.d.querySelectorAll("#gRisks input[name=grisk]").length === 19 && !t.q("#gRisks #r-inondation"), "liste du parcours distincte de celle du panneau (19 risques)");
+    ok(t.q('#gFormat [data-v="cadre"]').getAttribute("aria-pressed") === "true" && t.q("#gHeure").value === "09:00", "format « Cadre » et heure H 09:00 par défaut");
+    const s2 = t.q("#gr-canicule"); s2.checked = true; s2.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    click(t, '#gFormat [data-v="terrain"]'); t.q("#gDate").value = "2026-11-20"; t.q("#gHeure").value = "10:30";
+    click(t, "#gBack3"); ok(step(2), "« Retour » de l'écran 3 vers l'écran 2"); click(t, "#gChoixEx");
+    ok(t.q("#gr-canicule").checked && t.q('#gFormat [data-v="terrain"]').getAttribute("aria-pressed") === "true", "choix conservés après un retour");
+    click(t, "#gGen");
+    ok(t.q("#guide").hidden && !t.q("#view").hidden && !t.q("#config").hidden, "« Générer le dossier » ferme le parcours");
+    ok(t.q("#tab-cadrage").getAttribute("aria-selected") === "true" && t.d.activeElement && t.d.activeElement.id === "tab-cadrage", "onglet Cadrage ouvert, focus sur l'onglet");
+    const v = view(t);
+    ok(/Mirepoix/.test(v) && /Canicule/.test(v) && /Exercice avec volet terrain/.test(v) && /H = 10:30/.test(v) && /20 novembre 2026/.test(v), "dossier généré avec la commune, le risque, le format, la date et l'heure");
+    ok(t.q("#r-canicule").checked && t.q("#date").value === "2026-11-20" && t.q("#heureH").value === "10:30" && t.q('#segFormat [data-v="terrain"]').getAttribute("aria-pressed") === "true", "choix repris dans le panneau de préparation");
+    ok(/réglages/i.test(t.q("#toast").textContent), "message sur les réglages fins");
+    const st = JSON.parse(t.w.localStorage.getItem("atelier-pcs-v2")), aff = JSON.parse(t.w.localStorage.getItem("commune-prete-affichage"));
+    ok(st.isExample === false && st.p.insee === "09194" && st.injects.length > 5 && aff.guide === true, "dossier enregistré, parcours noté comme vu");
+    click(t, "#communeChange");
+    ok(!t.q("#gWarn").hidden && /réglages d'exercice/.test(t.q("#gWarn").textContent) && /conservés/.test(t.q("#gWarn").textContent), "commune réelle déjà choisie : avertissement de remplacement");
+    click(t, "#gBack1"); ok(t.q("#guide").hidden && !t.q("#view").hidden && /Mirepoix/.test(t.q("#communeBar").textContent), "« Retour » de l'écran 1 : parcours fermé, commune inchangée");
+    click(t, '#espaceSeg [data-esp="pcs"]'); click(t, "#communeChange");
+    ok(!t.q("#guide").hidden && !t.q('#guide [data-gstep="1"]').hidden && t.q("#pcsView").hidden && t.q("#pcsPanel").hidden, "« Changer » depuis l'espace PCS : écran 1");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
+  { const t = open("bourg"); await wait(300); t.q("#commune").value = "Mir"; t.q("#commune").dispatchEvent(new t.w.Event("input")); await wait(350);
+    t.q("#sugg li").dispatchEvent(new t.w.MouseEvent("mousedown", { bubbles: true })); await wait(700);
+    click(t, "#gChoixPcs");
+    ok(t.q("#guide").hidden && t.d.body.classList.contains("esp-pcs") && !t.q("#pcsView").hidden && !t.q("#pcsPanel").hidden, "« Rédiger ou vérifier le PCS » : espace PCS ouvert, parcours fermé");
+    ok(t.q('#pcsRub [data-rub="0"]').getAttribute("aria-current") === "true" && t.q('#ptab-rediger').getAttribute("aria-selected") === "true" && !!t.q('[data-pf="gen.dateApprob"]'), "rubrique Généralités ouverte");
+    ok(t.d.activeElement && t.d.activeElement.dataset.rub === "0", "focus sur la rubrique Généralités");
+    ok(JSON.parse(t.w.localStorage.getItem("commune-prete-affichage")).guide === true, "parcours noté comme vu");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
+  { const t = open("bourg", "", null, { offline: true }); await wait(300);
+    ok(!t.q("#guide").hidden && !t.q("#manualId").hidden && !!t.q("#gManual"), "hors ligne : saisie manuelle dans l'écran 1");
+    ok(t.q("#pop").value === "" && t.q("#dept").value === "", "hors ligne : champs vides, sans les valeurs de l'exemple fictif");
+    click(t, "#gManual"); ok(!t.q('#guide [data-gstep="1"]').hidden && /nom de la commune/i.test(t.q("#toast").textContent), "hors ligne : nom obligatoire");
+    t.q("#commune").value = "Belcaire"; t.q("#pop").value = "410"; t.q("#dept").value = "Aude (11)";
+    t.q("#dept").dispatchEvent(new t.w.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    ok(!t.q('#guide [data-gstep="2"]').hidden && /Belcaire/.test(t.q("#communeBar").textContent) && !/Exemple fictif/.test(t.q("#communeBar").textContent), "hors ligne : écran 2, commune saisie dans la barre");
+    const st = JSON.parse(t.w.localStorage.getItem("atelier-pcs-v2"));
+    ok(st.isExample === false && st.p.commune === "Belcaire" && String(st.p.pop) === "410" && st.p.dept === "Aude (11)" && !st.p.insee, "hors ligne : sortie de l'exemple fictif, nom, population et département enregistrés");
+    ok(!t.q("#gPcsNote").hidden && /INSEE/.test(t.q("#gPcsNote").textContent), "hors ligne : l'espace PCS signalé comme nécessitant la recherche en ligne");
+    click(t, "#gChoixEx"); ok(t.d.querySelectorAll("#gRisks input[name=grisk]").length === 19, "hors ligne : liste complète des risques");
+    click(t, "#gGen"); const v = view(t);
+    ok(t.q("#guide").hidden && /Belcaire/.test(v) && /410 habitants/.test(v) && /Aude \(11\)/.test(v) && !/fictive/.test(v), "hors ligne : dossier de la commune saisie");
+    click(t, '#espaceSeg [data-esp="pcs"]'); ok(/Recherchez votre commune/.test(t.q("#pcsView").textContent), "hors ligne, sans code INSEE : espace PCS inchangé (invitation)");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
+  { const t = open("bourg", "", null, { guideVu: true }); await wait(300); await pickCommune(t, "bourg"); gen(t);
+    click(t, '[data-tab="obs"]'); click(t, "#obsLinkBtn"); await wait(50); const link = t.clip.text;
+    const o = open("bourg", link.slice(link.indexOf("#"))); await wait(300);
+    ok(o.d.body.classList.contains("obsmode") && (!o.q("#guide") || o.q("#guide").hidden) && !/Étape 1 sur 3/.test(o.d.body.textContent), "mode observateur : jamais de démarrage guidé");
+    o.close(); t.close(); }
+
   console.log("\nAFFICHAGE");
-  const v = open("bourg"); await wait(300);
+  const v = open("bourg", "", null, { guideVu: true }); await wait(300);
   ok([...v.d.querySelectorAll(".tgrp")].map(x => x.textContent).join("/") === "Préparer/Conduire/Évaluer", "onglets regroupés en trois temps");
   click(v, "#panelBtn"); ok(v.d.body.classList.contains("panel-off") && v.q("#panelBtn").getAttribute("aria-pressed") === "true", "panneau de préparation masqué");
   click(v, "#panelBtn"); ok(!v.d.body.classList.contains("panel-off"), "panneau de préparation réaffiché");
@@ -546,16 +650,16 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
   ok(/"theme":"auto"/.test(v.w.localStorage.getItem("commune-prete-affichage")), "choix d'affichage conservé");
   ok(!/Scénario disponible/.test(v.q("#risks").textContent), "liste des risques épurée");
   ok(/aide\.html$/.test(v.q("#helpLink").href), "bouton Aide vers le mode d'emploi");
-  ok(!v.q("#hello").hidden, "bandeau d'accueil sur le dossier d'exemple");
+  ok(!v.q("#hello") && v.q("#guide").hidden && !v.q("#view").hidden && /Exemple fictif/.test(v.q("#communeBar").textContent), "démarrage guidé déjà vu : dossier d'exemple affiché, signalé dans la barre, sans bandeau");
   click(v, "#dosDoc"); await wait(50);
   const ex = await new Promise(r => { const f = new v.w.FileReader(); f.onload = () => r(f.result); f.readAsText(v.blobs.pop()) });
   ok(/Exemple sur une commune fictive/.test(ex), "dossier d'exemple signalé comme fictif");
-  await pickCommune(v, "bourg"); ok(v.q("#hello").hidden, "bandeau d'accueil masqué une fois la commune choisie");
+  await pickCommune(v, "bourg"); ok(v.q("#guide").hidden && !v.q("#view").hidden && !/Exemple fictif/.test(v.q("#communeBar").textContent), "démarrage guidé refermé une fois la commune choisie et le dossier généré");
   ok(!v.errs.length, "aucune erreur JavaScript" + (v.errs.length ? " : " + v.errs[0] : ""));
   v.close();
 
   console.log("\nRÉGLEMENTATION ET MODE D'EMPLOI");
-  { const t = open("bourg"); await wait(300); click(t, '[data-tab="regl"]');
+  { const t = open("bourg", "", null, { guideVu: true }); await wait(300); click(t, '[data-tab="regl"]');
     ok(/2025-126/.test(view(t)) && /D731-14/.test(view(t)), "réglementation : décret de 2025 et correspondant incendie et secours");
     t.close(); }
   { const A = fs.readFileSync(path.join(__dirname, "..", "aide.html"), "utf8");

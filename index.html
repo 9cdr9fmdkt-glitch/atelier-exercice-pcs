@@ -98,7 +98,6 @@ a{color:var(--primary);text-underline-offset:2px}
 body.obsmode #communeBar{display:none}
 .espace button{min-height:32px;padding:5px 10px;font-weight:600}
 .config[hidden],.bar[hidden],.head[hidden],#view[hidden],#pcsView[hidden]{display:none}
-body.esp-pcs .hello{display:none}
 body.obsmode #espaceSeg{display:none}
 @media (max-width:620px){.espace{min-width:0;margin-right:4px}.espace button{padding:5px 7px;font-size:13px}.cbar{margin-right:2px;flex-shrink:1}.appbar .espace{flex:none;grid-auto-columns:auto}.appbar .logo{flex:0 1000 auto;min-width:24px}.cbar .btn{padding-inline:6px;font-size:13px}.cb-nom{max-width:12ch;text-decoration:underline dotted;text-underline-offset:3px}.cb-act{display:none}.cbar.ex .cb-nom{display:none}.cbar.ex .cb-act{display:block;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;text-decoration:underline dotted;text-underline-offset:3px}.cb-etat{position:absolute;left:0;top:calc(100% + 8px);max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:2px 8px;box-shadow:var(--shadow)}}
 .iconbtn.help{width:auto;padding:0 10px;gap:6px;display:inline-flex;align-items:center;text-decoration:none;font-size:14px;font-weight:600}
@@ -391,10 +390,25 @@ body.obsmode .nowb{min-height:42px}
 .st.vig{background:var(--ok-soft);color:var(--ok)}
 .st.pro{background:var(--warn-soft);color:var(--warn)}
 .st.gui{background:var(--primary-soft);color:var(--primary)}
-.hello{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--primary);border-radius:var(--r-sm);padding:12px 16px;margin-top:12px;box-shadow:var(--shadow)}
-.hello svg{color:var(--primary);flex:none}
-.hello p{margin:0;flex:1 1 320px;font-size:14.5px}
-.hello b{font-weight:700}
+/* Démarrage guidé : une carte dans l'espace de travail, trois écrans */
+body.guide-on .shell{grid-template-columns:minmax(0,1fr)}
+.guide{overflow:visible;max-width:720px;width:100%;margin:clamp(0px,4vh,40px) auto 0}
+.guide .docbody{gap:18px}
+.guide .gmark{font-weight:600;letter-spacing:.02em;margin-bottom:-8px}
+.gstep{display:flex;flex-direction:column;gap:18px}
+.gstep h3:focus{outline:none}
+.gstep h3:focus-visible{outline:2px solid var(--primary);outline-offset:4px;border-radius:2px}
+.gacts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end;padding-top:4px}
+.gacts .btn.ghost{margin-right:auto;padding-inline:4px;text-decoration:underline;text-underline-offset:3px}
+.gchoix{display:flex;flex-direction:column;gap:10px}
+.gchoix .btn{width:100%;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;white-space:normal;text-align:left;min-height:68px;padding:12px 16px}
+.gchoix .btn b{font-size:15.5px;font-weight:700}
+.gchoix .btn[aria-disabled=true]{opacity:.55;cursor:not-allowed}
+.gchoix .btn[aria-disabled=true]:hover{background:var(--surface);border-color:var(--line-2)}
+.guide .risklist{margin-inline:-10px}
+.guide details.more{margin:4px 0 0;padding:0;border-top:1px solid var(--line)}
+.guide details.more summary{font-weight:600}
+@media (max-width:620px){.guide{margin-top:0}.gacts .btn:not(.ghost){flex:1 1 auto}}
 
 /* Cartographie (Leaflet, styles essentiels intégrés) */
 :root{--tile-filter:none}
@@ -464,7 +478,7 @@ body.obsmode .nowb{min-height:42px}
   .sum{gap:6px 18px}.sum dd{font-size:14.5px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-@media print{.appbar,.config,.bar,.tools,.toast,.hello{display:none!important}.shell{display:block}.work{padding:0;max-width:none}.doc{box-shadow:none;border:0}}
+@media print{.appbar,.config,.bar,.tools,.toast,.guide{display:none!important}.shell{display:block}.work{padding:0;max-width:none}.doc{box-shadow:none;border:0}}
 </style>
 
 <a class="skip" href="#view">Aller au dossier</a>
@@ -498,19 +512,7 @@ body.obsmode .nowb{min-height:42px}
       <div class="scroll">
       <section class="step" aria-labelledby="h1">
         <div class="stephead"><span class="num">1</span><h2 id="h1">Commune</h2><span class="aside" id="srcAside"></span></div>
-        <div class="field">
-          <label for="commune">Nom de la commune</label>
-          <div class="combo">
-            <svg class="ico" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-            <input type="search" id="commune" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sugg" placeholder="Rechercher une commune">
-            <ul class="sugg" id="sugg" role="listbox" hidden></ul>
-          </div>
-        </div>
         <div class="idcard" id="idcard"></div>
-        <div class="row2" id="manualId" hidden>
-          <div class="field"><label for="pop">Population</label><input type="number" id="pop" min="0" step="10"></div>
-          <div class="field"><label for="dept">Département</label><input type="text" id="dept"></div>
-        </div>
       </section>
 
       <section class="step" aria-labelledby="h2">
@@ -610,11 +612,66 @@ body.obsmode .nowb{min-height:42px}
   </aside>
 
   <main class="work">
-    <div class="hello" id="hello" hidden>
-      <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 7.2v4M8 4.8v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      <p><b>Ceci est un exemple, sur une commune fictive.</b> Recherchez votre commune : son dossier sera construit à partir de ses risques, de ses lieux et de ses partenaires réels.</p>
-      <button class="btn primary sm" type="button" id="helloBtn">Rechercher ma commune</button>
-    </div>
+    <section class="card doc guide" id="guide" aria-label="Démarrage guidé" hidden>
+      <div class="docbody">
+        <p class="note gmark" id="gMark">Étape 1 sur 3</p>
+        <div class="gstep" data-gstep="1">
+          <h3 id="gT1" tabindex="-1" aria-describedby="gMark">Votre commune</h3>
+          <p id="gIntro1">Recherchez votre commune : le dossier s'appuie sur ses risques, ses lieux et ses partenaires réels.</p>
+          <div class="callout" id="gWarn" hidden></div>
+          <div class="field">
+            <label for="commune">Nom de la commune</label>
+            <div class="combo">
+              <svg class="ico" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <input type="search" id="commune" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sugg" placeholder="Rechercher une commune">
+              <ul class="sugg" id="sugg" role="listbox" aria-label="Communes proposées" hidden></ul>
+            </div>
+          </div>
+          <div class="row2" id="manualId" hidden>
+            <div class="field"><label for="pop">Population</label><input type="number" id="pop" min="0" step="10"></div>
+            <div class="field"><label for="dept">Département</label><input type="text" id="dept"></div>
+          </div>
+          <div class="gacts">
+            <button class="btn ghost" type="button" id="gExample">Voir l'exemple</button>
+            <button class="btn" type="button" id="gBack1">Retour</button>
+            <button class="btn primary" type="button" id="gNext1">Continuer</button>
+            <button class="btn primary" type="button" id="gManual">Continuer</button>
+          </div>
+        </div>
+        <div class="gstep" data-gstep="2" hidden>
+          <h3 id="gT2" tabindex="-1" aria-describedby="gMark">Que voulez-vous faire ?</h3>
+          <p id="gCom"></p>
+          <div class="gchoix">
+            <button class="btn" type="button" id="gChoixEx"><b>Préparer un exercice de crise</b><span class="note">Scénario, chronogramme, conduite et retour d'expérience.</span></button>
+            <button class="btn" type="button" id="gChoixPcs" aria-describedby="gPcsNote"><b>Rédiger ou vérifier le plan communal de sauvegarde</b><span class="note">Rubriques du plan, vérification et documents.</span></button>
+          </div>
+          <p class="note" id="gPcsNote" hidden>L'espace PCS est rangé par code INSEE : il s'ouvre une fois la commune trouvée par la recherche en ligne.</p>
+          <div class="gacts"><button class="btn" type="button" id="gBack2">Retour</button></div>
+        </div>
+        <div class="gstep" data-gstep="3" hidden>
+          <h3 id="gT3" tabindex="-1" aria-describedby="gMark">Votre exercice</h3>
+          <div class="field">
+            <span class="lab" id="gLRisk">Risque joué</span>
+            <div id="gRiskNote"></div>
+            <div class="risklist" id="gRisks" role="radiogroup" aria-labelledby="gLRisk"></div>
+          </div>
+          <div class="field">
+            <span class="lab" id="gLFormat">Format</span>
+            <div class="seg" id="gFormat" role="group" aria-labelledby="gLFormat">
+              <button type="button" data-v="table">Sur table</button><button type="button" data-v="cadre">Cadre</button><button type="button" data-v="terrain">Avec terrain</button><button type="button" data-v="alerte" title="Exercice d'alerte de 30 minutes">Alerte</button>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field"><label for="gDate">Date de l'exercice</label><input type="date" id="gDate"></div>
+            <div class="field"><label for="gHeure">Heure H</label><input type="time" id="gHeure"></div>
+          </div>
+          <div class="gacts">
+            <button class="btn" type="button" id="gBack3">Retour</button>
+            <button class="btn primary" type="button" id="gGen">Générer le dossier</button>
+          </div>
+        </div>
+      </div>
+    </section>
     <div class="bar">
       <div class="tabs" role="tablist" id="tabs" aria-label="Pièces du dossier"></div>
     </div>
@@ -1165,6 +1222,7 @@ const ACTIONS0=()=>[{a:"Mettre à jour l'annuaire de crise du PCS",pilote:"Secr�
 
 const KEY="atelier-pcs-v2";
 let S=null, live=null, geoRisks=null, pendingRegen=false;
+const GUIDE={on:false,step:1,init:false,fresh:false,risk:null,riskUser:false,format:"cadre",confirm:false}; // démarrage guidé (état d'affichage, non enregistré)
 function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r)}catch(e){}return null}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){return false}}
 /* Mention « Enregistré » à côté de la commune : appelée seulement depuis les gestionnaires de saisie de l'utilisateur, jamais au rendu. */
@@ -1775,24 +1833,34 @@ function renderId(){
   $("#idcard").innerHTML=cells.map(c=>`<div><b title="${esc(c[1])}">${esc(c[1])}</b><span>${c[0]}</span></div>`).join("");
   $("#manualId").hidden=live!==false;
   $("#srcAside").textContent=live?"Source : geo.api.gouv.fr":"";
+  if(GUIDE.on&&GUIDE.step===1)guideRefresh1();
 }
-function renderRisks(){
-  const p=S.p;let banner="";
+function riskBannerHTML(){
+  let banner="";
   const alertIco=`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">${ICONS.autre}</svg>`;
   if(live===false) banner=`<div class="banner">${alertIco}<span><b>Saisie manuelle.</b> Cet affichage ne peut pas joindre Géorisques. Une fois l'outil hébergé, les risques de la commune se chargent automatiquement.</span></div>`;
   else if(geoRisks&&geoRisks.status==="loading") banner=`<p class="note">Interrogation de Géorisques…</p>`;
   else if(geoRisks&&geoRisks.status==="error") banner=`<div class="banner">${alertIco}<span><b>Géorisques n'a pas répondu.</b> Choisissez le risque manuellement ou réessayez plus tard.</span></div>`;
   else if(geoRisks&&geoRisks.status==="ok") banner=`<p class="note">Risques recensés par Géorisques, consultés le ${geoRisks.at.toLocaleDateString("fr-FR")} à ${geoRisks.at.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}. <a href="${API.fiche(geoRisks.insee)}" target="_blank" rel="noopener">Voir la fiche Géorisques</a></p>`;
   else if(live) banner=`<p class="note">Recherchez une commune pour charger ses risques recensés.</p>`;
+  return banner;
+}
+/* Carte d'un risque : name et pfx distinguent la liste du panneau (risk, r-) de celle du démarrage guidé (grisk, gr-). */
+function riskCardFn(name,pfx,sel){
   const prof=geoRisks&&geoRisks.status==="ok"?geoRisks.items:null;
-  const card=k=>{
+  return k=>{
     const e=prof&&prof.find(x=>x.key===k);const tags=[];
     if(e&&e.labels.length)tags.push('<span class="tg src">Recensé Géorisques</span>');
     if(e&&e.catnat)tags.push(`<span class="tg cat">${e.catnat} arrêté${e.catnat>1?"s":""} CatNat${e.last?" · dernier en "+e.last.getFullYear():""}</span>`);
     if(RISKS[k].site)tags.push(siteTag(k));
     else if(prof&&!(e&&e.labels.length))tags.push(RISKS[k].transverse?'<span class="tg no">Risque transverse</span>':'<span class="tg no">Non recensé</span>');
-    return `<div class="rk"><input type="radio" name="risk" id="r-${k}" value="${k}" ${p.risk===k?"checked":""}><label for="r-${k}"><span class="ic">${ico(k)}</span><span class="tx"><b>${esc(RISKS[k].label)}</b><span class="tags">${tags.join("")}</span></span></label></div>`;
+    return `<div class="rk"><input type="radio" name="${name}" id="${pfx}${k}" value="${k}" ${sel===k?"checked":""}><label for="${pfx}${k}"><span class="ic">${ico(k)}</span><span class="tx"><b>${esc(RISKS[k].label)}</b><span class="tags">${tags.join("")}</span></span></label></div>`;
   };
+}
+function renderRisks(){
+  const p=S.p,banner=riskBannerHTML();
+  const prof=geoRisks&&geoRisks.status==="ok"?geoRisks.items:null;
+  const card=riskCardFn("risk","r-",p.risk);
   const score=k=>{const e=prof&&prof.find(x=>x.key===k);return (e&&e.labels.length?2:0)+(e&&e.catnat?1:0)};
   let html=FAMS.map(([f,lab])=>{const ks=Object.keys(RISKS).filter(k=>RISKS[k].fam===f).sort((a,b)=>score(b)-score(a));return `<div class="famhead">${lab}</div>`+ks.map(card).join("")}).join("");
   if(prof) prof.filter(x=>x.key==="autre").forEach((x,i)=>{
@@ -1802,6 +1870,7 @@ function renderRisks(){
   $("#riskBanner").innerHTML=banner;
   $("#risks").innerHTML=html;
   $("#riskAside").textContent=prof?prof.length+" risque"+(prof.length>1?"s":"")+" recensé"+(prof.length>1?"s":""):"";
+  if(GUIDE.on&&GUIDE.step===3)renderGuideRisks();
 }
 function renderSegs(){
   document.querySelectorAll("#segFormat button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.p.format));
@@ -1858,8 +1927,7 @@ function writeForm(){
 }
 function readForm(){
   const p=S.p;
-  p.commune=$("#commune").value.trim()||"la commune";
-  if(live===false){p.pop=$("#pop").value;p.dept=$("#dept").value.trim()}
+  // commune, population et département : fixés par le démarrage guidé (recherche ou saisie manuelle), pas relus ici
   const r=document.querySelector('input[name=risk]:checked');if(r)p.risk=r.value;
   p.heureH=$("#heureH").value;p.date=$("#date").value;
   PLACE_KEYS.forEach(k=>p[k]=$("#"+k).value.trim()||DEFAULTS[k]);p.fdo=$("#fdo").value||"auto";
@@ -1897,6 +1965,7 @@ function pick(c){
   $("#commune").value=c.nom;S.isExample=false;renderId();save();render();renderCommuneBar();
   S.annu=[];S.annuAt=null;renderAnnu();renderPart();renderFiche();loadRisks(c.code).then(()=>{if(geoRisks&&geoRisks.status==="ok"&&geoRisks.insee===c.code)toast("Risques de "+c.nom+" chargés depuis Géorisques.")});
   loadPlaces();
+  GUIDE.fresh=true;GUIDE.init=false;if(GUIDE.on)guideStep(2);
 }
 
 /* ---------- Génération ---------- */
@@ -2539,7 +2608,6 @@ function render(){
   if(map){map.remove();map=null}
   $("#view").innerHTML=`<article class="card doc">${VIEWS[S.tab]()}</article>`;
   if(S.tab==="carte")drawMap();
-  $("#hello").hidden=!S.isExample;
   renderCommuneBar();
 }
 /* Commune dans la barre du haut, commune aux deux espaces */
@@ -2551,11 +2619,106 @@ function renderCommuneBar(){
   b.title=ex?"Exemple fictif : choisir ma commune":nom+" : changer de commune";
   b.setAttribute("aria-label",ex?"Exemple fictif. Choisir ma commune":"Commune : "+nom+". Changer de commune");
 }
-// En attendant le démarrage guidé : réaffiche l'espace Exercices et le panneau, puis place le curseur sur la recherche de commune.
-$("#communeChange").addEventListener("click",()=>{
-  if(AFF.panelOff){AFF.panelOff=false;saveAff();applyAff()}
-  if(AFF.espace==="pcs")setEspace("exercices");
-  const c=$("#commune");if(c){if(c.scrollIntoView)c.scrollIntoView({block:"center"});c.focus();c.select()}
+$("#communeChange").addEventListener("click",()=>openGuide(1));
+
+/* ---------- Démarrage guidé : trois écrans dans une carte de l'espace de travail ---------- */
+function openGuide(step){
+  const g=$("#guide");if(!g||document.body.classList.contains("obsmode")||!S)return;
+  if(!GUIDE.on){GUIDE.init=false;GUIDE.fresh=false;GUIDE.confirm=false}
+  GUIDE.on=true;
+  if(AFF.panelOff){AFF.panelOff=false;saveAff()}
+  document.body.classList.add("guide-on");g.hidden=false;applyAff();
+  if(window.scrollY)try{scrollTo(0,0)}catch(e){}
+  guideStep(step||1);
+}
+function closeGuide(redraw=true){
+  if(!GUIDE.on)return;
+  GUIDE.on=false;GUIDE.confirm=false;$("#gGen").textContent="Générer le dossier";
+  closeSugg();$("#guide").hidden=true;document.body.classList.remove("guide-on");
+  $("#commune").value=S.p.commune||"";
+  AFF.guide=true;saveAff();applyEspace();
+  if(redraw){if(AFF.espace==="pcs")renderPCS();else render()}
+}
+function guideStep(n){
+  GUIDE.step=n;
+  document.querySelectorAll("#guide [data-gstep]").forEach(e=>e.hidden=+e.dataset.gstep!==n);
+  $("#gMark").textContent="Étape "+n+" sur 3";
+  if(n===1){guideRefresh1();const c=$("#commune");if(S.isExample){c.value="";$("#pop").value="";$("#dept").value=""}c.focus()}
+  if(n===2){
+    const p=S.p,no=!p.insee;
+    $("#gCom").innerHTML=`Commune : <b>${esc(p.commune)}</b>${p.dept?" · "+esc(p.dept):""}${p.pop?" · "+nf(p.pop)+" habitants":""}`;
+    $("#gChoixPcs").setAttribute("aria-disabled",no);$("#gPcsNote").hidden=!no;
+    $("#gT2").focus();
+  }
+  if(n===3){guideInit3();renderGuideFormat();renderGuideRisks();$("#gT3").focus()}
+}
+function guideRefresh1(){
+  const ex=!!S.isExample,off=live===false,p=S.p;
+  $("#gIntro1").textContent=off?"Les bases publiques ne répondent pas : saisissez le nom, la population et le département de votre commune.":"Recherchez votre commune : le dossier s'appuie sur ses risques, ses lieux et ses partenaires réels.";
+  $("#gExample").hidden=!ex;$("#gBack1").hidden=ex;
+  $("#gNext1").hidden=ex||off;$("#gManual").hidden=!off;
+  const w=$("#gWarn"),has=!ex&&!!(p.insee||p.commune);w.hidden=!has;
+  if(has)w.innerHTML=`<span>Commune actuelle : <b>${esc(p.commune)}</b>. En choisir une autre remplace les réglages d'exercice (lieux, partenaires, moyens, annuaire de crise). Le plan communal de sauvegarde et l'historique des exercices de chaque commune sont conservés.</span>`;
+}
+function guideInit3(){
+  if(GUIDE.init)return;GUIDE.init=true;GUIDE.riskUser=false;GUIDE.risk=S.p.risk;
+  GUIDE.format=GUIDE.fresh?"cadre":(FORMATS[S.p.format]?S.p.format:"cadre");
+  $("#gDate").value=S.p.date||"";$("#gHeure").value=GUIDE.fresh?"09:00":(S.p.heureH||"09:00");
+}
+function renderGuideFormat(){document.querySelectorAll("#gFormat button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===GUIDE.format))}
+function renderGuideRisks(){
+  const box=$("#gRisks");if(!box)return;
+  const st=geoRisks&&geoRisks.insee===S.p.insee?geoRisks.status:null,prof=st==="ok"?geoRisks.items:null;
+  if(!GUIDE.riskUser)GUIDE.risk=S.p.risk;
+  const sel=GUIDE.risk,card=riskCardFn("grisk","gr-",sel),all=Object.keys(RISKS);
+  const fam=ks=>FAMS.map(([f,lab])=>{const l=ks.filter(k=>RISKS[k].fam===f);return l.length?`<div class="famhead">${lab}</div>`+l.map(card).join(""):""}).join("");
+  let note,html;
+  if(prof){
+    const rec=[...new Set(prof.filter(x=>RISKS[x.key]&&x.labels.length).map(x=>x.key))],rest=all.filter(k=>!rec.includes(k));
+    note=rec.length?`<p class="note">Risques recensés par Géorisques pour ${esc(S.p.commune)}. Le premier est présélectionné.</p>`:`<p class="note">Géorisques ne recense aucun de ces risques pour ${esc(S.p.commune)} : choisissez-en un dans la liste.</p>`;
+    html=rec.map(card).join("")+`<details class="more" id="gAutres"${rest.includes(sel)||!rec.length?" open":""}><summary>Autres risques <span class="aside">${rest.length}</span></summary><div class="inner"><div class="risklist">${fam(rest)}</div></div></details>`;
+  }else{
+    note=st==="loading"?`<p class="note" role="status">Chargement des risques recensés par Géorisques…</p>`:live===false?`<p class="note">Bases publiques hors ligne : choisissez le risque dans la liste complète.</p>`:st==="error"?`<p class="note">Géorisques n'a pas répondu : choisissez le risque dans la liste complète.</p>`:"";
+    html=fam(all);
+  }
+  const a=document.activeElement,fid=a&&box.contains(a)?a.id:null;
+  $("#gRiskNote").innerHTML=note;box.innerHTML=html;
+  if(fid){const n=document.getElementById(fid);if(n)n.focus()}
+}
+$("#gRisks").addEventListener("change",e=>{if(e.target.name==="grisk"){GUIDE.risk=e.target.value;GUIDE.riskUser=true}});
+$("#gFormat").addEventListener("click",e=>{const b=e.target.closest("button[data-v]");if(!b)return;GUIDE.format=b.dataset.v;renderGuideFormat()});
+$("#gExample").addEventListener("click",()=>{closeGuide();$("#communeChange").focus()});
+$("#gBack1").addEventListener("click",()=>{closeGuide();$("#communeChange").focus()});
+$("#gNext1").addEventListener("click",()=>{closeSugg();$("#commune").value=S.p.commune||"";guideStep(2)}); // garde la commune actuelle
+$("#gManual").addEventListener("click",()=>{ // hors ligne : nom, population et département saisis à la main
+  const nom=$("#commune").value.trim();
+  if(!nom){toast("Saisissez le nom de la commune.");$("#commune").focus();return}
+  const pop=$("#pop").value.trim(),dept=$("#dept").value.trim();
+  if(S.isExample||nom!==S.p.commune){ // nouvelle commune : même remise à zéro que la recherche
+    Object.assign(S.p,{commune:nom,insee:"",region:"",epci:"",part:{},fiche:{},exclus:[],lat:null,lon:null});
+    PLACE_KEYS.forEach(k=>S.p[k]=GENERIC[k]||DEFAULTS[k]);S.p.focus=null;S.p.fdo="auto";S.p.icpeUser=false;S.p.etabUser=false;S.p.secteurAuto=true;clearGeo();geoRisks=null;S.ctx=null;
+    S.annu=[];S.annuAt=null;GUIDE.fresh=true;GUIDE.init=false;
+  }
+  S.p.pop=pop;S.p.dept=dept;S.isExample=false;
+  writeForm();saveU();render();renderCommuneBar();guideStep(2);
+});
+$("#guide").addEventListener("keydown",e=>{if(e.key==="Enter"&&live===false&&["commune","pop","dept"].includes(e.target.id)){e.preventDefault();$("#gManual").click()}});
+$("#gBack2").addEventListener("click",()=>guideStep(1));
+$("#gBack3").addEventListener("click",()=>guideStep(2));
+$("#gChoixEx").addEventListener("click",()=>guideStep(3));
+$("#gChoixPcs").addEventListener("click",()=>{
+  if(!S.p.insee){toast($("#gPcsNote").textContent);return}
+  PCSUI.rub=0;PCSUI.tab="rediger";AFF.espace="pcs";closeGuide();
+  const n=document.querySelector('#pcsRub [data-rub="0"]');if(n)n.focus();
+});
+$("#gGen").addEventListener("click",()=>{
+  if(S.edited&&!GUIDE.confirm){GUIDE.confirm=true;$("#gGen").textContent="Confirmer : remplacer le chronogramme modifié";return}
+  const p=S.p;p.risk=LIB[GUIDE.risk]?GUIDE.risk:p.risk;p.format=GUIDE.format;p.date=$("#gDate").value;p.heureH=$("#gHeure").value||"09:00";
+  $("#date").value=p.date;$("#heureH").value=p.heureH;renderSegs();renderRisks();renderCombo();
+  pendingRegen=false;$("#genLabel").textContent="Générer le dossier";S.archId=null;S.live=null;S.tab="cadrage";
+  AFF.espace="exercices";closeGuide(false);generate();
+  const t=$("#tab-cadrage");if(t)t.focus();
+  toast("Dossier généré. Les réglages fins se trouvent dans le panneau de préparation, sous « Réglages avancés ».");
 });
 
 function tabsFit(scroll){
@@ -2565,7 +2728,6 @@ function tabsFit(scroll){
 }
 addEventListener("resize",()=>tabsFit(false));
 $("#tabs").addEventListener("scroll",()=>tabsFit(false),{passive:true});
-$("#helloBtn").addEventListener("click",()=>{if(AFF.panelOff){AFF.panelOff=false;saveAff();applyAff()}const c=$("#commune");c.scrollIntoView({block:"center",behavior:"smooth"});c.focus();c.select()});
 /* ---------- Événements ---------- */
 $("#segFormat").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.p.format=b.dataset.v;renderSegs();saveU()});
 $("#segDuree").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.p.duree=b.dataset.v;renderSegs();saveU()});
@@ -2606,7 +2768,7 @@ $("#view").addEventListener("click",e=>{
   const c=e.target.closest("[data-cot]");if(c){const id=c.dataset.cot;S.cot[id]=S.cot[id]===c.dataset.v?"":c.dataset.v;saveU();render();return}
   if(e.target.id==="addAct"){S.retex.actions.push({a:"Nouvelle action",pilote:"À désigner",ech:"À fixer"});saveU();render()}
 });
-[...PLACE_KEYS,"fdo","heureH","date","pop","dept"].forEach(id=>$("#"+id).addEventListener("change",()=>{readForm();saveU()}));
+[...PLACE_KEYS,"fdo","heureH","date"].forEach(id=>$("#"+id).addEventListener("change",()=>{readForm();saveU()}));
 $("#icpe").addEventListener("change",()=>{S.p.icpeUser=true;saveU()});
 $("#etab").addEventListener("change",()=>{S.p.etabUser=true;saveU()});
 $("#secteur").addEventListener("change",()=>{
@@ -3256,7 +3418,7 @@ function renderPCS(){
   const v=$("#pcsView");if(!v||!S)return;
   renderPcsPanel();renderCommuneBar();
   if(!S.p.insee||S.isExample){
-    v.innerHTML=`<article class="card doc"><div class="docbody"><h3>Plan communal de sauvegarde</h3><p>Recherchez votre commune dans l'espace Exercices pour construire son plan communal de sauvegarde.</p><div><button class="btn primary" type="button" id="pcsGoEx">Rechercher ma commune</button></div></div></article>`;
+    v.innerHTML=`<article class="card doc"><div class="docbody"><h3>Plan communal de sauvegarde</h3><p>Recherchez votre commune pour construire son plan communal de sauvegarde.</p><div><button class="btn primary" type="button" id="pcsGoEx">Rechercher ma commune</button></div></div></article>`;
     return;
   }
   v.innerHTML=`<article class="card doc"><div class="dochead"><span class="meta">${esc(S.p.commune)} · Plan communal de sauvegarde</span></div>
@@ -3288,7 +3450,7 @@ $("#pcsView").addEventListener("change",e=>{
 });
 $("#pcsView").addEventListener("click",e=>{
   if(S&&S.p.insee&&!S.isExample&&e.target.id&&pcsDocClick(e.target.id))return;
-  if(e.target.closest("#pcsGoEx")){if(AFF.panelOff){AFF.panelOff=false;saveAff();applyAff()}setEspace("exercices");const c=$("#commune");if(c)c.focus();return}
+  if(e.target.closest("#pcsGoEx")){openGuide(1);return}
   const rs=e.target.closest("[data-fiche-reset]");
   if(rs){pcsSet("fiches."+rs.dataset.ficheReset,"");pcsSavedU();const l=$("#pcsFiches");if(l){const op=[...l.querySelectorAll("details")].map(d=>d.open);l.innerHTML=fichesListeHTML();l.querySelectorAll("details").forEach((d,i)=>{d.open=!!op[i]})}updateApercu();return}
   const gv=e.target.closest("[data-gv]");
@@ -3341,8 +3503,10 @@ function applyEspace(){
   const pp=$("#pcsPanel"),pv=$("#pcsView"); // absents en mode observateur
   if(pp)pp.hidden=!pcs;if(pv)pv.hidden=!pcs;
   document.querySelectorAll("#espaceSeg [data-esp]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.esp===AFF.espace));
+  if(GUIDE.on)["#config","#pcsPanel",".bar",".head","#view","#pcsView"].forEach(s=>{const el=$(s);if(el)el.hidden=true}); // le parcours occupe l'espace de travail
 }
 function setEspace(e){
+  if(GUIDE.on)closeGuide(false);
   AFF.espace=e==="pcs"?"pcs":"exercices";saveAff();applyEspace();
   if(S){if(AFF.espace==="pcs")renderPCS();else render()}
   if(map)setTimeout(()=>map.invalidateSize(),60);
@@ -3367,6 +3531,7 @@ if(!(S&&S.p&&LIB[S.p.risk]&&Array.isArray(S.injects))){
 S.p={...DEFAULTS,...S.p};
 if(S.p.insee&&(!S.geo||S.geo.insee!==S.p.insee||S.geo.status!=="ok"||S.geo.v!==2)){GEO_KEYS.forEach(k=>S[k]=null);S.geo=null;S.floodChecked=false;S.icpeLoaded=false}
 writeForm();render();if(AFF.espace==="pcs")renderPCS();
+if(S.isExample&&!AFF.guide)openGuide(1); // premier lancement : démarrage guidé à la place du dossier d'exemple
 probe().then(()=>{if(live&&S.p.insee){loadRisks(S.p.insee);if(!S.places)loadPlaces();else fetchContour()}});
 }
 async function fetchContour(){try{contourGeo=await getJSON(API.contour(S.p.insee),8000);if(S.tab==="carte")drawMap()}catch(e){}}
