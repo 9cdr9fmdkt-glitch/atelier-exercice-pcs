@@ -530,6 +530,10 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     o.q("#oname").value = "Obs"; o.q("#oname").dispatchEvent(new o.w.Event("input", { bubbles: true }));
     ok(!o.q("#saveState") || o.q("#saveState").textContent.trim() === "", "mode observateur : pas de mention « Enregistré »");
     o.close(); t.close(); }
+  { const m = (SRC.match(/@media \(max-width:620px\)\{\.espace\{[^\n]*/) || [""])[0];
+    ok(/\.appbar \.logo\{flex:0 1000 auto/.test(m), "téléphone : le titre se replie avant le nom de la commune (« Mirepoix » ne se réduit pas à « M »)");
+    ok(/\.cb-etat\{position:absolute;left:0;[^}]*max-width:calc\(100vw - 32px\)/.test(m), "téléphone : mention d'état ancrée à gauche, sans sortir de l'écran");
+  }
 
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);
