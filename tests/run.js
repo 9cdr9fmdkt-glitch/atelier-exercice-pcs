@@ -644,6 +644,44 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(o.d.body.classList.contains("obsmode") && (!o.q("#guide") || o.q("#guide").hidden) && !/Étape 1 sur 3/.test(o.d.body.textContent), "mode observateur : jamais de démarrage guidé");
     o.close(); t.close(); }
 
+  console.log("\nPANNEAU ALLÉGÉ");
+  { const t = open("bourg", "", null, { offline: true, guideVu: true }); await wait(300);
+    ok(!t.q("#autresRisques") && t.d.querySelectorAll("#risks input[name=risk]").length === 19, "Géorisques injoignable : liste complète, sans repli « Autres risques »");
+    t.close(); }
+  { const t = open("bourg", "", null, { guideVu: true }); await wait(300); await pickCommune(t, "bourg");
+    const steps = [...t.d.querySelectorAll("#config .step")].filter(s => s.querySelector(".num"));
+    ok(steps.map(s => s.querySelector(".num").textContent + " " + s.querySelector("h2").textContent).join(" / ") === "1 Commune / 2 Risque joué / 3 Format et horaires", "trois étapes numérotées : Commune, Risque joué, Format et horaires");
+    ok(!t.q("#idcard").closest(".step").querySelector("input, select, textarea"), "étape 1 : fiche d'identité seule");
+    const av = t.q("#avance");
+    ok(av && av.tagName === "DETAILS" && !av.open && /Réglages avancés/.test(av.querySelector(":scope > summary").textContent) && !av.closest(".step").querySelector(".num"), "un seul « Réglages avancés », replié et non numéroté");
+    const sums = [...av.querySelectorAll("details.more > summary")].map(s => s.textContent);
+    ok(["Effets en cascade", "Objectifs évalués", "Lieux utilisés dans le scénario", "Annuaire de crise", "Moyens de la commune", "Partenaires"].every((l, i) => sums[i] && sums[i].startsWith(l)), "réglages avancés : cascade, objectifs, lieux, annuaire, moyens, partenaires (" + sums.length + ")");
+    ok(["#combo", "#comboAdd", "#objs", "#secteur", "#icpe", "#annuPaste", "#ficheFields", "#partFields"].every(s => t.q(s) && t.q(s).closest("details.more") && av.contains(t.q(s))), "champs existants déplacés dans les réglages avancés, identifiants conservés");
+    ok(t.d.querySelectorAll("#config details.more").length === t.d.querySelectorAll("#avance details.more").length + t.d.querySelectorAll("#risks details.more").length, "aucun autre repli hors des réglages avancés et de la liste des risques");
+    ok(t.q("#objCount").closest("summary") && t.q("#objCount").textContent === "7 sur 7" && /^\d sur 9$/.test(t.q("#ficheCount").textContent) && t.q("#ficheCount").closest("summary") && t.q("#annuCount").closest("summary"), "résumés : objectifs « 7 sur 7 », moyens « n sur 9 », contacts");
+    t.q("#annuPaste").value = "Nom\tFonction\tTéléphone\nJean Martin\tMaire\t06 11 22 33 44\nLuc Bernard\tAgent technique\t"; click(t, "#annuImport");
+    ok(t.q("#annuCount").textContent === "2 contacts" && !av.open, "nombre de contacts dans le résumé de l'annuaire");
+    const ar = t.q("#autresRisques"), inAr = k => ar.contains(t.q("#r-" + k));
+    ok(ar && ar.tagName === "DETAILS" && !ar.open && /Autres risques/.test(ar.querySelector("summary").textContent), "Géorisques a répondu : « Autres risques » replié");
+    ok(inAr("seisme") && inAr("feu") && !inAr("inondation") && !inAr("canicule") && !inAr("cyber") && !inAr("ferroviaire") && !inAr("bombe"), "recensés, transverses et risques à site visibles ; non recensés repliés");
+    ok(t.d.querySelectorAll("#risks input[name=risk]").length === 19 && t.q("#risks .rk").contains(t.q("#r-inondation")),"19 risques, le risque recensé en tête");
+    const rerender = async () => { const r = t.d.createElement("button"); r.id = "placesRetry"; t.d.body.appendChild(r); click(t, "#placesRetry"); r.remove(); await wait(700) };
+    t.q("#autresRisques").open = true; { const s = t.q("#r-seisme"); s.checked = true; s.dispatchEvent(new t.w.Event("change", { bubbles: true })); s.focus() }
+    await rerender();
+    ok(t.q("#autresRisques").open && t.q("#r-seisme").checked && t.d.activeElement === t.q("#r-seisme"), "nouveau rendu en arrière-plan : liste ouverte, risque choisi et focus conservés");
+    t.q("#autresRisques").open = false; t.q("#gen").focus(); await rerender();
+    ok(!t.q("#autresRisques").open && t.q("#r-seisme").checked, "liste refermée par l'utilisateur, même risque : reste fermée");
+    { const s = t.q("#r-inondation"); s.checked = true; s.dispatchEvent(new t.w.Event("change", { bubbles: true })) }
+    t.q("#autresRisques").open = true; t.q("#autresRisques summary").focus(); await rerender();
+    ok(t.q("#autresRisques").open && t.d.activeElement === t.q("#autresRisques summary"), "liste ouverte par l'utilisateur : reste ouverte, focus sur son résumé");
+    t.q("#autresRisques").open = false; await rerender();
+    ok(!t.q("#autresRisques").open && JSON.parse(t.w.localStorage.getItem("atelier-pcs-v2")).p.risk === "inondation", "liste refermée par l'utilisateur : reste fermée");
+    click(t, "#communeChange"); click(t, "#gNext1"); click(t, "#gChoixEx");
+    { const s = t.q("#gr-feu"); s.checked = true; s.dispatchEvent(new t.w.Event("change", { bubbles: true })) } click(t, "#gGen");
+    ok(t.q("#r-feu").checked && t.q("#autresRisques").open, "risque non recensé choisi : « Autres risques » ouvert automatiquement");
+    ok(/« Réglages avancés »/.test(t.q("#toast").textContent) && /Réglages avancés/.test(t.q("#avance > summary").textContent), "le message du parcours renvoie à « Réglages avancés », présent dans le panneau");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
   console.log("\nAFFICHAGE");
   const v = open("bourg", "", null, { guideVu: true }); await wait(300);
   ok([...v.d.querySelectorAll(".tgrp")].map(x => x.textContent).join("/") === "Préparer/Conduire/Évaluer", "onglets regroupés en trois temps");

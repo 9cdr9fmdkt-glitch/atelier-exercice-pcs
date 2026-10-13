@@ -193,6 +193,19 @@ details.more .inner{display:flex;flex-direction:column;gap:12px;padding-bottom:1
 .erpg summary{cursor:pointer;font-size:14px;padding:6px 0;min-height:32px}.erpg .checks{margin:0 0 6px}
 .more summary .aside{margin-left:auto;font-weight:400;font-size:12.5px;color:var(--faint)}
 #comboAdd{font-size:14px}
+/* Réglages avancés : un seul repli non numéroté sous les trois étapes */
+#avance > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;min-height:44px;margin:-8px 0}
+#avance > summary::-webkit-details-marker{display:none}
+#avance > summary::before{content:"";width:7px;height:7px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);transition:transform .15s;margin:0 7px 0 6px;flex:none}
+#avance[open] > summary::before{transform:rotate(45deg)}
+#avance > summary .avt{font-size:15px;font-weight:700;color:var(--ink)}
+#avance > summary:hover .avt{color:var(--primary)}
+#avance > summary .aside{margin-left:auto;font-size:12.5px;color:var(--faint)}
+#avance > summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:2px}
+#avance .avin{margin-top:16px}
+#risks details.more{margin:6px 0 0;padding:0 10px}
+#risks details.more .inner{padding-bottom:6px}
+#risks details.more .risklist{margin-inline:-10px}
 
 .btn{font-size:14px;font-weight:600;border-radius:var(--r-sm);padding:8px 14px;min-height:38px;cursor:pointer;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .12s,border-color .12s;white-space:nowrap;text-decoration:none}
 .btn:hover{background:var(--surface-2);border-color:var(--muted)}
@@ -519,12 +532,6 @@ body.guide-on .shell{grid-template-columns:minmax(0,1fr)}
         <div class="stephead"><span class="num">2</span><h2 id="h2">Risque joué</h2><span class="aside" id="riskAside"></span></div>
         <div id="riskBanner"></div>
         <div class="risklist" id="risks" role="radiogroup" aria-labelledby="h2"></div>
-        <div class="field" id="comboBox">
-          <span class="lab" id="lcombo">Effets en cascade</span>
-          <p class="note">Les crises se succèdent et se chevauchent. Ajoutez jusqu'à deux événements qui viendront s'y superposer en cours d'exercice.</p>
-          <div class="chips" id="combo" role="group" aria-labelledby="lcombo"></div>
-          <select id="comboAdd" aria-label="Ajouter un autre événement"></select>
-        </div>
       </section>
 
       <section class="step" aria-labelledby="h3">
@@ -541,9 +548,25 @@ body.guide-on .shell{grid-template-columns:minmax(0,1fr)}
         <div class="field"><label for="date">Date de l'exercice</label><input type="date" id="date"></div>
       </section>
 
-      <section class="step" aria-labelledby="h4">
-        <div class="stephead"><span class="num">4</span><h2 id="h4">Objectifs évalués</h2><span class="aside" id="objCount"></span></div>
-        <div class="chips" id="objs"></div>
+      <section class="step" aria-label="Réglages avancés">
+        <details id="avance">
+          <summary><span class="avt">Réglages avancés</span><span class="aside">Facultatif</span></summary>
+          <div class="avin">
+        <details class="more" id="comboBox">
+          <summary><span id="lcombo">Effets en cascade</span></summary>
+          <div class="inner">
+            <p class="note">Les crises se succèdent et se chevauchent. Ajoutez jusqu'à deux événements qui viendront s'y superposer en cours d'exercice.</p>
+            <div class="chips" id="combo" role="group" aria-labelledby="lcombo"></div>
+            <select id="comboAdd" aria-label="Ajouter un autre événement"></select>
+          </div>
+        </details>
+        <details class="more" id="objBox">
+          <summary><span id="lobjs">Objectifs évalués</span> <span class="aside" id="objCount"></span></summary>
+          <div class="inner">
+            <p class="note">Les messages des objectifs retirés disparaissent du chronogramme.</p>
+            <div class="chips" id="objs" role="group" aria-labelledby="lobjs"></div>
+          </div>
+        </details>
         <details class="more" id="lieuxBox">
           <summary>Lieux utilisés dans le scénario</summary>
           <div class="inner">
@@ -591,6 +614,8 @@ body.guide-on .shell{grid-template-columns:minmax(0,1fr)}
           <div class="inner">
             <p class="note">Proposés d'après le département, la région et l'intercommunalité. Corrigez-les si besoin : ils apparaissent comme émetteurs des messages.</p>
             <div id="partFields"></div>
+          </div>
+        </details>
           </div>
         </details>
       </section>
@@ -1862,13 +1887,23 @@ function renderRisks(){
   const prof=geoRisks&&geoRisks.status==="ok"?geoRisks.items:null;
   const card=riskCardFn("risk","r-",p.risk);
   const score=k=>{const e=prof&&prof.find(x=>x.key===k);return (e&&e.labels.length?2:0)+(e&&e.catnat?1:0)};
-  let html=FAMS.map(([f,lab])=>{const ks=Object.keys(RISKS).filter(k=>RISKS[k].fam===f).sort((a,b)=>score(b)-score(a));return `<div class="famhead">${lab}</div>`+ks.map(card).join("")}).join("");
-  if(prof) prof.filter(x=>x.key==="autre").forEach((x,i)=>{
-    if(i===0)html+='<div class="famhead">Autres risques recensés</div>';
-    html+=`<div class="rk"><input type="radio" name="risk" id="ro-${i}" disabled><label for="ro-${i}"><span class="ic">${ico("autre")}</span><span class="tx"><b>${esc(x.group)}</b><span class="tags"><span class="tg src">Recensé Géorisques</span>${x.catnat?`<span class="tg cat">${x.catnat} CatNat</span>`:""}<span class="tg no">Scénario à venir</span></span></span></label></div>`;
-  });
+  const fam=ks=>FAMS.map(([f,lab])=>{const l=ks.filter(k=>RISKS[k].fam===f).sort((a,b)=>score(b)-score(a));return l.length?`<div class="famhead">${lab}</div>`+l.map(card).join(""):""}).join("");
+  const all=Object.keys(RISKS);let html;
+  if(prof){ // Géorisques a répondu : les risques non recensés (hors transverses et à site) sont repliés, comme à l'écran 3 du parcours
+    const rec=k=>prof.some(x=>x.key===k&&x.labels.length),rest=all.filter(k=>!rec(k)&&!RISKS[k].transverse&&!RISKS[k].site);
+    // Ouvert automatiquement si le risque choisi s'y trouve ; un nouveau rendu pour le même risque garde l'état choisi par l'utilisateur.
+    const was=$("#autresRisques"),open=was&&was.dataset.risk===p.risk?was.open:rest.includes(p.risk)||!!(was&&was.open);
+    html=fam(all.filter(k=>!rest.includes(k)));
+    prof.filter(x=>x.key==="autre").forEach((x,i)=>{
+      if(i===0)html+='<div class="famhead">Autres risques recensés</div>';
+      html+=`<div class="rk"><input type="radio" name="risk" id="ro-${i}" disabled><label for="ro-${i}"><span class="ic">${ico("autre")}</span><span class="tx"><b>${esc(x.group)}</b><span class="tags"><span class="tg src">Recensé Géorisques</span>${x.catnat?`<span class="tg cat">${x.catnat} CatNat</span>`:""}<span class="tg no">Scénario à venir</span></span></span></label></div>`;
+    });
+    if(rest.length)html+=`<details class="more" id="autresRisques" data-risk="${esc(p.risk)}"${open?" open":""}><summary>Autres risques <span class="aside">${rest.length} non recensé${rest.length>1?"s":""}</span></summary><div class="inner"><div class="risklist">${fam(rest)}</div></div></details>`;
+  }else html=fam(all);
+  const a=document.activeElement,box=$("#risks"),fid=a&&box.contains(a)?(a.id||(a.closest("#autresRisques")&&a.tagName==="SUMMARY"?"#autresRisques summary":null)):null;
   $("#riskBanner").innerHTML=banner;
-  $("#risks").innerHTML=html;
+  box.innerHTML=html;
+  if(fid){const n=fid[0]==="#"?document.querySelector(fid):document.getElementById(fid);if(n)n.focus()}
   $("#riskAside").textContent=prof?prof.length+" risque"+(prof.length>1?"s":"")+" recensé"+(prof.length>1?"s":""):"";
   if(GUIDE.on&&GUIDE.step===3)renderGuideRisks();
 }
@@ -2591,7 +2626,7 @@ function vCarte(){
       if(S.floodChecked)rows.push(["En zone inondable",(S.quartiers||[]).filter(x=>x.inond).map(x=>x.name).join(", ")||"aucun quartier testé"]);
       return rows.length?`<div class="sec"><h4>Éléments du terrain</h4><div class="facts">${rows.map(r=>`<div class="fact"><b>${esc(r[1])}</b><span>${esc(r[0])}</span></div>`).join("")}</div><p class="note">Sources : OpenStreetMap ; Géorisques (installations classées, zones inondables au point de chaque quartier).</p></div>`:""})()}
     ${sites.length?`<div class="sec"><h4>Sites concernés par le risque « ${esc(RISKS[p.risk].label)} »</h4><div class="sites">${sites.map(x=>`<div class="site c-${x.cat}"><i></i><div><b>${esc(x.name)}</b><span>${esc(CATS[x.cat].label)}${x.d!=null?" · "+String(x.d).replace(".",",")+" km":""}</span></div></div>`).join("")}</div><p class="note">Les sites mis en évidence sur la carte sont ceux qu'un événement de ce type menacerait en priorité, ou dont la commune aurait besoin pour y faire face.</p></div>`:""}
-    <div class="callout">${info}<span>Les données OpenStreetMap sont collaboratives : vérifiez les lieux sur le terrain avant l'exercice. Un lieu manquant peut être saisi à la main dans « Lieux utilisés dans le scénario ».</span></div>
+    <div class="callout">${info}<span>Les données OpenStreetMap sont collaboratives : vérifiez les lieux sur le terrain avant l'exercice. Un lieu manquant peut être saisi à la main dans le panneau de préparation, sous « Réglages avancés », « Lieux utilisés dans le scénario ».</span></div>
   </div>`;
 }
 const VIEWS={cadrage:vCadrage,carte:vCarte,scenario:vScenario,chrono:vChrono,conduite:vLive,roles:vRoles,modeles:vModeles,obs:vObs,retex:vRetex,regl:vRegl};
