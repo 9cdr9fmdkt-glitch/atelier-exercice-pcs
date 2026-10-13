@@ -654,6 +654,7 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     click(t, "#gGen"); const v = view(t);
     ok(t.q("#guide").hidden && /Belcaire/.test(v) && /410 habitants/.test(v) && /Aude \(11\)/.test(v) && !/fictive/.test(v), "hors ligne : dossier de la commune saisie");
     click(t, '#espaceSeg [data-esp="pcs"]'); ok(!!t.q("#pcsChoisir") && /Ce que la loi exige/.test(t.q("#pcsBody").textContent) && !t.q("#pcsBody [data-pf]") && t.q("#ptab-verifier").getAttribute("aria-disabled") === "true" && t.q("#ptab-documents").getAttribute("aria-disabled") === "true", "hors ligne, sans code INSEE : rubriques en lecture seule, Vérifier et Documents indisponibles (invitation)");
+    ok(/code INSEE/.test(t.q("#pcsTabsNote").textContent) && /en ligne/.test(t.q("#pcsTabsNote").textContent), "hors ligne, sans code INSEE : la note explique comment ouvrir le PCS");
     ok(t.w.localStorage.getItem("commune-prete-pcs") === null, "hors ligne, sans code INSEE : aucune donnée PCS enregistrée");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
@@ -812,8 +813,8 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(st().annu.length === 0 && t.q("#annuCount").textContent === "" && /Annuaire de crise : \[?à compléter/i.test(ap()), "« Vider » depuis le PCS : annuaire vidé dans les deux espaces");
     click(t, '#pcsRub [data-rub="5"]');
     ok(more() && /^Modifier les moyens de la commune/.test(more().querySelector("summary").textContent.trim()), "rubrique 5 : « Modifier les moyens de la commune »");
-    const want5 = ["elus", "agents", "tech", "cap", "lits", "veh", "ge"];
-    ok(want5.every(k => more().querySelector("#pfi-" + k + '[data-fi="' + k + '"]') && t.q('label[for="pfi-' + k + '"]')) && more().querySelectorAll('[data-fic="conv"]').length === 4 && !more().querySelector('[data-fi="reserve"],[data-fi="pics"],[data-fic="alerte"]'), "rubrique 5 : élus, agents, techniques, places, lits, véhicules, groupe électrogène, conventions");
+    const want5 = ["elus", "agents", "tech", "lits", "veh", "ge"];
+    ok(want5.every(k => more().querySelector("#pfi-" + k + '[data-fi="' + k + '"]') && t.q('label[for="pfi-' + k + '"]')) && more().querySelectorAll('[data-fic="conv"]').length === 4 && !more().querySelector('[data-fi="reserve"],[data-fi="pics"],[data-fi="cap"],[data-fic="alerte"]'), "rubrique 5 : élus, agents, techniques, lits, véhicules, groupe électrogène, conventions (pas le total des places)");
     ok(!idsOk().length, "rubrique 5 : identifiants uniques" + (idsOk().length ? " : " + idsOk().join(", ") : ""));
     more().open = true; const el = t.q("#pfi-elus"); el.focus(); fire(el, "7");
     ok(st().p.fiche.elus === "7" && t.q("#fi-elus").value === "7" && t.q("#ficheCount").textContent === "2 sur 9", "élus depuis le PCS : enregistré, panneau Exercices à jour");
@@ -856,6 +857,7 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     click(t, '#pcsRub [data-rub="5"]'); const e = t.q("#pfi-elus"); e.value = "9"; e.dispatchEvent(new t.w.Event("change", { bubbles: true }));
     click(t, '#pcsRub [data-rub="3"]'); t.q("#pcsBody textarea").value = "Nom\tFonction\nJean Martin\tMaire"; click(t, '#pcsBody [data-annu="import"]');
     ok(t.q("#fi-elus").value === "9" && t.q("#annuCount").textContent === "1 contact", "Mirepoix : moyens et annuaire saisis depuis le PCS");
+    click(t, '#pcsRub [data-rub="5"]'); ok(!t.q("#pfi-cap") && !/Places d'accueil \(fiche\)/.test(t.q("#pcsFacts").textContent) && !!t.q("#fi-cap"), "rubrique 5 : le total des places d'accueil n'est plus demandé dans le PCS (capacité saisie par lieu), il reste dans la fiche Moyens");
     const mem = {}; for (let i = 0; i < t.w.localStorage.length; i++) { const k = t.w.localStorage.key(i); mem[k] = t.w.localStorage.getItem(k) }
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close();
     t = open("bourg", "", mem, { offline: true }); await wait(300); // même navigateur, rouvert hors ligne
