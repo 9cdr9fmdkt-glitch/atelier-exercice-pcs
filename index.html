@@ -643,7 +643,7 @@ body.guide-on .shell{grid-template-columns:minmax(0,1fr)}
           <p id="gCom"></p>
           <div class="gchoix">
             <button class="btn" type="button" id="gChoixEx"><b>Préparer un exercice de crise</b><span class="note">Scénario, chronogramme, conduite et retour d'expérience.</span></button>
-            <button class="btn" type="button" id="gChoixPcs" aria-describedby="gPcsNote"><b>Rédiger ou vérifier le plan communal de sauvegarde</b><span class="note">Rubriques du plan, vérification et documents.</span></button>
+            <button class="btn" type="button" id="gChoixPcs"><b>Rédiger ou vérifier le plan communal de sauvegarde</b><span class="note">Rubriques du plan, vérification et documents.</span></button>
           </div>
           <p class="note" id="gPcsNote" hidden>L'espace PCS est rangé par code INSEE : il s'ouvre une fois la commune trouvée par la recherche en ligne.</p>
           <div class="gacts"><button class="btn" type="button" id="gBack2">Retour</button></div>
@@ -2643,11 +2643,12 @@ function guideStep(n){
   GUIDE.step=n;
   document.querySelectorAll("#guide [data-gstep]").forEach(e=>e.hidden=+e.dataset.gstep!==n);
   $("#gMark").textContent="Étape "+n+" sur 3";
-  if(n===1){guideRefresh1();const c=$("#commune");if(S.isExample){c.value="";$("#pop").value="";$("#dept").value=""}c.focus()}
+  if(n===1){guideRefresh1();const c=$("#commune");if(S.isExample){c.value="";$("#pop").value="";$("#dept").value=""}c.focus();c.select()} // commune actuelle sélectionnée : la frappe la remplace
   if(n===2){
     const p=S.p,no=!p.insee;
     $("#gCom").innerHTML=`Commune : <b>${esc(p.commune)}</b>${p.dept?" · "+esc(p.dept):""}${p.pop?" · "+nf(p.pop)+" habitants":""}`;
-    $("#gChoixPcs").setAttribute("aria-disabled",no);$("#gPcsNote").hidden=!no;
+    const cp=$("#gChoixPcs");cp.setAttribute("aria-disabled",no);$("#gPcsNote").hidden=!no;
+    if(no)cp.setAttribute("aria-describedby","gPcsNote");else cp.removeAttribute("aria-describedby"); // note lue seulement quand elle s'applique
     $("#gT2").focus();
   }
   if(n===3){guideInit3();renderGuideFormat();renderGuideRisks();$("#gT3").focus()}
@@ -2676,7 +2677,8 @@ function renderGuideRisks(){
   if(prof){
     const rec=[...new Set(prof.filter(x=>RISKS[x.key]&&x.labels.length).map(x=>x.key))],rest=all.filter(k=>!rec.includes(k));
     note=rec.length?`<p class="note">Risques recensés par Géorisques pour ${esc(S.p.commune)}. Le premier est présélectionné.</p>`:`<p class="note">Géorisques ne recense aucun de ces risques pour ${esc(S.p.commune)} : choisissez-en un dans la liste.</p>`;
-    html=rec.map(card).join("")+`<details class="more" id="gAutres"${rest.includes(sel)||!rec.length?" open":""}><summary>Autres risques <span class="aside">${rest.length}</span></summary><div class="inner"><div class="risklist">${fam(rest)}</div></div></details>`;
+    const was=$("#gAutres"),keep=!!(was&&was.open); // rendu relancé par un chargement en arrière-plan : la liste ouverte le reste
+    html=rec.map(card).join("")+`<details class="more" id="gAutres"${keep||rest.includes(sel)||!rec.length?" open":""}><summary id="gAutresSum">Autres risques <span class="aside">${rest.length}</span></summary><div class="inner"><div class="risklist">${fam(rest)}</div></div></details>`;
   }else{
     note=st==="loading"?`<p class="note" role="status">Chargement des risques recensés par Géorisques…</p>`:live===false?`<p class="note">Bases publiques hors ligne : choisissez le risque dans la liste complète.</p>`:st==="error"?`<p class="note">Géorisques n'a pas répondu : choisissez le risque dans la liste complète.</p>`:"";
     html=fam(all);

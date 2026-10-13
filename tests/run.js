@@ -582,8 +582,12 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     click(t, "#gBack2"); ok(step(1) && t.d.activeElement.id === "commune", "« Retour » de l'écran 2 vers l'écran 1");
     ok(t.q("#gExample").hidden && !t.q("#gBack1").hidden, "commune choisie : plus de lien « Voir l'exemple », bouton « Retour »");
     click(t, "#gNext1"); ok(step(2), "écran 1 : « Continuer » avec la commune déjà choisie");
+    ok(t.q("#gChoixPcs").getAttribute("aria-disabled") === "false" && !t.q("#gChoixPcs").hasAttribute("aria-describedby"), "commune trouvée : choix PCS actif, sans note « code INSEE » associée");
     click(t, "#gChoixEx");
     ok(step(3) && mark() === "Étape 3 sur 3" && t.d.activeElement && t.d.activeElement.id === "gT3", "« Préparer un exercice » : écran 3, focus sur son titre");
+    { t.q("#gAutres").open = true; t.q("#gAutres summary").focus();
+      const r = t.d.createElement("button"); r.id = "placesRetry"; t.d.body.appendChild(r); click(t, "#placesRetry"); r.remove(); await wait(700);
+      ok(t.q("#gAutres").open && t.d.activeElement === t.q("#gAutres summary"), "lieux rechargés en arrière-plan : « Autres risques » reste ouvert, focus conservé") }
     const chk = t.q("#gRisks input:checked");
     ok(chk && chk.value === "inondation" && chk.name === "grisk" && /Recensé/.test(t.q("#gRisks").textContent), "risque recensé par Géorisques présélectionné");
     ok(t.d.querySelectorAll("#gRisks input[name=grisk]").length === 19 && !t.q("#gRisks #r-inondation"), "liste du parcours distincte de celle du panneau (19 risques)");
@@ -603,6 +607,7 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(st.isExample === false && st.p.insee === "09194" && st.injects.length > 5 && aff.guide === true, "dossier enregistré, parcours noté comme vu");
     click(t, "#communeChange");
     ok(!t.q("#gWarn").hidden && /réglages d'exercice/.test(t.q("#gWarn").textContent) && /conservés/.test(t.q("#gWarn").textContent), "commune réelle déjà choisie : avertissement de remplacement");
+    { const c = t.q("#commune"); ok(c.value === "Mirepoix" && c.selectionStart === 0 && c.selectionEnd === c.value.length, "« Changer » : commune actuelle sélectionnée, la frappe la remplace") }
     click(t, "#gBack1"); ok(t.q("#guide").hidden && !t.q("#view").hidden && /Mirepoix/.test(t.q("#communeBar").textContent), "« Retour » de l'écran 1 : parcours fermé, commune inchangée");
     click(t, '#espaceSeg [data-esp="pcs"]'); click(t, "#communeChange");
     ok(!t.q("#guide").hidden && !t.q('#guide [data-gstep="1"]').hidden && t.q("#pcsView").hidden && t.q("#pcsPanel").hidden, "« Changer » depuis l'espace PCS : écran 1");
@@ -626,7 +631,7 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(!t.q('#guide [data-gstep="2"]').hidden && /Belcaire/.test(t.q("#communeBar").textContent) && !/Exemple fictif/.test(t.q("#communeBar").textContent), "hors ligne : écran 2, commune saisie dans la barre");
     const st = JSON.parse(t.w.localStorage.getItem("atelier-pcs-v2"));
     ok(st.isExample === false && st.p.commune === "Belcaire" && String(st.p.pop) === "410" && st.p.dept === "Aude (11)" && !st.p.insee, "hors ligne : sortie de l'exemple fictif, nom, population et département enregistrés");
-    ok(!t.q("#gPcsNote").hidden && /INSEE/.test(t.q("#gPcsNote").textContent), "hors ligne : l'espace PCS signalé comme nécessitant la recherche en ligne");
+    ok(!t.q("#gPcsNote").hidden && /INSEE/.test(t.q("#gPcsNote").textContent) && t.q("#gChoixPcs").getAttribute("aria-describedby") === "gPcsNote", "hors ligne : l'espace PCS signalé comme nécessitant la recherche en ligne");
     click(t, "#gChoixEx"); ok(t.d.querySelectorAll("#gRisks input[name=grisk]").length === 19, "hors ligne : liste complète des risques");
     click(t, "#gGen"); const v = view(t);
     ok(t.q("#guide").hidden && /Belcaire/.test(v) && /410 habitants/.test(v) && /Aude \(11\)/.test(v) && !/fictive/.test(v), "hors ligne : dossier de la commune saisie");
