@@ -273,6 +273,10 @@ details.more .inner{display:flex;flex-direction:column;gap:12px;padding-bottom:1
 .ref:hover{text-decoration:underline}
 .docbody h4.apt{margin:22px 0 8px}.apercu{border:1px solid var(--line);border-radius:10px;padding:4px 16px;background:var(--surface-2)}.apercu p{margin:10px 0}.apercu ul{margin:6px 0 10px;padding-left:20px}.apercu .todo{color:var(--muted)}
 .callout.pdoc{flex-direction:column;align-items:flex-start;gap:4px}.callout.pdoc .note{margin:0}
+/* Étape suivante : bouton en bas de chaque pièce ou rubrique */
+.btn.next{display:flex;width:fit-content;max-width:100%;margin-left:auto;align-self:flex-end;white-space:normal;text-align:left}
+.doc > .btn.next{margin:-12px clamp(18px,4vw,48px) 32px auto;max-width:calc(100% - 2 * clamp(18px,4vw,48px))}
+#pcsBody > h3:focus{outline:none}#pcsBody > h3:focus-visible{outline:2px solid var(--primary);outline-offset:4px;border-radius:2px}
 .pcsrub{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.pcsrub .btn{width:100%;justify-content:flex-start;text-align:left}.pcsrub .btn[aria-current=true]{border-color:var(--primary);background:var(--primary-soft)}.pcsrub .pm{display:inline-block;width:1.2em}
 .callout{display:flex;gap:12px;border-left:3px solid var(--primary);border-radius:0 var(--r-sm) var(--r-sm) 0;padding:12px 16px;background:var(--primary-soft);color:var(--ink);font-size:14px;max-width:84ch}
 .callout svg{flex:none;color:var(--primary);margin-top:2px}
@@ -491,7 +495,7 @@ body.guide-on .shell{grid-template-columns:minmax(0,1fr)}
   .sum{gap:6px 18px}.sum dd{font-size:14.5px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-@media print{.appbar,.config,.bar,.tools,.toast,.guide{display:none!important}.shell{display:block}.work{padding:0;max-width:none}.doc{box-shadow:none;border:0}}
+@media print{.appbar,.config,.bar,.tools,.toast,.guide,.next{display:none!important}.shell{display:block}.work{padding:0;max-width:none}.doc{box-shadow:none;border:0}}
 </style>
 
 <a class="skip" href="#view">Aller au dossier</a>
@@ -1889,7 +1893,7 @@ function renderRisks(){
   const score=k=>{const e=prof&&prof.find(x=>x.key===k);return (e&&e.labels.length?2:0)+(e&&e.catnat?1:0)};
   const fam=ks=>FAMS.map(([f,lab])=>{const l=ks.filter(k=>RISKS[k].fam===f).sort((a,b)=>score(b)-score(a));return l.length?`<div class="famhead">${lab}</div>`+l.map(card).join(""):""}).join("");
   const all=Object.keys(RISKS);let html;
-  if(prof){ // Géorisques a répondu : les risques non recensés (hors transverses et à site) sont repliés, comme à l'écran 3 du parcours
+  if(prof){ // Géorisques a répondu : les risques non recensés sont repliés sous « Autres risques », sauf les risques transverses et à site qui restent visibles (l'écran 3 du parcours, lui, les replie aussi)
     const rec=k=>prof.some(x=>x.key===k&&x.labels.length),rest=all.filter(k=>!rec(k)&&!RISKS[k].transverse&&!RISKS[k].site);
     // Ouvert automatiquement si le risque choisi s'y trouve ; un nouveau rendu pour le même risque garde l'état choisi par l'utilisateur.
     const was=$("#autresRisques"),open=was&&was.dataset.risk===p.risk?was.open:rest.includes(p.risk)||!!(was&&was.open);
@@ -2506,7 +2510,7 @@ pre{white-space:pre-wrap;font-family:Cambria,Georgia,serif;font-size:10pt;border
 function cleanView(html){
   const d=document.createElement("div");d.innerHTML=html;
   d.querySelectorAll(".sr").forEach(x=>x.remove());
-  d.querySelectorAll(".dochead,button,.lbtns,details,.mapwrap,.catchips,.obsv-wrap input,.tools,script").forEach(x=>{if(x.classList&&x.classList.contains("cot")){return}x.remove()});
+  d.querySelectorAll(".dochead,.next,button,.lbtns,details,.mapwrap,.catchips,.obsv-wrap input,.tools,script").forEach(x=>{if(x.classList&&x.classList.contains("cot")){return}x.remove()});
   d.querySelectorAll(".cot").forEach(x=>{x.outerHTML='<span class="chk">☐ Atteint ☐ Partiel ☐ Non atteint</span>'});
   d.querySelectorAll("input.tmin").forEach(x=>x.remove());
   d.querySelectorAll(".callout.warn").forEach(x=>{if(/Points de cohérence/.test(x.textContent))x.remove()});
@@ -2641,10 +2645,13 @@ function render(){
   $("#tools").innerHTML=tools;
   tabsFit(true);$("#view").setAttribute("aria-labelledby","tab-"+S.tab);
   if(map){map.remove();map=null}
-  $("#view").innerHTML=`<article class="card doc">${VIEWS[S.tab]()}</article>`;
+  const ti=TABS.findIndex(t=>t[0]===S.tab),nx=TABS[ti+1]; // étape suivante, sauf sur la dernière pièce
+  $("#view").innerHTML=`<article class="card doc">${VIEWS[S.tab]()}${nx?`<button class="btn next" type="button" data-next="${nx[0]}">Suivant : ${nx[1]}</button>`:""}</article>`;
   if(S.tab==="carte")drawMap();
   renderCommuneBar();
 }
+// remonte en haut de l'espace de travail (sous la barre du haut) si on l'a dépassé
+function toWorkTop(el){try{if(!el)return;const h=($(".appbar")||{}).offsetHeight||0,y=Math.max(0,el.getBoundingClientRect().top+window.scrollY-h-8);if(window.scrollY>y)scrollTo(0,y)}catch(e){}}
 /* Commune dans la barre du haut, commune aux deux espaces */
 function renderCommuneBar(){
   const n=$("#cbNom"),a=$("#cbAct"),b=$("#communeChange");if(!n||!a||!b||!S)return;
@@ -2794,6 +2801,7 @@ $("#view").addEventListener("focusout",e=>{
 $("#view").addEventListener("change",e=>{const t=e.target;if(t.classList.contains("tmin")){const n=+t.closest("[data-i]").dataset.i;S.injects[n].t=Math.max(0,parseInt(t.value||0,10));S.injects.sort((a,b)=>a.t-b.t);S.edited=true;saveU();render()}});
 $("#view").addEventListener("input",e=>{const t=e.target;if(t.dataset.r){S.retex[t.dataset.r]=t.value;saveU()}if(t.dataset.obsv){S.obsv=S.obsv||{};S.obsv[t.dataset.obsv]=t.value;saveU()}});
 $("#view").addEventListener("click",e=>{
+  const nb=e.target.closest("[data-next]");if(nb){S.tab=nb.dataset.next;save();render();toWorkTop(document.querySelector(".work"));const tb=$("#tab-"+S.tab);if(tb)tb.focus({preventScroll:true});return}
   const cc=e.target.closest("[data-cat]");if(cc){const k=cc.dataset.cat;hiddenCats.has(k)?hiddenCats.delete(k):hiddenCats.add(k);cc.setAttribute("aria-pressed",!hiddenCats.has(k));drawMap();return}
   const d=e.target.closest("[data-del]");if(d){S.injects.splice(+d.dataset.del,1);S.edited=true;saveU();render();return}
   const nw=e.target.closest("[data-now]");if(nw){const id=nw.dataset.now,inp=nw.parentNode.querySelector("input");const v=nowStamp()+(inp.value?" · "+inp.value:"");inp.value=v;S.obsv=S.obsv||{};S.obsv[id]=v;saveU();return}
@@ -3262,11 +3270,12 @@ function pcsFactsHTML(r){
 function renderRediger(){
   const b=$("#pcsBody");if(!b)return;
   const r=PCS_RUB[PCSUI.rub]||PCS_RUB[0];
-  b.innerHTML=`<h3>${r.id}. ${esc(r.titre)}</h3>
+  const nr=PCS_RUB[r.id+1],nx=nr?`<button class="btn next" type="button" data-pnext="${nr.id}">Rubrique suivante : ${nr.id}. ${esc(nr.titre)}</button>`:`<button class="btn next" type="button" data-pnext="verifier">Vérifier le PCS</button>`;
+  b.innerHTML=`<h3 tabindex="-1">${r.id}. ${esc(r.titre)}</h3>
     <div class="callout"><div><b>Ce que la loi exige</b><br>${esc(r.loi)} <span class="aside">${esc(r.ref)}</span></div></div>
     <div id="pcsFacts">${pcsFactsHTML(r)}</div>
     ${r.id===8?fichesEditeur():r.champs.length?r.champs.map((c,i)=>pcsField(c,i,r)).join(""):`<p class="note">Cette rubrique ne comporte pas de saisie pour l'instant.</p>`}
-    <h4 class="apt">Aperçu dans le PCS</h4><div class="apercu" id="pcsApercu">${rubApercu(r.id)}</div>`;
+    <h4 class="apt">Aperçu dans le PCS</h4><div class="apercu" id="pcsApercu">${rubApercu(r.id)}</div>${nx}`;
 }
 // met à jour l'aperçu et les données pré-remplies sans toucher aux champs (la saisie en cours ne doit pas être perdue)
 function updateApercu(){
@@ -3499,6 +3508,9 @@ $("#pcsView").addEventListener("click",e=>{
   if(vd){const i=+vd.dataset.vadel;pcsCur().verif.actions.splice(i,1);pcsSavedU();const p=$("#verifPlan");if(p)p.innerHTML=verifActionsHTML();
     const nx=p&&p.querySelectorAll("[data-vadel]")[i],cible=nx||$("#addVAct");if(cible)cible.focus();return}
   if(e.target.id==="addVAct"){pcsCur().verif.actions.push({id:"m"+Date.now(),a:"Nouvelle action",pilote:"À désigner",ech:"À fixer"});pcsSavedU();const p=$("#verifPlan");if(p)p.innerHTML=verifActionsHTML();return}
+  const pn=e.target.closest("[data-pnext]");
+  if(pn){const v=pn.dataset.pnext;if(v==="verifier")PCSUI.tab="verifier";else{PCSUI.rub=+v;PCSUI.tab="rediger"}
+    renderPCS();toWorkTop($("#pcsView"));const f=v==="verifier"?$("#ptab-verifier"):$("#pcsBody h3");if(f)f.focus({preventScroll:true});return}
   const b=e.target.closest("[data-ptab]");if(b){PCSUI.tab=b.dataset.ptab;renderPCS();const n=$("#ptab-"+PCSUI.tab);if(n)n.focus()}
 });
 addEventListener("storage",e=>{ // autre onglet : relire les données plutôt que garder la copie en mémoire

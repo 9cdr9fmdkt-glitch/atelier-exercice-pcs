@@ -704,6 +704,37 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
   ok(!v.errs.length, "aucune erreur JavaScript" + (v.errs.length ? " : " + v.errs[0] : ""));
   v.close();
 
+  console.log("\nÉTAPE SUIVANTE");
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); await wait(400);
+    const TABS = [...t.d.querySelectorAll("#tabs [data-tab]")].map(b => [b.dataset.tab, b.textContent]);
+    const bad = [];
+    TABS.forEach(([k], i) => { click(t, `#tabs [data-tab="${k}"]`); const n = t.d.querySelectorAll("#view [data-next]"), b = n[0];
+      if (i === TABS.length - 1) { if (n.length) bad.push(k + " : bouton présent") }
+      else if (n.length !== 1 || !b.classList.contains("next") || !b.closest("#view article") || b.textContent.trim() !== "Suivant : " + TABS[i + 1][1] || b.dataset.next !== TABS[i + 1][0]) bad.push(k) });
+    ok(!bad.length, "chaque pièce se termine par « Suivant : <onglet suivant> », aucun sur Réglementation" + (bad.length ? " : " + bad.join(", ") : ""));
+    click(t, '#tabs [data-tab="cadrage"]'); t.q("#view [data-next]").focus(); click(t, "#view [data-next]");
+    ok(t.q("#tab-carte").getAttribute("aria-selected") === "true" && t.d.activeElement === t.q("#tab-carte") && JSON.parse(t.w.localStorage.getItem("atelier-pcs-v2")).tab === "carte", "« Suivant » : onglet suivant ouvert, enregistré, focus sur l'onglet");
+    click(t, '#tabs [data-tab="scenario"]'); click(t, "#dosDoc"); await wait(50);
+    const dos = await new Promise(r => { const f = new t.w.FileReader(); f.onload = () => r(f.result); f.readAsText(t.blobs[t.blobs.length - 1]) });
+    click(t, "#copyAll"); await wait(50);
+    ok(!/Suivant :|Rubrique suivante/.test(dos) && !/Suivant :|Rubrique suivante/.test(t.clip.text) && /Convention d'exercice/.test(dos), "ni le dossier Word ni le texte copié ne contiennent les boutons « Suivant »");
+    ok(/@media print\{[^}]*\.next\b/.test(SRC), "boutons « Suivant » masqués à l'impression");
+    click(t, '#espaceSeg [data-esp="pcs"]');
+    const titres = [...t.d.querySelectorAll("#pcsRub [data-rub]")].map(b => b.textContent.replace(/\s*\([^()]*\)$/, "").replace(/^\S?\s*/, "").trim());
+    const badR = [];
+    for (let i = 0; i <= 9; i++) { click(t, `#pcsRub [data-rub="${i}"]`); const n = t.d.querySelectorAll("#pcsBody .next"), b = n[0];
+      const want = i < 9 ? "Rubrique suivante : " + titres[i + 1] : "Vérifier le PCS";
+      if (n.length !== 1 || b.textContent.trim() !== want) badR.push(i + (b ? " « " + b.textContent.trim() + " »" : "")) }
+    ok(titres.length === 10 && /^1\. /.test(titres[1]) && !badR.length, "rubriques 0 à 8 : « Rubrique suivante : n. titre », rubrique 9 : « Vérifier le PCS »" + (badR.length ? " : " + badR.join(", ") : ""));
+    click(t, '#pcsRub [data-rub="2"]'); click(t, "#pcsBody .next");
+    ok(t.q('#pcsRub [data-rub="3"]').getAttribute("aria-current") === "true" && t.q('#pcsRub [data-rub="2"]').getAttribute("aria-current") === "false" && /^3\. /.test(t.q("#pcsBody h3").textContent) && t.d.activeElement === t.q("#pcsBody h3"), "« Rubrique suivante » : sommaire mis à jour, focus sur le titre de la rubrique");
+    click(t, '#pcsRub [data-rub="9"]'); click(t, "#pcsBody .next");
+    ok(t.q("#ptab-verifier").getAttribute("aria-selected") === "true" && /Vérifier|vérification/i.test(t.q("#pcsBody").textContent) && !t.q("#pcsBody .next"), "« Vérifier le PCS » ouvre l'onglet Vérifier");
+    click(t, '#pcsTabs [data-ptab="documents"]'); click(t, "#pcsDoc"); click(t, "#pcsPub"); await wait(80);
+    const docs = (await Promise.all(t.blobs.slice(-2).map(b => new Promise(r => { const f = new t.w.FileReader(); f.onload = () => r(f.result); f.readAsText(b) })))).join(" ");
+    ok(/Plan communal de sauvegarde/.test(docs) && !/Rubrique suivante|Vérifier le PCS|Suivant :/.test(docs), "documents PCS sans boutons « Rubrique suivante »");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
   console.log("\nRÉGLEMENTATION ET MODE D'EMPLOI");
   { const t = open("bourg", "", null, { guideVu: true }); await wait(300); click(t, '[data-tab="regl"]');
     ok(/2025-126/.test(view(t)) && /D731-14/.test(view(t)), "réglementation : décret de 2025 et correspondant incendie et secours");
