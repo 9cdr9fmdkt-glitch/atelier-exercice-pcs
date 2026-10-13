@@ -768,6 +768,91 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     click(t, '#pcsTabs [data-ptab="rediger"]'); ok(!!t.q("#pcsBody [data-pf]") && !t.q("#pcsChoisir"), "avec commune : champs de saisie, pas de bouton « Choisir ma commune »");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
+  console.log("\nSAISIE UNIQUE ENTRE LES DEUX ESPACES");
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); await wait(400);
+    const st = () => JSON.parse(t.w.localStorage.getItem("atelier-pcs-v2")), fire = (el, v) => { el.value = v; el.dispatchEvent(new t.w.Event("change", { bubbles: true })) };
+    const more = () => t.q("#pcsBody details.more"), ap = () => t.q("#pcsApercu").textContent, facts = () => t.q("#pcsFacts").textContent;
+    const idsOk = () => { const ids = [...t.d.querySelectorAll("[id]")].map(e => e.id), dup = ids.filter((x, i) => ids.indexOf(x) !== i);
+      const lab = [...t.d.querySelectorAll("label[for]")].filter(l => !t.d.getElementById(l.htmlFor)).map(l => l.htmlFor); return dup.concat(lab) };
+    click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="3"]');
+    ok(more() && /^Modifier l'annuaire et les moyens d'alerte/.test(more().querySelector("summary").textContent.trim()) && !more().open, "rubrique 3 : « Modifier l'annuaire et les moyens d'alerte », replié");
+    const m3 = more();
+    ok(m3.querySelector("textarea") && m3.querySelector('[data-annu="import"]') && m3.querySelector('input[type=file][data-annu="file"]') && m3.querySelector('label[for="' + m3.querySelector("input[type=file]").id + '"]') && m3.querySelector('[data-annu="clear"]') && m3.querySelectorAll('[data-fic="alerte"]').length === 6, "rubrique 3 : coller, fichier CSV, vider et puces des moyens d'alerte");
+    ok(!idsOk().length && !m3.querySelector('[id^="fi-"],#annuPaste'), "rubrique 3 : identifiants uniques, labels reliés" + (idsOk().length ? " : " + idsOk().join(", ") : ""));
+    m3.open = true; t.q("#saveState").textContent = "";
+    m3.querySelector("textarea").value = "Nom\tFonction\tTéléphone\nJean Martin\tMaire\t06 11 22 33 44\nLuc Bernard\tAgent technique\t"; click(t, '#pcsBody [data-annu="import"]');
+    ok(st().annu.length === 2 && t.q("#annuCount").textContent === "2 contacts" && /Jean Martin/.test(t.q("#annuList").textContent), "import depuis le PCS : annuaire enregistré et panneau Exercices à jour");
+    ok(/Jean Martin/.test(m3.textContent) && /2 contacts/.test(ap()) && /Enregistré/.test(t.q("#saveState").textContent) && more() === m3 && m3.open, "import depuis le PCS : liste courte, aperçu, « Enregistré », rubrique non reconstruite");
+    click(t, '#pcsBody [data-fic="alerte"][data-v="sirene"]');
+    ok(t.q('#pcsBody [data-fic="alerte"][data-v="sirene"]').getAttribute("aria-pressed") === "true" && st().p.fiche.alerte.join() === "sirene" && t.q('#ficheFields [data-fic="alerte"][data-v="sirene"]').getAttribute("aria-pressed") === "true" && t.q("#ficheCount").textContent === "1 sur 9" && /Sirène/.test(ap()), "moyen d'alerte depuis le PCS : enregistré, panneau et aperçu à jour");
+    // fichier CSV
+    const csv = "Nom;Fonction;Téléphone\nAnne Petit;Secrétaire de mairie;05 61 00 00 00", fic = new t.w.File([csv], "annuaire.csv", { type: "text/csv" }); fic.text = () => Promise.resolve(csv); // File.text absent de jsdom
+    const fin = m3.querySelector("input[type=file]"); Object.defineProperty(fin, "files", { configurable: true, value: [fic] });
+    fin.dispatchEvent(new t.w.Event("change", { bubbles: true })); await wait(80);
+    ok(st().annu.length === 1 && st().annu[0].nom === "Anne Petit" && t.q("#annuCount").textContent === "1 contact", "fichier CSV importé depuis le PCS");
+    click(t, '#pcsBody [data-annu="clear"]');
+    ok(st().annu.length === 0 && t.q("#annuCount").textContent === "" && /Annuaire de crise : \[?à compléter/i.test(ap()), "« Vider » depuis le PCS : annuaire vidé dans les deux espaces");
+    click(t, '#pcsRub [data-rub="5"]');
+    ok(more() && /^Modifier les moyens de la commune/.test(more().querySelector("summary").textContent.trim()), "rubrique 5 : « Modifier les moyens de la commune »");
+    const want5 = ["elus", "agents", "tech", "cap", "lits", "veh", "ge"];
+    ok(want5.every(k => more().querySelector("#pfi-" + k + '[data-fi="' + k + '"]') && t.q('label[for="pfi-' + k + '"]')) && more().querySelectorAll('[data-fic="conv"]').length === 4 && !more().querySelector('[data-fi="reserve"],[data-fi="pics"],[data-fic="alerte"]'), "rubrique 5 : élus, agents, techniques, places, lits, véhicules, groupe électrogène, conventions");
+    ok(!idsOk().length, "rubrique 5 : identifiants uniques" + (idsOk().length ? " : " + idsOk().join(", ") : ""));
+    more().open = true; const el = t.q("#pfi-elus"); el.focus(); fire(el, "7");
+    ok(st().p.fiche.elus === "7" && t.q("#fi-elus").value === "7" && t.q("#ficheCount").textContent === "2 sur 9", "élus depuis le PCS : enregistré, panneau Exercices à jour");
+    ok(/Élus mobilisables\s*7\s*fiche Moyens/.test(facts()) && t.d.activeElement === el && more().open, "élus depuis le PCS : données pré-remplies à jour, focus conservé");
+    t.q("#pfi-ge").value = "oui"; t.q("#pfi-ge").dispatchEvent(new t.w.Event("change", { bubbles: true })); click(t, '#pcsBody [data-fic="conv"][data-v="transport"]');
+    ok(t.q("#fi-ge").value === "oui" && st().p.fiche.conv.join() === "transport" && t.q('#ficheFields [data-fic="conv"][data-v="transport"]').getAttribute("aria-pressed") === "true" && /Transporteur/.test(facts() + ap()), "groupe électrogène et conventions depuis le PCS");
+    const ag = t.q("#pfi-agents"); ag.focus(); ag.value = "12"; t.w.dispatchEvent(new t.w.StorageEvent("storage", { key: "commune-prete-pcs" })); await wait(30);
+    ok(t.q("#pfi-agents") === ag && ag.value === "12" && t.d.activeElement === ag && more().open, "rafraîchissement en arrière-plan (autre onglet) : saisie en cours et focus conservés");
+    click(t, '#pcsRub [data-rub="3"]'); more().open = true; t.q("#pcsBody textarea").value = "Nom\nPaul"; t.q('#pcsBody [data-fic="alerte"]').focus();
+    t.w.dispatchEvent(new t.w.StorageEvent("storage", { key: "commune-prete-pcs" })); await wait(30);
+    ok(more().open && t.q("#pcsBody textarea").value === "Nom\nPaul", "rubrique reconstruite (autre onglet) : repli ouvert et texte collé conservés");
+    t.q("#pcsBody textarea").value = "";
+    click(t, '#pcsRub [data-rub="6"]');
+    ok(more() && /réservistes/i.test(more().querySelector("summary").textContent) && t.q("#pfi-reserve") && more().querySelectorAll("[data-fi],[data-fic]").length === 1, "rubrique 6 : nombre de réservistes seulement");
+    fire(t.q("#pfi-reserve"), "5");
+    ok(st().p.fiche.reserve === "5" && t.q("#fi-reserve").value === "5" && /5 réservistes/.test(facts()), "réservistes depuis le PCS : enregistré, panneau et données pré-remplies");
+    click(t, '#pcsRub [data-rub="0"]');
+    ok(more() && t.q("#pfi-pics") && more().querySelectorAll("[data-fi],[data-fic]").length === 1, "rubrique 0 : plan intercommunal (PICS)");
+    fire(t.q("#pfi-pics"), "oui");
+    ok(t.q("#fi-pics").value === "oui" && /Un plan intercommunal de sauvegarde existe/.test(ap()), "PICS depuis le PCS : panneau et aperçu à jour");
+    click(t, '#pcsRub [data-rub="1"]'); ok(!more(), "rubrique 1 : rien à modifier ici");
+    // inverse : saisie dans le panneau Exercices, relue par le PCS
+    click(t, '#espaceSeg [data-esp="exercices"]');
+    fire(t.q("#fi-veh"), "4"); click(t, '#ficheFields [data-fic="alerte"][data-v="porte"]');
+    t.q("#annuPaste").value = "Nom\tFonction\tTéléphone\nA Un\tMaire\t1\nB Deux\tAdjoint\t2\nC Trois\tAgent\t3"; click(t, "#annuImport");
+    click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="5"]');
+    ok(t.q("#pfi-veh").value === "4" && t.q("#pfi-elus").value === "7" && /Véhicules communaux/.test(facts()), "saisie du panneau Exercices relue dans le PCS (moyens)");
+    click(t, '#pcsRub [data-rub="3"]');
+    ok(/3 contacts/.test(facts() + ap()) && /C Trois/.test(more().textContent) && t.q('#pcsBody [data-fic="alerte"][data-v="porte"]').getAttribute("aria-pressed") === "true", "saisie du panneau Exercices relue dans le PCS (annuaire, alerte)");
+    const f = st().p.fiche; ok(Object.keys(f).every(k => ["alerte", "elus", "agents", "tech", "reserve", "cap", "lits", "veh", "ge", "pics", "conv"].includes(k)) && Array.isArray(f.alerte) && typeof f.veh === "string" && !("fiche" in (JSON.parse(t.w.localStorage.getItem("commune-prete-pcs") || "{}")["09194"] || {})), "structure des données inchangée (S.p.fiche, aucune copie dans le PCS)");
+    ok(/#pcsBody details\.more\{margin:0;padding:0/.test(SRC), "repli « Modifier » sans débordement dans le PCS (400 px)");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+  { // aller-retour : exemple sans commune → commune choisie par le démarrage guidé → commune saisie à la main hors ligne
+    let t = open("bourg", "", null, { guideVu: true }); await wait(300); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="5"]');
+    ok(!!t.q("#pcsChoisir") && !t.q("#pcsBody details.more"), "exemple : rubrique 5 en lecture seule, sans « Modifier »");
+    click(t, "#pcsChoisir"); t.q("#commune").value = "Mir"; t.q("#commune").dispatchEvent(new t.w.Event("input")); await wait(350);
+    t.q("#sugg li").dispatchEvent(new t.w.MouseEvent("mousedown", { bubbles: true })); await wait(700); click(t, "#gChoixPcs");
+    ok(t.q('#pcsRub [data-rub="0"]').getAttribute("aria-current") === "true" && !!t.q('[data-pf="gen.dateApprob"]') && !t.q("#pcsChoisir") && !t.q("#ptab-verifier").hasAttribute("aria-disabled") && !t.q("#ptab-documents").hasAttribute("aria-disabled"), "commune choisie : rubrique 0, champs présents, onglets actifs");
+    setF(t, "gen.referent", "Adjoint au maire");
+    click(t, '#pcsRub [data-rub="5"]'); const e = t.q("#pfi-elus"); e.value = "9"; e.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    click(t, '#pcsRub [data-rub="3"]'); t.q("#pcsBody textarea").value = "Nom\tFonction\nJean Martin\tMaire"; click(t, '#pcsBody [data-annu="import"]');
+    ok(t.q("#fi-elus").value === "9" && t.q("#annuCount").textContent === "1 contact", "Mirepoix : moyens et annuaire saisis depuis le PCS");
+    const mem = {}; for (let i = 0; i < t.w.localStorage.length; i++) { const k = t.w.localStorage.key(i); mem[k] = t.w.localStorage.getItem(k) }
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close();
+    t = open("bourg", "", mem, { offline: true }); await wait(300); // même navigateur, rouvert hors ligne
+    click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="5"]');
+    ok(t.q("#pfi-elus") && t.q("#pfi-elus").value === "9" && /Mirepoix/.test(t.q("#communeBar").textContent), "rouvert hors ligne : Mirepoix et ses moyens relus dans le PCS");
+    click(t, "#communeChange");
+    ok(!t.q("#gManual").hidden, "hors ligne : saisie manuelle proposée");
+    t.q("#commune").value = "Belcaire"; t.q("#pop").value = "410"; t.q("#dept").value = "Aude (11)"; click(t, "#gManual"); click(t, "#gChoixEx"); click(t, "#gGen");
+    const s = JSON.parse(t.w.localStorage.getItem("atelier-pcs-v2"));
+    ok(s.p.commune === "Belcaire" && !s.p.insee && !Object.keys(s.p.fiche || {}).length && !(s.annu || []).length && t.q("#fi-elus").value === "" && t.q("#annuCount").textContent === "" && !/Jean Martin/.test(t.q("#annuList").textContent), "commune saisie à la main : ni moyens ni annuaire de Mirepoix");
+    click(t, '#espaceSeg [data-esp="pcs"]');
+    ok(!!t.q("#pcsChoisir") && !t.q("#pcsBody details.more") && !t.q("#pcsBody [data-pf]") && !t.q("#pcsBody [data-fi],#pcsBody [data-fic],#pcsBody [data-annu]") && t.q("#ptab-verifier").getAttribute("aria-disabled") === "true" && !/Mirepoix|Jean Martin/.test(t.q("#pcsView").textContent), "commune saisie à la main : PCS en lecture seule, sans donnée de Mirepoix");
+    ok((JSON.parse(t.w.localStorage.getItem("commune-prete-pcs"))["09194"] || {}).gen.referent === "Adjoint au maire", "PCS de Mirepoix conservé");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
   console.log("\nRÉGLEMENTATION ET MODE D'EMPLOI");
   { const t = open("bourg", "", null, { guideVu: true }); await wait(300); click(t, '[data-tab="regl"]');
     ok(/2025-126/.test(view(t)) && /D731-14/.test(view(t)), "réglementation : décret de 2025 et correspondant incendie et secours");

@@ -279,6 +279,7 @@ details.more .inner{display:flex;flex-direction:column;gap:12px;padding-bottom:1
 /* Étape suivante : bouton en bas de chaque pièce ou rubrique */
 .btn.next{display:flex;width:fit-content;max-width:100%;margin-left:auto;align-self:flex-end;white-space:normal;text-align:left}
 .doc > .btn.next{margin:-12px clamp(18px,4vw,48px) 32px auto;max-width:calc(100% - 2 * clamp(18px,4vw,48px))}
+#pcsBody details.more{margin:0;padding:0;border-bottom:1px solid var(--line)}
 #pcsBody > h3:focus{outline:none}#pcsBody > h3:focus-visible{outline:2px solid var(--primary);outline-offset:4px;border-radius:2px}
 .pcsrub{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.pcsrub .btn{width:100%;justify-content:flex-start;text-align:left}.pcsrub .btn[aria-current=true]{border-color:var(--primary);background:var(--primary-soft)}.pcsrub .pm{display:inline-block;width:1.2em}
 .callout{display:flex;gap:12px;border-left:3px solid var(--primary);border-radius:0 var(--r-sm) var(--r-sm) 0;padding:12px 16px;background:var(--primary-soft);color:var(--ink);font-size:14px;max-width:84ch}
@@ -605,12 +606,7 @@ body.guide-on .shell{grid-template-columns:minmax(0,1fr)}
         </details>
         <details class="more" id="annuBox">
           <summary>Annuaire de crise <span class="aside" id="annuCount"></span></summary>
-          <div class="inner">
-            <p class="note">Dans Excel, sélectionnez les colonnes Nom, Fonction et Téléphone, copiez, puis collez ici. Un fichier CSV convient aussi. Les noms restent dans ce navigateur.</p>
-            <textarea id="annuPaste" rows="4" style="width:100%" placeholder="Nom	Fonction	Téléphone"></textarea>
-            <div class="lbtns" style="margin-top:8px"><button class="btn sm" type="button" id="annuImport">Importer</button><label class="btn sm ghost" for="annuFile">Fichier CSV</label><input type="file" id="annuFile" accept=".csv,text/csv,text/plain" hidden><button class="btn sm ghost" type="button" id="annuClear">Vider</button></div>
-            <ul class="checks" id="annuList"></ul>
-          </div>
+          <div class="inner" id="annuFields"></div>
         </details>
         <details class="more" id="ficheBox">
           <summary>Moyens de la commune <span class="aside" id="ficheCount"></span></summary>
@@ -1935,26 +1931,64 @@ function parseAnnu(txt){
 const ROLE_KEYS=[[/directeur des opérations|DOS/,/^maire\b|\bmaire$|^le maire/i],[/actions communales/,/adjoint|responsable des actions|\brac\b/i],[/Secrétariat/,/secr[ée]tai|\bdgs\b|directeur g[ée]n[ée]ral|directrice g[ée]n[ée]rale|main courante/i],[/Population et accueil/,/ccas|social|accueil|population|care/i],[/Logistique/,/technique|voirie|logistique|\bst\b|agent/i],[/^Communication/,/communication|presse/i]];
 const CELLULE=["Maire, directeur des opérations (DOS)","Responsable des actions communales","Secrétariat et main courante","Population et accueil (CARE)","Logistique et terrain","Communication"];
 function holders(title){const k=ROLE_KEYS.find(x=>x[0].test(title));if(!k)return [];return (S.annu||[]).filter(c=>k[1].test(c.fonction)).slice(0,3)}
+/* Annuaire de crise et fiche « Moyens de la commune » : mêmes données (S.annu, S.p.fiche) et mêmes champs dans le panneau Exercices
+   et dans l'onglet Rédiger du PCS. Le préfixe distingue les identifiants des deux espaces. */
+function annuListHTML(){const a=S.annu||[];return a.slice(0,8).map(c=>`<li>${esc(c.nom)} <span class="note">· ${esc(c.fonction||"fonction ?")} · ${esc(c.tel||"pas de numéro")}</span></li>`).join("")+(a.length>8?`<li class="note">et ${a.length-8} autres</li>`:"")}
+function annuHTML(pr){
+  return `<div data-annu-box><p class="note">Dans Excel, sélectionnez les colonnes Nom, Fonction et Téléphone, copiez, puis collez ici. Un fichier CSV convient aussi. Les noms restent dans ce navigateur.</p>
+    <label class="sr" for="${pr}Paste">Contacts à importer : nom, fonction et téléphone</label><textarea id="${pr}Paste" data-annu="paste" rows="4" style="width:100%" placeholder="Nom	Fonction	Téléphone"></textarea>
+    <div class="lbtns" style="margin-top:8px"><button class="btn sm" type="button" id="${pr}Import" data-annu="import">Importer</button><label class="btn sm ghost" for="${pr}File">Fichier CSV</label><input type="file" id="${pr}File" data-annu="file" accept=".csv,text/csv,text/plain" hidden><button class="btn sm ghost" type="button" id="${pr}Clear" data-annu="clear">Vider</button></div>
+    <ul class="checks" id="${pr}List" data-annu-list>${S?annuListHTML():""}</ul></div>`;
+}
 function renderAnnu(){
   const a=S.annu||[];$("#annuCount").textContent=a.length?a.length+" contact"+(a.length>1?"s":""):"";
-  $("#annuList").innerHTML=a.slice(0,8).map(c=>`<li>${esc(c.nom)} <span class="note">· ${esc(c.fonction||"fonction ?")} · ${esc(c.tel||"pas de numéro")}</span></li>`).join("")+(a.length>8?`<li class="note">et ${a.length-8} autres</li>`:"");
+  const h=annuListHTML();document.querySelectorAll("[data-annu-list]").forEach(u=>u.innerHTML=h);
 }
-$("#annuImport").addEventListener("click",()=>{const a=parseAnnu($("#annuPaste").value);if(!a.length){toast("Aucun contact reconnu. Collez au moins un nom.");return}S.annu=a;S.annuAt=new Date().toISOString().slice(0,10);$("#annuPaste").value="";renderAnnu();saveU();if(S.tab==="roles"||S.tab==="conduite")render();toast(a.length+" contacts importés.")});
-$("#annuFile").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(!f)return;f.text().then(t=>{$("#annuPaste").value=t;$("#annuImport").click()});e.target.value=""});
-$("#annuClear").addEventListener("click",()=>{S.annu=[];S.annuAt=null;renderAnnu();saveU();if(S.tab==="roles"||S.tab==="conduite")render();toast("Annuaire vidé.")});
+function annuChanged(msg){renderAnnu();saveU();if(S.tab==="roles"||S.tab==="conduite")render();pcsSync();toast(msg)}
+function annuImport(box){const ta=box.querySelector('[data-annu="paste"]'),a=parseAnnu(ta.value);if(!a.length){toast("Aucun contact reconnu. Collez au moins un nom.");return}
+  S.annu=a;S.annuAt=new Date().toISOString().slice(0,10);ta.value="";annuChanged(a.length+" contacts importés.")}
+const FICHE_KEYS=["alerte","elus","agents","tech","reserve","cap","lits","veh","ge","pics","conv"];
+function ficheFieldsHTML(keys,pr){
+  const f=S.p.fiche||{},lab=Object.assign({},FICHE_LAB,{ge:"Groupe électrogène",pics:"Plan intercommunal de sauvegarde (PICS)"});
+  const one=k=>FICHE_LAB[k]?`<div class="field"><label for="${pr}-${k}">${esc(lab[k])}</label><input type="number" min="0" inputmode="numeric" id="${pr}-${k}" data-fi="${k}" value="${esc(f[k]??"")}"></div>`
+    :`<div class="field"><label for="${pr}-${k}">${esc(lab[k])}</label><select id="${pr}-${k}" data-fi="${k}"><option value="">Non renseigné</option><option value="oui"${f[k]==="oui"?" selected":""}>Oui</option><option value="non"${f[k]==="non"?" selected":""}>Non</option></select></div>`;
+  const chips=(k,l,list)=>`<div class="field" role="group" aria-labelledby="${pr}-${k}-lab"><span class="lab" id="${pr}-${k}-lab">${esc(l)}</span><div class="chips">${list.map(([v,t])=>`<button type="button" class="chip" data-fic="${k}" data-v="${v}" aria-pressed="${(f[k]||[]).includes(v)}">${esc(t)}</button>`).join("")}</div></div>`;
+  let out="",pair=[];const flush=()=>{if(pair.length)out+=pair.length>1?`<div class="row2">${pair.join("")}</div>`:pair[0];pair=[]};
+  keys.forEach(k=>{
+    if(k==="alerte"||k==="conv"){flush();out+=k==="alerte"?chips(k,"Moyens d'alerte de la population",ALERTES):chips(k,"Conventions signées",CONVS);return}
+    if(k==="pics"){flush();out+=one(k);return} // libellé long : seul sur sa ligne
+    pair.push(one(k));if(pair.length===2)flush();
+  });
+  flush();return out;
+}
 function renderFiche(){
-  const f=S.p.fiche||{},num=([k,l])=>`<div class="field"><label for="fi-${k}">${esc(l)}</label><input type="number" min="0" inputmode="numeric" id="fi-${k}" data-fi="${k}" value="${esc(f[k]??"")}"></div>`;
-  const sel=(k,l)=>`<div class="field"><label for="fi-${k}">${esc(l)}</label><select id="fi-${k}" data-fi="${k}"><option value="">Non renseigné</option><option value="oui"${f[k]==="oui"?" selected":""}>Oui</option><option value="non"${f[k]==="non"?" selected":""}>Non</option></select></div>`;
-  const chips=(k,l,list)=>`<div class="field"><span class="lab">${esc(l)}</span><div class="chips">${list.map(([v,t])=>`<button type="button" class="chip" data-fic="${k}" data-v="${v}" aria-pressed="${(f[k]||[]).includes(v)}">${esc(t)}</button>`).join("")}</div></div>`;
-  $("#ficheFields").innerHTML=`<p class="note">À remplir une fois. Les messages et les hypothèses s'appuient sur vos moyens réels ; un champ vide reste générique.</p>`+
-    chips("alerte","Moyens d'alerte de la population",ALERTES)+
-    `<div class="row2">${FICHE_NUM.slice(0,2).map(num).join("")}</div><div class="row2">${FICHE_NUM.slice(2,4).map(num).join("")}</div><div class="row2">${FICHE_NUM.slice(4,6).map(num).join("")}</div>`+
-    `<div class="row2">${num(FICHE_NUM[6])}${sel("ge","Groupe électrogène")}</div>`+sel("pics","Plan intercommunal de sauvegarde (PICS)")+
-    chips("conv","Conventions signées",CONVS);
+  $("#ficheFields").innerHTML=`<p class="note">À remplir une fois. Les messages et les hypothèses s'appuient sur vos moyens réels ; un champ vide reste générique.</p>`+ficheFieldsHTML(FICHE_KEYS,"fi");
   $("#ficheCount").textContent=ficheFill(S.p)+" sur 9";
 }
-$("#ficheFields").addEventListener("change",e=>{const k=e.target.dataset.fi;if(!k)return;S.p.fiche=S.p.fiche||{};S.p.fiche[k]=e.target.value.trim();$("#ficheCount").textContent=ficheFill(S.p)+" sur 9";saveU()});
-$("#ficheFields").addEventListener("click",e=>{const b=e.target.closest("[data-fic]");if(!b)return;const k=b.dataset.fic,v=b.dataset.v;S.p.fiche=S.p.fiche||{};const a=S.p.fiche[k]=S.p.fiche[k]||[];const i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);b.setAttribute("aria-pressed",a.includes(v));$("#ficheCount").textContent=ficheFill(S.p)+" sur 9";saveU()});
+// après une saisie dans l'un des deux espaces : l'autre champ, le résumé « n sur 9 », l'aperçu et l'avancement du PCS
+function ficheSync(k,from){
+  const f=S.p.fiche||{};
+  document.querySelectorAll('[data-fi="'+k+'"]').forEach(el=>{if(el!==from)el.value=f[k]??""});
+  document.querySelectorAll('[data-fic="'+k+'"]').forEach(b=>b.setAttribute("aria-pressed",(f[k]||[]).includes(b.dataset.v)));
+  $("#ficheCount").textContent=ficheFill(S.p)+" sur 9";pcsSync();
+}
+function pcsSync(){if(!pcsLecture()&&$("#pcsApercu")){updateApercu();updatePcsPanel()}}
+const inSaisie=el=>el.closest("#config")||!pcsLecture()&&el.closest("#pcsBody");
+function saisieChange(e){
+  const t=e.target;if(!S||!inSaisie(t))return;
+  if(t.dataset.fi){const k=t.dataset.fi;S.p.fiche=S.p.fiche||{};S.p.fiche[k]=t.value.trim();saveU();ficheSync(k,t);return}
+  if(t.dataset.annu==="file"){const fl=t.files&&t.files[0],box=t.closest("[data-annu-box]");if(!fl||!box)return;
+    fl.text().then(x=>{box.querySelector('[data-annu="paste"]').value=x;annuImport(box)});try{t.value=""}catch(err){}}
+}
+function saisieClick(e){
+  const t=e.target;if(!S||!t.closest||!inSaisie(t))return;
+  const b=t.closest("[data-fic]");
+  if(b){const k=b.dataset.fic,v=b.dataset.v;S.p.fiche=S.p.fiche||{};const a=S.p.fiche[k]=Array.isArray(S.p.fiche[k])?S.p.fiche[k]:[];const i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);saveU();ficheSync(k,b);return}
+  const n=t.closest('[data-annu="import"],[data-annu="clear"]');
+  if(n){if(n.dataset.annu==="import")annuImport(n.closest("[data-annu-box]"));else{S.annu=[];S.annuAt=null;annuChanged("Annuaire vidé.")}}
+}
+["#ficheFields","#annuFields","#pcsView"].forEach(s=>{const r=$(s);if(r){r.addEventListener("change",saisieChange);r.addEventListener("click",saisieClick)}});
+$("#annuFields").innerHTML=annuHTML("annu");
 function renderPart(){
   const pt=partners(S.p);
   $("#partFields").innerHTML=PART_KEYS.map(([k,l])=>`<div class="field"><label for="pt-${k}">${esc(l)}</label><input type="text" id="pt-${k}" data-part="${k}" value="${esc((S.p.part||{})[k]||"")}" placeholder="${esc(pt.def[k])}"></div>`).join("");
@@ -3280,13 +3314,22 @@ function renderRediger(){
     <div><button class="btn primary" type="button" id="pcsChoisir">Choisir ma commune</button></div>${nr?`<button class="btn next" type="button" data-pnext="${nr.id}">Rubrique suivante : ${nr.id}. ${esc(nr.titre)}</button>`:""}`;
     return;
   }
+  const keep=PCSUI.keep||modifState();PCSUI.keep=null; // même rubrique reconstruite : le repli « Modifier » reste ouvert, avec le texte collé
   const nx=nr?`<button class="btn next" type="button" data-pnext="${nr.id}">Rubrique suivante : ${nr.id}. ${esc(nr.titre)}</button>`:`<button class="btn next" type="button" data-pnext="verifier">Vérifier le PCS</button>`;
   b.innerHTML=`<h3 tabindex="-1">${r.id}. ${esc(r.titre)}</h3>
     <div class="callout"><div><b>Ce que la loi exige</b><br>${esc(r.loi)} <span class="aside">${esc(r.ref)}</span></div></div>
-    <div id="pcsFacts">${pcsFactsHTML(r)}</div>
+    <div id="pcsFacts">${pcsFactsHTML(r)}</div>${pcsModifier(r.id)}
     ${r.id===8?fichesEditeur():r.champs.length?r.champs.map((c,i)=>pcsField(c,i,r)).join(""):`<p class="note">Cette rubrique ne comporte pas de saisie pour l'instant.</p>`}
     <h4 class="apt">Aperçu dans le PCS</h4><div class="apercu" id="pcsApercu">${rubApercu(r.id)}</div>${nx}`;
+  if(keep&&keep.id===String(r.id)){const m=b.querySelector('details[data-modif="'+r.id+'"]');if(m){m.open=true;const ta=m.querySelector('[data-annu="paste"]');if(ta)ta.value=keep.paste}}
 }
+// rubriques 0, 3, 5 et 6 : la fiche « Moyens de la commune » et l'annuaire de crise, mêmes données et mêmes champs que dans le panneau Exercices
+const PCS_MODIF={0:["Modifier le plan intercommunal (PICS)",["pics"]],3:["Modifier l'annuaire et les moyens d'alerte",["alerte"],true],5:["Modifier les moyens de la commune",["elus","agents","tech","veh","cap","lits","ge","conv"]],6:["Modifier le nombre de réservistes",["reserve"]]};
+function pcsModifier(id){
+  const m=PCS_MODIF[id];if(!m)return "";
+  return `<details class="more" data-modif="${id}"><summary>${esc(m[0])}</summary><div class="inner"><p class="note">Ces informations sont communes avec le panneau de préparation des exercices.</p>${m[2]?annuHTML("pannu"):""}${ficheFieldsHTML(m[1],"pfi")}</div></details>`;
+}
+function modifState(){const m=document.querySelector("#pcsBody details[data-modif]");return m&&m.open?{id:m.dataset.modif,paste:(m.querySelector('[data-annu="paste"]')||{}).value||""}:null}
 // met à jour l'aperçu et les données pré-remplies sans toucher aux champs (la saisie en cours ne doit pas être perdue)
 function updateApercu(){
   const ap=$("#pcsApercu");if(!ap)return;const r=PCS_RUB[PCSUI.rub]||PCS_RUB[0];
@@ -3476,7 +3519,7 @@ const pcsTabOff=id=>pcsLecture()&&id!=="rediger";
 function renderPCS(){
   const v=$("#pcsView");if(!v||!S)return;
   renderPcsPanel();renderCommuneBar();
-  const ro=pcsLecture();if(ro)PCSUI.tab="rediger";
+  const ro=pcsLecture();if(ro)PCSUI.tab="rediger";PCSUI.keep=modifState();
   v.innerHTML=`<article class="card doc"><div class="dochead"><span class="meta">${ro?"":esc(S.p.commune)+" · "}Plan communal de sauvegarde</span></div>
     <div class="pcsbar"><div class="tabs" role="tablist" id="pcsTabs" aria-label="Étapes du PCS">${PCS_TABS.map(t=>`<button class="tab" role="tab" type="button" id="ptab-${t[0]}" aria-selected="${PCSUI.tab===t[0]}" aria-controls="pcsBody" tabindex="${PCSUI.tab===t[0]?0:-1}" data-ptab="${t[0]}"${pcsTabOff(t[0])?' aria-disabled="true" aria-describedby="pcsTabsNote"':""}>${t[1]}</button>`).join("")}</div>${ro?`<p class="note" id="pcsTabsNote">Choisissez votre commune pour vérifier un PCS existant et produire ses documents.</p>`:""}</div>
     <div class="docbody" id="pcsBody" role="tabpanel" aria-labelledby="ptab-${PCSUI.tab}" tabindex="-1"></div></article>`;
