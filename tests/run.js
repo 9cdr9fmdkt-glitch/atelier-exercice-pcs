@@ -264,7 +264,7 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(t.q('#espaceSeg [data-esp="exercices"]').getAttribute("aria-pressed") === "true", "espace Exercices par défaut");
     click(t, '#espaceSeg [data-esp="pcs"]');
     ok(t.d.body.classList.contains("esp-pcs") && !t.q("#pcsPanel").hidden && t.q("#config").hidden, "espace PCS affiché, panneau des exercices masqué");
-    ok(/Recherchez votre commune/.test(t.q("#pcsView").textContent), "invitation à choisir la commune");
+    ok(!!t.q("#pcsChoisir") && /Choisir ma commune/.test(t.q("#pcsChoisir").textContent) && t.q("#pcsChoisir").classList.contains("primary") && /Ce que la loi exige/.test(t.q("#pcsBody").textContent), "invitation à choisir la commune (rubriques lisibles)");
     ok(/"espace":"pcs"/.test(t.w.localStorage.getItem("commune-prete-affichage")), "choix d'espace conservé");
     click(t, '#espaceSeg [data-esp="exercices"]'); ok(!t.q("#config").hidden && t.q("#pcsPanel").hidden, "retour à l'espace Exercices");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
@@ -487,8 +487,8 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
   { const t = open("bourg", "", null, { guideVu: true }); await wait(300);
     click(t, "#panelBtn"); click(t, '#espaceSeg [data-esp="pcs"]');
     ok(t.d.body.classList.contains("panel-off"), "panneau des exercices masqué avant la recherche");
-    click(t, "#pcsGoEx");
-    ok(!t.d.body.classList.contains("panel-off") && t.d.activeElement && t.d.activeElement.id === "commune", "« Rechercher ma commune » réaffiche le panneau et place le curseur sur le champ commune");
+    click(t, "#pcsChoisir");
+    ok(!t.d.body.classList.contains("panel-off") && t.d.activeElement && t.d.activeElement.id === "commune" && guideStep1(t), "« Choisir ma commune » réaffiche le panneau, ouvre l'écran 1 et place le curseur sur le champ commune");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
   { const t = open("paris"); await wait(300); await pickCommune(t, "paris"); await wait(400); click(t, '#espaceSeg [data-esp="pcs"]');
@@ -635,7 +635,8 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     click(t, "#gChoixEx"); ok(t.d.querySelectorAll("#gRisks input[name=grisk]").length === 19, "hors ligne : liste complète des risques");
     click(t, "#gGen"); const v = view(t);
     ok(t.q("#guide").hidden && /Belcaire/.test(v) && /410 habitants/.test(v) && /Aude \(11\)/.test(v) && !/fictive/.test(v), "hors ligne : dossier de la commune saisie");
-    click(t, '#espaceSeg [data-esp="pcs"]'); ok(/Recherchez votre commune/.test(t.q("#pcsView").textContent), "hors ligne, sans code INSEE : espace PCS inchangé (invitation)");
+    click(t, '#espaceSeg [data-esp="pcs"]'); ok(!!t.q("#pcsChoisir") && /Ce que la loi exige/.test(t.q("#pcsBody").textContent) && !t.q("#pcsBody [data-pf]") && t.q("#ptab-verifier").getAttribute("aria-disabled") === "true" && t.q("#ptab-documents").getAttribute("aria-disabled") === "true", "hors ligne, sans code INSEE : rubriques en lecture seule, Vérifier et Documents indisponibles (invitation)");
+    ok(t.w.localStorage.getItem("commune-prete-pcs") === null, "hors ligne, sans code INSEE : aucune donnée PCS enregistrée");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
   { const t = open("bourg", "", null, { guideVu: true }); await wait(300); await pickCommune(t, "bourg"); gen(t);
@@ -733,6 +734,38 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     click(t, '#pcsTabs [data-ptab="documents"]'); click(t, "#pcsDoc"); click(t, "#pcsPub"); await wait(80);
     const docs = (await Promise.all(t.blobs.slice(-2).map(b => new Promise(r => { const f = new t.w.FileReader(); f.onload = () => r(f.result); f.readAsText(b) })))).join(" ");
     ok(/Plan communal de sauvegarde/.test(docs) && !/Rubrique suivante|Vérifier le PCS|Suivant :/.test(docs), "documents PCS sans boutons « Rubrique suivante »");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
+  console.log("\nRUBRIQUES PCS SANS COMMUNE");
+  { const t = open("bourg", "", null, { guideVu: true }); await wait(300); click(t, '#espaceSeg [data-esp="pcs"]');
+    const rubs = t.d.querySelectorAll("#pcsRub [data-rub]");
+    ok(rubs.length === 10 && ![...rubs].some(b => b.dataset.state || b.querySelector(".pm").textContent.trim()) && /Choisissez une commune/.test(t.q("#pcsTaux").textContent), "sommaire des dix rubriques, sans marques d'avancement, note invitant à choisir une commune");
+    ok(t.d.querySelectorAll("#pcsTabs [role=tab]").length === 3 && t.q("#ptab-rediger").getAttribute("aria-selected") === "true", "onglets Rédiger, Vérifier, Documents ; Rédiger affiché");
+    const bad = [];
+    for (let i = 0; i <= 9; i++) { click(t, `#pcsRub [data-rub="${i}"]`); const B = t.q("#pcsBody"), txt = B.textContent;
+      const m = SRC.match(new RegExp('\\{id:' + i + ',titre:"[^"]*",ref:"([^"]*)",loi:"([^"]*)"')), R = m ? { ref: m[1], loi: m[2] } : { ref: "?", loi: "?" };
+      if (!new RegExp("^" + i + "\\. ").test(t.q("#pcsBody h3").textContent) || !/Ce que la loi exige/.test(txt) || !txt.includes(R.loi) || !txt.includes(R.ref)) bad.push(i + " loi");
+      if (B.querySelector("input,select,textarea,[contenteditable],[data-pf],#pcsApercu,#pcsFacts,#pcsFiches")) bad.push(i + " saisie");
+      const c = B.querySelectorAll("#pcsChoisir"); if (c.length !== 1 || !c[0].classList.contains("btn") || !c[0].classList.contains("primary")) bad.push(i + " bouton");
+      const n = B.querySelectorAll(".next"); if (i < 9 ? n.length !== 1 || !/^Rubrique suivante/.test(n[0].textContent) : n.length) bad.push(i + " suivante");
+      if (t.q('#pcsRub [data-rub="' + i + '"]').getAttribute("aria-current") !== "true") bad.push(i + " sommaire") }
+    ok(!bad.length, "chaque rubrique : titre, « Ce que la loi exige » et référence, aucun champ ni aperçu, bouton « Choisir ma commune » ; « Rubrique suivante » sauf la rubrique 9" + (bad.length ? " : " + bad.join(", ") : ""));
+    click(t, '#pcsRub [data-rub="4"]'); click(t, "#pcsBody .next");
+    ok(/^5\. /.test(t.q("#pcsBody h3").textContent) && t.d.activeElement === t.q("#pcsBody h3"), "« Rubrique suivante » parcourt la loi en lecture seule");
+    for (const id of ["verifier", "documents"]) { const tb = t.q("#ptab-" + id);
+      ok(tb.getAttribute("aria-disabled") === "true" && tb.getAttribute("aria-selected") === "false" && tb.getAttribute("aria-describedby") === "pcsTabsNote", "onglet " + id + " désactivé (aria-disabled) et relié à la note") ;
+      click(t, "#ptab-" + id); ok(t.q("#ptab-rediger").getAttribute("aria-selected") === "true" && /Ce que la loi exige/.test(t.q("#pcsBody").textContent), "clic sur l'onglet " + id + " sans effet") }
+    ok(/choisi(r|ssez)[^.]*commune/i.test(t.q("#pcsTabsNote").textContent), "note : Vérifier et Documents nécessitent une commune");
+    t.q("#ptab-rediger").focus();
+    for (const k of ["ArrowRight", "ArrowLeft"]) { t.q("#ptab-rediger").dispatchEvent(new t.w.KeyboardEvent("keydown", { key: k, bubbles: true }));
+      ok(t.q("#ptab-rediger").getAttribute("aria-selected") === "true" && t.d.activeElement === t.q("#ptab-rediger"), "flèche " + k + " : reste sur Rédiger") }
+    click(t, '#pcsRub [data-rub="8"]'); ok(!t.q("#pcsBody details textarea") && !t.q("[data-fiche]") && !t.q("[data-trans]"), "rubrique 8 : aucune fiche réflexe éditable");
+    ok(t.w.localStorage.getItem("commune-prete-pcs") === null, "aucune écriture dans commune-prete-pcs");
+    click(t, "#pcsChoisir"); ok(guideStep1(t) && t.d.activeElement === t.q("#commune"), "« Choisir ma commune » ouvre le démarrage guidé à l'écran 1");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsTabs [data-ptab="verifier"]');
+    ok(!t.q("#pcsChoisir") && !t.q("#pcsTabsNote") && !t.q("#ptab-verifier").hasAttribute("aria-disabled") && t.q("#ptab-verifier").getAttribute("aria-selected") === "true", "avec commune : onglets actifs, sans note ni lecture seule");
+    click(t, '#pcsTabs [data-ptab="rediger"]'); ok(!!t.q("#pcsBody [data-pf]") && !t.q("#pcsChoisir"), "avec commune : champs de saisie, pas de bouton « Choisir ma commune »");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
   console.log("\nRÉGLEMENTATION ET MODE D'EMPLOI");
