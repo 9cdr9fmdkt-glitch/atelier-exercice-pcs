@@ -407,6 +407,92 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     ok(!st["09194"], "aucune entrée PCS créée par la seule consultation des exercices");
     t.close(); }
 
+  console.log("\nESPACE PCS : CORRECTIONS DE LA REVUE FINALE");
+  const setF = (t, p, v) => { const f = t.q('[data-pf="' + p + '"]'); f.value = v; f.dispatchEvent(new t.w.Event("change", { bubbles: true })) };
+  const readBlob = (t, b) => new Promise(r => { const f = new t.w.FileReader(); f.onload = () => r(f.result); f.readAsText(b) });
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); gen(t);
+    click(t, '[data-tab="obs"]'); click(t, "#obsLinkBtn"); await wait(50); const link = t.clip.text;
+    const o = open("bourg", link.slice(link.indexOf("#"))); await wait(300);
+    click(o, "#themeBtn"); click(o, "#panelBtn");
+    ok(o.d.body.classList.contains("obsmode") && !!o.d.documentElement.dataset.theme, "mode observateur : changement de thème possible");
+    ok(!o.errs.length, "mode observateur : aucune erreur JavaScript au changement de thème" + (o.errs.length ? " : " + o.errs[0] : "")); o.close(); t.close(); }
+
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); await wait(400); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="2"]');
+    setF(t, "vuln.detenteur", "Mme Durand, CCAS");
+    ok(/Mme Durand, CCAS/.test(t.q("#pcsApercu").textContent), "aperçu complet : détenteur du registre");
+    click(t, '#pcsTabs [data-ptab="documents"]'); click(t, "#pcsDoc"); click(t, "#pcsPub"); await wait(80);
+    const [full, pub] = await Promise.all(t.blobs.slice(-2).map(b => readBlob(t, b)));
+    ok(/Mme Durand, CCAS/.test(full), "PCS complet : détenteur du registre présent");
+    ok(!/Durand|CCAS/.test(pub) && /Le registre est tenu par la commune ; ses modalités ne sont pas publiées\./.test(pub), "version publique : détenteur absent, mention à la place");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); await wait(400); click(t, '#espaceSeg [data-esp="pcs"]');
+    const tab = t.q('#pcsTabs [data-ptab="verifier"]'); tab.focus(); click(t, '#pcsTabs [data-ptab="verifier"]');
+    ok(t.d.activeElement && t.d.activeElement.id === "ptab-verifier", "clic sur un onglet : le focus reste sur l'onglet");
+    click(t, "#addVAct"); click(t, "#addVAct"); const n0 = t.d.querySelectorAll("[data-vadel]").length;
+    t.q('[data-vadel="0"]').focus(); click(t, '[data-vadel="0"]');
+    const ae = t.d.activeElement;
+    ok(t.d.querySelectorAll("[data-vadel]").length === n0 - 1 && ae && (ae.dataset.vadel !== undefined || ae.id === "addVAct"), "suppression d'une action : le focus reste dans le plan de mise à jour");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); await wait(400); click(t, '#espaceSeg [data-esp="pcs"]');
+    const loi = r => { click(t, '#pcsRub [data-rub="' + r + '"]'); return t.q("#pcsBody .callout").textContent };
+    ok(/personnes vulnérables/.test(loi(2)) && /zones et infrastructures sensibles/.test(loi(2)), "loi, rubrique 2 : registre et zones sensibles");
+    ok(/annuaire/.test(loi(3)) && /règlement d'emploi/.test(loi(3)) && /DICRIM/.test(loi(3)) && /inséré/.test(loi(3)), "loi, rubrique 3 : annuaire, règlement d'emploi, DICRIM inséré");
+    ok(/réserve communale/.test(loi(6)) && /bénévolement/.test(loi(6)), "loi, rubrique 6 : réserve et bénévoles");
+    ok(/poste de commandement/.test(loi(4)), "loi, rubrique 4 : poste de commandement");
+    ok(/actions préventives et correctives/.test(loi(7)) && /personne publique ou privée/.test(loi(7)), "loi, rubrique 7 : actions préventives et dispositions des tiers");
+    ok(/inventaire/.test(loi(5)) && /intercommunalité/.test(loi(5)), "loi, rubrique 5 : inventaire et capacités de l'intercommunalité");
+    ok(/dispositions spécifiques/.test(loi(8)), "loi, rubrique 8 : dispositions spécifiques");
+    ok(/L731-3/.test(loi(9)) && /L731-4/.test(loi(9)) && /annuaire/.test(loi(9)), "loi, rubrique 9 : périodicité des exercices et annuaire");
+    ok(/deux ans/.test(loi(0)) && /correspondant incendie et secours/.test(loi(0)), "loi, rubrique 0 : délai de deux ans et correspondant");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); await wait(400); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="0"]');
+    setF(t, "gen.dateNotif", "2023-05-10");
+    ok(/Échéance d'élaboration : 10 mai 2025 \(dépassée\)/.test(t.q("#pcsApercu").textContent), "échéance d'élaboration à deux ans de la notification, dépassée");
+    setF(t, "gen.dateNotif", "2099-05-10");
+    ok(/Échéance d'élaboration : 10 mai 2101/.test(t.q("#pcsApercu").textContent) && !/10 mai 2101 \(dépassée\)/.test(t.q("#pcsApercu").textContent), "échéance d'élaboration à venir sans mention");
+    setF(t, "gen.dateNotif", "2023-05-10"); setF(t, "gen.dateApprob", "2024-01-15");
+    ok(/Échéance d'élaboration : 10 mai 2025/.test(t.q("#pcsApercu").textContent) && !/10 mai 2025 \(dépassée\)/.test(t.q("#pcsApercu").textContent), "échéance d'élaboration non dépassée une fois le plan approuvé");
+    click(t, '#pcsRub [data-rub="1"]'); setF(t, "risques.pprDate", "2019-03-04"); setF(t, "risques.ppiDate", "2021-11-20");
+    ok(/4 mars 2019/.test(t.q("#pcsApercu").textContent) && /20 novembre 2021/.test(t.q("#pcsApercu").textContent), "dates du PPR et du PPI dans l'aperçu");
+    click(t, '#pcsRub [data-rub="2"]'); setF(t, "vuln.zones", "Berges de l'Hers, passage à niveau");
+    ok(/Berges de l'Hers/.test(t.q("#pcsApercu").textContent), "zones sensibles complémentaires dans l'aperçu");
+    click(t, '#pcsRub [data-rub="3"]');
+    ok(/Modèles de messages disponibles dans l'espace Exercices : .*FR-Alert/.test(t.q("#pcsApercu").textContent), "modèles de messages cités dans l'aperçu de la rubrique 3");
+    click(t, '#pcsTabs [data-ptab="documents"]'); ok(!!t.q("#pcsArrPdf"), "bouton PDF de l'arrêté");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); await wait(400); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="0"]');
+    setF(t, "gen.referent", "Premier onglet");
+    const st = JSON.parse(t.w.localStorage.getItem("commune-prete-pcs")); st["09194"].gen.dateApprob = "2022-02-02";
+    t.w.localStorage.setItem("commune-prete-pcs", JSON.stringify(st));
+    t.w.dispatchEvent(new t.w.StorageEvent("storage", { key: "commune-prete-pcs" })); await wait(30);
+    ok(t.q('[data-pf="gen.dateApprob"]').value === "2022-02-02" && /2 février 2022/.test(t.q("#pcsApercu").textContent), "modification faite dans un autre onglet reprise à l'affichage");
+    setF(t, "gen.referent", "Adjoint");
+    ok(JSON.parse(t.w.localStorage.getItem("commune-prete-pcs"))["09194"].gen.dateApprob === "2022-02-02", "saisie suivante : la modification de l'autre onglet n'est pas écrasée");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
+  { const t = open("bourg"); await wait(300);
+    click(t, "#panelBtn"); click(t, '#espaceSeg [data-esp="pcs"]');
+    ok(t.d.body.classList.contains("panel-off"), "panneau des exercices masqué avant la recherche");
+    click(t, "#pcsGoEx");
+    ok(!t.d.body.classList.contains("panel-off") && t.d.activeElement && t.d.activeElement.id === "commune", "« Rechercher ma commune » réaffiche le panneau et place le curseur sur le champ commune");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
+  { const t = open("paris"); await wait(300); await pickCommune(t, "paris"); await wait(400); click(t, '#espaceSeg [data-esp="pcs"]');
+    click(t, '#pcsTabs [data-ptab="documents"]'); click(t, "#pcsArr"); await wait(80);
+    const arr = await readBlob(t, t.blobs[t.blobs.length - 1]);
+    ok(/Le préfet de police/.test(arr) && /R731-3/.test(arr) && !/Le maire,<br>/.test(arr), "arrêté de Paris : signé par le préfet de police");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); await wait(400); click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="1"]');
+    ok(t.q('[data-pf="risques.ddrm"] option[value=""]').textContent === "—", "liste oui/non : option vide affichée « — »");
+    click(t, '#pcsRub [data-rub="5"]'); ok(!!t.q("#pcsBody fieldset legend") && /Capacité des lieux d'accueil/.test(t.q("#pcsBody fieldset legend").textContent), "capacités dans un fieldset nommé");
+    ok(!/dont techniques/.test(t.q("#pcsApercu").textContent), "aperçu des moyens : pas de « 3 dont techniques »");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
   console.log("\nAFFICHAGE");
   const v = open("bourg"); await wait(300);
   ok([...v.d.querySelectorAll(".tgrp")].map(x => x.textContent).join("/") === "Préparer/Conduire/Évaluer", "onglets regroupés en trois temps");
