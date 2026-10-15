@@ -1375,8 +1375,8 @@ function ficheFill(p){const f=p.fiche||{};let n=0;["alerte","elus","agents","tec
 function ficheHyp(p){
   const h=[],elus=fn(p,"elus"),ag=fn(p,"agents"),tech=fn(p,"tech"),res=fn(p,"reserve"),cap=capEff(p),lits=fn(p,"lits"),veh=fn(p,"veh"),conv=fv(p,"conv")||[];
   if(elus!=null||ag!=null)h.push(`La commune mobilise ${elus!=null?nf(elus)+" élu"+(elus>1?"s":""):"ses élus"} et ${ag!=null?nf(ag)+" agent"+(ag>1?"s":""):"ses agents"}${tech!=null?", dont "+nf(tech)+" technique"+(tech>1?"s":""):""} : la relève au-delà de trois heures est à organiser.`);
-  if(res!=null)h.push(res>0?`La réserve communale de sécurité civile (${nf(res)} membres) peut être mobilisée pour des missions de soutien.`:"La commune n'a pas de réserve communale : le soutien repose sur les agents et les bénévoles spontanés.");
-  if(cap!=null)h.push(`Le lieu d'accueil (${p.heberg}) offre ${nf(cap)} places${lits!=null?" et "+nf(lits)+" lits de camp":""}.`);
+  if(res!=null)h.push(res>0?`La réserve communale de sécurité civile (${nf(res)} membre${res>1?"s":""}) peut être mobilisée pour des missions de soutien.`:"La commune n'a pas de réserve communale : le soutien repose sur les agents et les bénévoles spontanés.");
+  if(cap!=null)h.push(`Le lieu d'accueil (${p.heberg}) offre ${nf(cap)} place${cap>1?"s":""}${lits!=null?" et "+nf(lits)+(lits>1?" lits":" lit")+" de camp":""}.`);
   if(veh!=null)h.push(`${nf(veh)} véhicule${veh>1?"s":""} communa${veh>1?"ux":"l"} disponible${veh>1?"s":""}.`);
   if(fv(p,"pics")==="oui")h.push(`La commune relève d'un plan intercommunal de sauvegarde : la coordination avec ${actors(p).l_epci} est à jouer.`);
   if(conv.length)h.push("Conventions activables : "+conv.map(k=>(CONVS.find(c=>c[0]===k)||[,""])[1].toLowerCase()).join(", ")+".");
@@ -1678,7 +1678,7 @@ async function loadPlaces(opt={}){
     S.places=places;S.roads=Object.entries(roads).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);S.rail=rail||places.some(x=>x.cat==="gare");
     S.geo={status:"ok",at:new Date().toISOString(),insee,v:2};
     autoAssign(opt);save();
-    toast(places.length+" lieux "+(big?"de la zone d'exercice":"de "+p.commune)+" chargés depuis OpenStreetMap.");
+    toast((places.length>1?places.length+" lieux ":places.length+" lieu ")+(big?"de la zone d'exercice":"de "+p.commune)+(places.length>1?" chargés":" chargé")+" depuis OpenStreetMap.");
   }catch(e){if(stale())return;S.geo={status:"error",insee};const auto=!opt.auto;const n=$("#lieuxNote");if(n)n.textContent="OpenStreetMap n'a pas répondu (ses serveurs publics sont saturés) : les lieux ci-dessous sont génériques. "+(auto?"Un nouvel essai automatique aura lieu dans une minute ; vous pouvez aussi réessayer depuis l'onglet Carte, ou saisir vos lieux réels.":"Réessayez plus tard depuis l'onglet Carte, ou saisissez vos lieux réels.");
     if(auto)setTimeout(()=>{if(S.p.insee===insee&&S.geo&&S.geo.status==="error"&&seq===placesSeq)loadPlaces({...opt,auto:true})},60000)}
   renderDatalists();renderRisks();if(S.tab==="carte"||S.tab==="scenario")render();else renderMapState();
@@ -1933,11 +1933,11 @@ const CELLULE=["Maire, directeur des opérations (DOS)","Responsable des actions
 function holders(title){const k=ROLE_KEYS.find(x=>x[0].test(title));if(!k)return [];return (S.annu||[]).filter(c=>k[1].test(c.fonction)).slice(0,3)}
 /* Annuaire de crise et fiche « Moyens de la commune » : mêmes données (S.annu, S.p.fiche) et mêmes champs dans le panneau Exercices
    et dans l'onglet Rédiger du PCS. Le préfixe distingue les identifiants des deux espaces. */
-function annuListHTML(){const a=S.annu||[];return a.slice(0,8).map(c=>`<li>${esc(c.nom)} <span class="note">· ${esc(c.fonction||"fonction ?")} · ${esc(c.tel||"pas de numéro")}</span></li>`).join("")+(a.length>8?`<li class="note">et ${a.length-8} autres</li>`:"")}
+function annuListHTML(){const a=S.annu||[];return a.slice(0,8).map(c=>`<li>${esc(c.nom)} <span class="note">· ${esc(c.fonction||"fonction ?")} · ${esc(c.tel||"pas de numéro")}</span></li>`).join("")+(a.length>8?`<li class="note">et ${a.length-8} autre${a.length-8>1?"s":""}</li>`:"")}
 function annuHTML(pr){
   return `<div data-annu-box><p class="note">Dans Excel, sélectionnez les colonnes Nom, Fonction et Téléphone, copiez, puis collez ici. Un fichier CSV convient aussi. Les noms restent dans ce navigateur.</p>
     <label class="sr" for="${pr}Paste">Contacts à importer : nom, fonction et téléphone</label><textarea id="${pr}Paste" data-annu="paste" rows="4" style="width:100%" placeholder="Nom	Fonction	Téléphone"></textarea>
-    <div class="lbtns" style="margin-top:8px"><button class="btn sm" type="button" id="${pr}Import" data-annu="import">Importer</button><label class="btn sm ghost" for="${pr}File">Fichier CSV</label><input type="file" id="${pr}File" data-annu="file" accept=".csv,text/csv,text/plain" hidden><button class="btn sm ghost" type="button" id="${pr}Clear" data-annu="clear">Vider</button></div>
+    <div class="lbtns" style="margin-top:8px"><button class="btn sm" type="button" id="${pr}Import" data-annu="import">Importer</button><button class="btn sm ghost" type="button" data-annu="pick">Fichier CSV</button><input type="file" id="${pr}File" data-annu="file" accept=".csv,text/csv,text/plain" hidden tabindex="-1"><button class="btn sm ghost" type="button" id="${pr}Clear" data-annu="clear">Vider</button></div>
     <ul class="checks" id="${pr}List" data-annu-list>${S?annuListHTML():""}</ul></div>`;
 }
 function renderAnnu(){
@@ -1946,7 +1946,7 @@ function renderAnnu(){
 }
 function annuChanged(msg){renderAnnu();saveU();if(S.tab==="roles"||S.tab==="conduite")render();pcsSync();toast(msg)}
 function annuImport(box){const ta=box.querySelector('[data-annu="paste"]'),a=parseAnnu(ta.value);if(!a.length){toast("Aucun contact reconnu. Collez au moins un nom.");return}
-  S.annu=a;S.annuAt=new Date().toISOString().slice(0,10);ta.value="";annuChanged(a.length+" contacts importés.")}
+  S.annu=a;S.annuAt=new Date().toISOString().slice(0,10);ta.value="";annuChanged(a.length>1?a.length+" contacts importés.":"1 contact importé.")}
 const FICHE_KEYS=["alerte","elus","agents","tech","reserve","cap","lits","veh","ge","pics","conv"];
 function ficheFieldsHTML(keys,pr){
   const f=S.p.fiche||{},lab=Object.assign({},FICHE_LAB,{ge:"Groupe électrogène",pics:"Plan intercommunal de sauvegarde (PICS)"});
@@ -1984,6 +1984,7 @@ function saisieClick(e){
   const t=e.target;if(!S||!t.closest||!inSaisie(t))return;
   const b=t.closest("[data-fic]");
   if(b){const k=b.dataset.fic,v=b.dataset.v;S.p.fiche=S.p.fiche||{};const a=S.p.fiche[k]=Array.isArray(S.p.fiche[k])?S.p.fiche[k]:[];const i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);saveU();ficheSync(k,b);return}
+  const pk=t.closest('[data-annu="pick"]');if(pk){const fi=pk.closest("[data-annu-box]").querySelector('[data-annu="file"]');if(fi)fi.click();return}
   const n=t.closest('[data-annu="import"],[data-annu="clear"]');
   if(n){if(n.dataset.annu==="import")annuImport(n.closest("[data-annu-box]"));else{S.annu=[];S.annuAt=null;annuChanged("Annuaire vidé.")}}
 }
@@ -2201,7 +2202,7 @@ function lieuxSection(p){
   if(!S.places)return "";
   const E=etabsScen(p).filter(x=>!x.lone),g=erpConcerned(p),zw=zoneWord(p);
   if(!E.length&&!g.length)return "";
-  const row=(lab,l,f)=>`<li><b>${esc(lab)}</b> (${l.length}) : ${esc(l.slice(0,12).map(f||(x=>x.name)).join(", "))}${l.length>12?" et "+(l.length-12)+" autres":""}</li>`;
+  const row=(lab,l,f)=>`<li><b>${esc(lab)}</b> (${l.length}) : ${esc(l.slice(0,12).map(f||(x=>x.name)).join(", "))}${l.length>12?" et "+(l.length-12)+(l.length-12>1?" autres":" autre"):""}</li>`;
   const el=E.map(elevesOf),tot=el.reduce((a,x)=>a+(x||0),0);
   return `<div class="sec"><h4>Établissements et lieux publics concernés</h4><ul>${E.length?row("Établissements d'enseignement",E,x=>{const n=elevesOf(x);return x.name+(n?" ("+nf(n)+" élèves)":"")}):""}${g.map(o=>row(CATS[o.cat].label,o.l)).join("")}</ul>
     <p class="note">Recensement ${zw} : établissements publics et privés de tous niveaux (annuaire de l'Éducation nationale${E.length&&tot?", "+nf(tot)+" élèves au total":""}) et lieux recevant du public (OpenStreetMap). Les messages destinés aux établissements sont répartis entre eux. Décochez un lieu dans « Lieux utilisés dans le scénario » pour l'écarter.</p></div>`;
@@ -2233,6 +2234,9 @@ function vChrono(){
 }
 /* ---------- Conduite de l'exercice ---------- */
 const LV=()=>{S.live=S.live||{start:null,acc:0,run:false,sent:{},done:{},rel:{},log:[]};return S.live};
+// Les états « envoyé », « réaction » et « relance » sont indexés par la position du message : quand le chronogramme
+// change (ajout, suppression, tri), ils suivent leur message au lieu de rester à la même position.
+function keepLive(fn){const l=S.live,before=S.injects.slice();fn();if(!l)return;["sent","done","rel"].forEach(k=>{const o=l[k]||{},m={};Object.keys(o).forEach(n=>{const j=S.injects.indexOf(before[+n]);if(j>=0)m[j]=o[n]});l[k]=m})}
 const elMs=()=>{const l=LV();return l.run?l.acc+(Date.now()-l.start):l.acc};
 const elMin=()=>elMs()/60000;
 function fmtEl(ms){ms=Math.max(0,ms);const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor(t%3600/60),sec=t%60;return "H+"+h+":"+String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0")}
@@ -2473,7 +2477,7 @@ function reportHTML(){
   <h2>4. Axes d'amélioration</h2><p>${esc(S.retex.axes||"—").replace(/\n/g,"<br>")}</p>
   <h2>5. Plan d'actions correctives</h2>
   <table><tr><th>Action</th><th>Pilote</th><th>Échéance</th></tr>${S.retex.actions.map(x=>row([esc(x.a),esc(x.pilote),esc(x.ech)])).join("")}</table>
-  ${(()=>{const st=callStats();if(!st||!st.n)return "";const a=S.annu||[],L=S.live.calls||{};return `<h2>${++sn}. Test de l'annuaire de crise</h2><p>${st.ok} membres joints sur ${st.n} (${Math.round(st.ok/st.n*100)} %)${st.half!=null?", la moitié en "+st.half+" min":""}${st.last!=null?", le dernier à H+"+st.last+" min":""}.</p><table><tr><th>Nom</th><th>Fonction</th><th>Résultat</th><th>Heure</th></tr>${a.map((c,i)=>row([esc(c.nom),esc(c.fonction),L[i]?CALL_ST.find(x=>x[0]===L[i].st)[1]:"Non appelé",L[i]?fmtShort(L[i].at):"—"])).join("")}</table>`})()}
+  ${(()=>{const st=callStats();if(!st||!st.n)return "";const a=S.annu||[],L=S.live.calls||{};return `<h2>${++sn}. Test de l'annuaire de crise</h2><p>${pl(st.ok,"membre","joint")} sur ${st.n} (${Math.round(st.ok/st.n*100)} %)${st.half!=null?", la moitié en "+st.half+" min":""}${st.last!=null?", le dernier à H+"+st.last+" min":""}.</p><table><tr><th>Nom</th><th>Fonction</th><th>Résultat</th><th>Heure</th></tr>${a.map((c,i)=>row([esc(c.nom),esc(c.fonction),L[i]?CALL_ST.find(x=>x[0]===L[i].st)[1]:"Non appelé",L[i]?fmtShort(L[i].at):"—"])).join("")}</table>`})()}
   ${D.length?`<h2>${++sn}. Délais de réaction mesurés</h2><table><tr><th>Heure</th><th>Émetteur</th><th>Message</th><th>Délai</th></tr>${D.map(o=>row([hplus(o.i.t),esc(o.i.from),esc(o.i.msg),o.d!=null?Math.round(o.d-o.s)+" min":"aucune réaction"+(o.r!=null?" (relancé)":"")])).join("")}</table>`:""}
   <h2>${++sn}. Grille d'observation détaillée</h2>
   ${p.objs.map(o=>`<div class="blk"><h4>${esc(OBJS[o].label)}</h4><table><thead><tr><th>Critère</th><th>Cotation</th><th>Constaté</th></tr></thead>${crit(o).map((c,j)=>row([esc(c),lab[S.cot[o+"-"+j]]||"—",esc((S.obsv||{})[o+"-"+j]||"")])).join("")}</table></div>`).join("")}
@@ -2602,11 +2606,12 @@ document.addEventListener("click",e=>{
   if(id==="repDoc"){dl(fileBase()+".doc","application/msword","﻿"+reportHTML()).then(r=>toast(dlMsg(r,"Rapport Word téléchargé.")));return}
   if(id==="repPdf"){printReport();toast("Choisissez « Enregistrer au format PDF » dans la fenêtre d'impression.");return}
   if(id==="archBtn"){if(!pendingArch){pendingArch=true;render();return}pendingArch=false;const ok=archive();saved(ok);render();toast(ok?"Exercice archivé dans l'historique de la commune.":"Ce navigateur ne conserve pas les données : l'archive sera perdue à la fermeture de la page. Cliquez sur « Sauvegarder l'historique » pour la garder.");return}
+  if(id==="histImportBtn"){const fi=$("#histImport");if(fi)fi.click();return}
   if(id==="histExport"){dl("historique-commune-prete.json","application/json",JSON.stringify(hLoad(),null,1)).then(r=>toast(dlMsg(r,"Historique exporté.")));return}
   const hd=e.target.closest("[data-hact]");if(hd){const [hid,ai]=hd.dataset.hact.split("|"),h=hLoad(),x=h.find(y=>y.id===hid);if(x&&x.actions[+ai]){x.actions[+ai].done=hd.checked;saved(hSave(h));render()}return}
 });
 document.addEventListener("change",e=>{
-  if(e.target.id!=="histImport")return;const f=e.target.files&&e.target.files[0];if(!f)return;
+  if(e.target.id!=="histImport")return;const f=e.target.files&&e.target.files[0];if(!f)return;try{e.target.value=""}catch(err){}
   f.text().then(t=>{const imp=JSON.parse(t);if(!Array.isArray(imp))throw 0;const h=hLoad();imp.forEach(x=>{if(x&&x.id&&!h.some(y=>y.id===x.id))h.push(x)});saved(hSave(h));render();toast("Historique importé.")}).catch(()=>toast("Fichier d'historique illisible."));
 });
 function vHist(){
@@ -2617,7 +2622,7 @@ function vHist(){
     ${list.length?`<div class="tablewrap"><table style="min-width:540px"><thead><tr><th>Date</th><th>Scénario</th><th>Format</th><th>Atteinte</th><th>Délai moyen</th></tr></thead><tbody>${list.map(x=>`<tr><td>${esc(fmtDate(x.date))}</td><td>${esc(x.titre)}</td><td>${esc(x.format)}</td><td>${x.taux!=null?x.taux+" %":"—"}</td><td>${x.delai!=null?x.delai+" min":"—"}</td></tr>`).join("")}</tbody></table></div>
     <p class="note">${due?`Prochain exercice à organiser avant le ${due.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})} (un exercice au moins tous les cinq ans).`:""}</p>`:`<p class="note">Aucun exercice archivé pour cette commune. Clôturez celui-ci pour démarrer l'historique.</p>`}
     ${pend.length?`<h4 style="margin-top:14px">Actions correctives des exercices précédents</h4><ul class="checks">${pend.map(o=>`<li><label><input type="checkbox" data-hact="${esc(o.x.id)}|${o.i}"> ${esc(o.a.a)} <span class="note">· ${esc(o.a.pilote)} · ${esc(o.a.ech)} · exercice du ${esc(fmtDate(o.x.date))}</span></label></li>`).join("")}</ul>`:""}
-    <div class="lbtns" style="margin-top:10px"><button class="btn sm ghost" type="button" id="histExport">Sauvegarder l'historique</button><label class="btn sm ghost" for="histImport">Restaurer une sauvegarde</label><input type="file" id="histImport" accept="application/json,.json" hidden></div>
+    <div class="lbtns" style="margin-top:10px"><button class="btn sm ghost" type="button" id="histExport">Sauvegarder l'historique</button><button class="btn sm ghost" type="button" id="histImportBtn">Restaurer une sauvegarde</button><input type="file" id="histImport" accept="application/json,.json" hidden tabindex="-1"></div>
     <p class="note">L'historique est conservé dans ce navigateur. Sauvegardez-le régulièrement pour ne pas le perdre.</p>
   </div>`;
 }
@@ -2825,7 +2830,7 @@ $("#tabs").addEventListener("click",e=>{const b=e.target.closest("[data-tab]");i
 $("#tabs").addEventListener("keydown",e=>{if(e.key!=="ArrowRight"&&e.key!=="ArrowLeft")return;const i=TABS.findIndex(t=>t[0]===S.tab);S.tab=TABS[(i+(e.key==="ArrowRight"?1:-1)+TABS.length)%TABS.length][0];save();render();$("#tab-"+S.tab).focus()});
 $("#tools").addEventListener("click",e=>{
   const v=e.target.closest("[data-view]");if(v){S.view=v.dataset.view==="table"?"table":"tl";save();render();return}
-  if(e.target.id==="addInj"){const last=S.injects.filter(i=>i.obj!=="FIN").pop();S.injects.push({t:last?last.t+5:0,obj:"EVAL",from:"Émetteur",to:"PCC",via:"Téléphone",msg:"Nouveau message",exp:"Réaction attendue"});S.injects.sort((a,b)=>a.t-b.t);S.edited=true;saveU();render()}
+  if(e.target.id==="addInj"){const last=S.injects.filter(i=>i.obj!=="FIN").pop();keepLive(()=>{S.injects.push({t:last?last.t+5:0,obj:"EVAL",from:"Émetteur",to:"PCC",via:"Téléphone",msg:"Nouveau message",exp:"Réaction attendue"});S.injects.sort((a,b)=>a.t-b.t)});S.edited=true;saveU();render()}
   if(e.target.id==="copyTsv"){const c=s=>String(s).replace(/[\t\n]/g," ");copy([["Heure","Horaire","Objectif","Émetteur","Destinataire","Vecteur","Message","Réaction attendue"].join("\t")].concat(S.injects.map(i=>[hplus(i.t),clock(i.t),i.obj==="FIN"?"FINEX":OBJS[i.obj].short,i.from,i.to,i.via,i.msg,i.exp].map(c).join("\t"))).join("\n"),"Chronogramme copié. Collez-le dans un tableur.")}
   if(e.target.id==="copyAll")copy(asText(),"Dossier copié. Collez-le dans un traitement de texte.");
 });
@@ -2835,16 +2840,16 @@ $("#view").addEventListener("focusout",e=>{
   if(it&&ce.dataset.f){S.injects[+it.dataset.i][ce.dataset.f]=ce.textContent.trim();S.edited=true;saveU()}
   if(ac&&ce.dataset.af){S.retex.actions[+ac.dataset.a][ce.dataset.af]=ce.textContent.trim();saveU()}
 });
-$("#view").addEventListener("change",e=>{const t=e.target;if(t.classList.contains("tmin")){const n=+t.closest("[data-i]").dataset.i;S.injects[n].t=Math.max(0,parseInt(t.value||0,10));S.injects.sort((a,b)=>a.t-b.t);S.edited=true;saveU();render()}});
+$("#view").addEventListener("change",e=>{const t=e.target;if(t.classList.contains("tmin")){const n=+t.closest("[data-i]").dataset.i;keepLive(()=>{S.injects[n].t=Math.max(0,parseInt(t.value||0,10));S.injects.sort((a,b)=>a.t-b.t)});S.edited=true;saveU();render()}});
 $("#view").addEventListener("input",e=>{const t=e.target;if(t.dataset.r){S.retex[t.dataset.r]=t.value;saveU()}if(t.dataset.obsv){S.obsv=S.obsv||{};S.obsv[t.dataset.obsv]=t.value;saveU()}});
 $("#view").addEventListener("click",e=>{
   const nb=e.target.closest("[data-next]");if(nb){S.tab=nb.dataset.next;save();render();toWorkTop(document.querySelector(".work"));const tb=$("#tab-"+S.tab);if(tb)tb.focus({preventScroll:true});return}
   const cc=e.target.closest("[data-cat]");if(cc){const k=cc.dataset.cat;hiddenCats.has(k)?hiddenCats.delete(k):hiddenCats.add(k);cc.setAttribute("aria-pressed",!hiddenCats.has(k));drawMap();return}
-  const d=e.target.closest("[data-del]");if(d){S.injects.splice(+d.dataset.del,1);S.edited=true;saveU();render();return}
+  const d=e.target.closest("[data-del]");if(d){keepLive(()=>S.injects.splice(+d.dataset.del,1));S.edited=true;saveU();render();return}
   const nw=e.target.closest("[data-now]");if(nw){const id=nw.dataset.now,inp=nw.parentNode.querySelector("input");const v=nowStamp()+(inp.value?" · "+inp.value:"");inp.value=v;S.obsv=S.obsv||{};S.obsv[id]=v;saveU();return}
   if(e.target.id==="obsLinkBtn"){copy(obsLink(),"Lien observateurs copié. Envoyez-le aux observateurs.");return}
   if(e.target.id==="obsImportBtn"){const raw=($("#obsImport").value||"").trim();const m=raw.match(/COMMUNE-PRETE-OBS:([\w-]+)/);if(!m){toast("Code non reconnu.");return}
-    try{const d=b64d(m[1]);let n=0;S.cot=S.cot||{};S.obsv=S.obsv||{};Object.entries(d.cot||{}).forEach(([k,v])=>{if(v&&!S.cot[k]){S.cot[k]=v;n++}});Object.entries(d.obsv||{}).forEach(([k,v])=>{if(v){S.obsv[k]=(S.obsv[k]?S.obsv[k]+" | ":"")+(d.n||"Observateur")+" : "+v;n++}});saveU();render();toast(n+" éléments importés de "+(d.n||"l'observateur")+".")}catch(err){toast("Code illisible.")}return}
+    try{const d=b64d(m[1]);let n=0;S.cot=S.cot||{};S.obsv=S.obsv||{};Object.entries(d.cot||{}).forEach(([k,v])=>{if(v&&!S.cot[k]){S.cot[k]=v;n++}});Object.entries(d.obsv||{}).forEach(([k,v])=>{if(v){S.obsv[k]=(S.obsv[k]?S.obsv[k]+" | ":"")+(d.n||"Observateur")+" : "+v;n++}});saveU();render();toast(pl(n,"élément","importé")+" de "+(d.n||"l'observateur")+".")}catch(err){toast("Code illisible.")}return}
   const ct=e.target.closest("[data-copytpl]");if(ct){const m=MODELES[+ct.dataset.copytpl];if(m)copy(m.x,m.t+" copié.");return}
   const ad=e.target.closest("[data-adel]");if(ad){S.retex.actions.splice(+ad.dataset.adel,1);saveU();render();return}
   const c=e.target.closest("[data-cot]");if(c){const id=c.dataset.cot;S.cot[id]=S.cot[id]===c.dataset.v?"":c.dataset.v;saveU();render();return}

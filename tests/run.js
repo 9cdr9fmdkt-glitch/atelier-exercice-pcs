@@ -796,7 +796,7 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     click(t, '#espaceSeg [data-esp="pcs"]'); click(t, '#pcsRub [data-rub="3"]');
     ok(more() && /^Modifier l'annuaire et les moyens d'alerte/.test(more().querySelector("summary").textContent.trim()) && !more().open, "rubrique 3 : « Modifier l'annuaire et les moyens d'alerte », replié");
     const m3 = more();
-    ok(m3.querySelector("textarea") && m3.querySelector('[data-annu="import"]') && m3.querySelector('input[type=file][data-annu="file"]') && m3.querySelector('label[for="' + m3.querySelector("input[type=file]").id + '"]') && m3.querySelector('[data-annu="clear"]') && m3.querySelectorAll('[data-fic="alerte"]').length === 6, "rubrique 3 : coller, fichier CSV, vider et puces des moyens d'alerte");
+    ok(m3.querySelector("textarea") && m3.querySelector('[data-annu="import"]') && m3.querySelector('input[type=file][data-annu="file"]') && m3.querySelector('button[data-annu="pick"]') && m3.querySelector('[data-annu="clear"]') && m3.querySelectorAll('[data-fic="alerte"]').length === 6, "rubrique 3 : coller, fichier CSV, vider et puces des moyens d'alerte");
     ok(!idsOk().length && !m3.querySelector('[id^="fi-"],#annuPaste'), "rubrique 3 : identifiants uniques, labels reliés" + (idsOk().length ? " : " + idsOk().join(", ") : ""));
     m3.open = true; t.q("#saveState").textContent = "";
     m3.querySelector("textarea").value = "Nom\tFonction\tTéléphone\nJean Martin\tMaire\t06 11 22 33 44\nLuc Bernard\tAgent technique\t"; click(t, '#pcsBody [data-annu="import"]');
@@ -879,6 +879,26 @@ const pcsStored = (t, sec) => JSON.parse(t.w.localStorage.getItem("commune-prete
     await chooseCommune(t, "hameau"); await wait(300); click(t, '#espaceSeg [data-esp="pcs"]');
     const m = t.q("#pcsBody details[data-modif]");
     ok(/Rouze/.test(t.q("#communeBar").textContent) && m && !m.open && t.q("#pannuPaste").value === "" && !/Jean Secret/.test(t.q("#pcsView").innerHTML), "changement de commune : le texte collé dans la rubrique 3 n'est pas repris pour la nouvelle commune");
+    ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
+
+  console.log("\nCORRECTIONS DU 15 OCTOBRE 2026");
+  { const t = open("bourg"); await wait(300); await pickCommune(t, "bourg"); gen(t);
+    click(t, '[data-tab="conduite"]'); click(t, "#lstart"); click(t, '[data-lsent="0"]');
+    const m0 = t.q('[data-ldone="0"]').closest(".lcard").querySelector(".lm").textContent;
+    // Chronogramme modifié en cours de jeu : le message envoyé passe en fin de liste, puis le premier message est supprimé.
+    click(t, '[data-tab="chrono"]'); const tm = t.q('[data-i="0"] .tmin'); tm.value = "999"; tm.dispatchEvent(new t.w.Event("change", { bubbles: true }));
+    click(t, '[data-del="0"]'); click(t, '[data-tab="conduite"]');
+    const w = [...t.d.querySelectorAll("[data-ldone]")].map(b => b.closest(".lcard").querySelector(".lm").textContent);
+    ok(w.length === 1 && w[0] === m0, "conduite : l'état « envoyé » suit son message quand le chronogramme est trié ou modifié");
+    click(t, '[data-tab="roles"]'); const box = t.q("[data-annu-box]") || t.q("#annuFields [data-annu-box]");
+    box.querySelector("textarea").value = "Jean Martin\tMaire\t06 11 22 33 44"; box.querySelector('[data-annu="import"]').dispatchEvent(new t.w.MouseEvent("click", { bubbles: true }));
+    ok(/^1 contact importé\.$/.test(t.q("#toast").textContent), "accord : « 1 contact importé »");
+    let picked = 0; const fi = box.querySelector('input[type=file][data-annu="file"]'); fi.click = () => picked++;
+    const pk = box.querySelector('button[data-annu="pick"]'); if (pk) pk.dispatchEvent(new t.w.MouseEvent("click", { bubbles: true }));
+    ok(pk && picked === 1 && !box.querySelector("label[for]:not(.sr)"), "annuaire : bouton « Fichier CSV » atteignable au clavier");
+    click(t, '[data-tab="retex"]'); const hb = t.q("#histImportBtn"), hi = t.q("#histImport"); let hp = 0; if (hi) hi.click = () => hp++;
+    if (hb) hb.dispatchEvent(new t.w.MouseEvent("click", { bubbles: true }));
+    ok(hb && hb.tagName === "BUTTON" && hp === 1, "historique : bouton « Restaurer une sauvegarde » atteignable au clavier");
     ok(!t.errs.length, "aucune erreur JavaScript" + (t.errs.length ? " : " + t.errs[0] : "")); t.close(); }
 
   console.log("\nRÉGLEMENTATION ET MODE D'EMPLOI");
